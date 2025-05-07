@@ -27,9 +27,8 @@ jobs:
           git checkout testing
           git merge origin/develop \
             --allow-unrelated-histories \
-            --no-ff \
-            --no-edit \
-          || { echo "Merge failed"; exit 1; }
+            --no-ff --no-edit \
+            -s recursive -X theirs || { echo "Merge failed"; exit 1; }
           git push origin testing
 
   testing:
@@ -72,9 +71,8 @@ jobs:
           git checkout acceptance
           git merge origin/testing \
             --allow-unrelated-histories \
-            --no-ff \
-            --no-edit \
-          || { echo "Merge failed"; exit 1; }
+            --no-ff --no-edit \
+            -s recursive -X theirs || { echo "Merge failed"; exit 1; }
           git push origin acceptance
       - name: Set up Swift
         uses: fwal/setup-swift@v1
@@ -106,7 +104,6 @@ jobs:
           git checkout main
           git merge origin/acceptance \
             --allow-unrelated-histories \
-            --no-ff \
-            --no-edit \
-          || { echo "Merge failed"; exit 1; }
+            --no-ff --no-edit \
+            -s recursive -X theirs || { echo "Merge failed"; exit 1; }
           git push origin main
