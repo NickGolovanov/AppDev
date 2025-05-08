@@ -75,23 +75,28 @@ struct EventsMapView: View {
                     .ignoresSafeArea(edges: .top)
                     
                     // Event Cards Overlay
-                    VStack {
+                    VStack(spacing: 0) {
                         Capsule()
                             .fill(Color(.systemGray4))
                             .frame(width: 60, height: 6)
                             .padding(.top, 8)
-                        VStack(spacing: 12) {
-                            ForEach(events) { event in
-                                EventCard(event: event)
+                            .padding(.bottom, 8)
+                        ScrollView {
+                            VStack(spacing: 12) {
+                                ForEach(events) { event in
+                                    EventCard(event: event)
+                                }
                             }
+                            .padding(.bottom, 16)
+                            .padding(.top, 4)
                         }
-                        .padding(.bottom, 16)
+                        .frame(maxHeight: 180) // Adjust height as needed
                     }
                     .background(Color.white)
                     .cornerRadius(28)
                     .shadow(color: Color(.systemGray3), radius: 16, x: 0, y: 8)
                     .padding(.horizontal, 16)
-                    .offset(y: 32)
+                    .padding(.bottom, 16)
                 }
                 .padding(.bottom, 0)
                 Spacer()
