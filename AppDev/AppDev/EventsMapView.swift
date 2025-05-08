@@ -37,70 +37,66 @@ struct EventsMapView: View {
     ]
     
     var body: some View {
-        ZStack(alignment: .top) {
-            VStack(spacing: 0) {
-                // Header
-                HStack {
-                    Text("PartyPal")
-                        .font(.title2).fontWeight(.bold)
-                        .foregroundColor(Color.purple)
-                    Spacer()
-                    ZStack(alignment: .topTrailing) {
-                        Image(systemName: "bell")
-                            .font(.title2)
-                            .foregroundColor(.gray)
-                        Circle()
-                            .fill(Color.red)
-                            .frame(width: 18, height: 18)
-                            .overlay(Text("3").font(.caption2).foregroundColor(.white))
-                            .offset(x: 10, y: -10)
-                    }
-                    Image(systemName: "person.crop.circle")
-                        .resizable()
-                        .frame(width: 36, height: 36)
-                        .clipShape(Circle())
-                }
-                .padding([.horizontal, .top])
-                .padding(.bottom, 4)
-                .background(Color.white)
-                .shadow(color: Color(.systemGray5), radius: 1, y: 1)
-                
-                // Map
-                ZStack(alignment: .bottom) {
-                    Map(coordinateRegion: $region, annotationItems: events) { event in
-                        MapMarker(coordinate: event.coordinate, tint: .red)
-                    }
-                    .frame(height: 480) // Make the map bigger
-                    .cornerRadius(0)
-                    .ignoresSafeArea(edges: .top)
-                    
-                    // Event Cards Overlay
-                    VStack(spacing: 0) {
-                        Capsule()
-                            .fill(Color(.systemGray4))
-                            .frame(width: 60, height: 6)
-                            .padding(.top, 8)
-                            .padding(.bottom, 8)
-                        ScrollView {
-                            VStack(spacing: 12) {
-                                ForEach(events) { event in
-                                    EventCard(event: event)
-                                }
-                            }
-                            .padding(.bottom, 16)
-                            .padding(.top, 4)
-                        }
-                        .frame(maxHeight: 180) // Adjust height as needed
-                    }
-                    .background(Color.white)
-                    .cornerRadius(28)
-                    .shadow(color: Color(.systemGray3), radius: 16, x: 0, y: 8)
-                    .padding(.horizontal, 16)
-                    .padding(.bottom, 16)
-                }
-                .padding(.bottom, 0)
+        VStack(spacing: 0) {
+            // Header
+            HStack {
+                Text("PartyPal")
+                    .font(.title2).fontWeight(.bold)
+                    .foregroundColor(Color.purple)
                 Spacer()
+                ZStack(alignment: .topTrailing) {
+                    Image(systemName: "bell")
+                        .font(.title2)
+                        .foregroundColor(.gray)
+                    Circle()
+                        .fill(Color.red)
+                        .frame(width: 18, height: 18)
+                        .overlay(Text("3").font(.caption2).foregroundColor(.white))
+                        .offset(x: 10, y: -10)
+                }
+                Image(systemName: "person.crop.circle")
+                    .resizable()
+                    .frame(width: 36, height: 36)
+                    .clipShape(Circle())
             }
+            .padding([.horizontal, .top])
+            .padding(.bottom, 4)
+            .background(Color.white)
+            .shadow(color: Color(.systemGray5), radius: 1, y: 1)
+            
+            // Map (fixed height)
+            Map(coordinateRegion: $region, annotationItems: events) { event in
+                MapMarker(coordinate: event.coordinate, tint: .red)
+            }
+            .frame(height: 340)
+            .cornerRadius(0)
+            .padding(.bottom, 0)
+            
+            // Event Cards (below the map, not overlapping)
+            VStack(spacing: 0) {
+                Capsule()
+                    .fill(Color(.systemGray4))
+                    .frame(width: 60, height: 6)
+                    .padding(.top, 16)
+                    .padding(.bottom, 8)
+                ScrollView {
+                    VStack(spacing: 12) {
+                        ForEach(events) { event in
+                            EventCard(event: event)
+                        }
+                    }
+                    .padding(.bottom, 16)
+                    .padding(.top, 4)
+                }
+                .frame(maxHeight: 180)
+            }
+            .background(Color.white)
+            .cornerRadius(28)
+            .shadow(color: Color(.systemGray3), radius: 16, x: 0, y: 8)
+            .padding(.horizontal, 16)
+            .padding(.top, 0)
+            .padding(.bottom, 16)
+            Spacer()
         }
         .background(Color(.systemGray6).ignoresSafeArea())
     }
