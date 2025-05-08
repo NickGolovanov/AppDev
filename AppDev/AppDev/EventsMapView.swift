@@ -1,8 +1,7 @@
 import SwiftUI
 import MapKit
 
-struct Event: Identifiable 
-{
+struct Event: Identifiable {
     let id = UUID()
     let name: String
     let location: String
@@ -12,15 +11,13 @@ struct Event: Identifiable
     let imageName: String // Use systemName or asset name
 }
 
-struct EventsMapView: View 
-{
+struct EventsMapView: View {
     @State private var region = MKCoordinateRegion(
         center: CLLocationCoordinate2D(latitude: 52.3702, longitude: 4.8952), // Amsterdam
         span: MKCoordinateSpan(latitudeDelta: 0.08, longitudeDelta: 0.08)
     )
     
-    let events = 
-    [
+    let events = [
         Event(
             name: "Summer Night Party",
             location: "Club Matrix, 2.3km away",
@@ -39,21 +36,16 @@ struct EventsMapView: View
         )
     ]
     
-    var body: some View 
-    {
-        ZStack(alignment: .top) 
-        {
-            VStack(spacing: 0) 
-            {
+    var body: some View {
+        ZStack(alignment: .top) {
+            VStack(spacing: 0) {
                 // Header
-                HStack 
-                {
+                HStack {
                     Text("PartyPal")
                         .font(.title2).fontWeight(.bold)
                         .foregroundColor(Color.purple)
                     Spacer()
-                    ZStack(alignment: .topTrailing) 
-                    {
+                    ZStack(alignment: .topTrailing) {
                         Image(systemName: "bell")
                             .font(.title2)
                             .foregroundColor(.gray)
@@ -74,8 +66,7 @@ struct EventsMapView: View
                 .shadow(color: Color(.systemGray5), radius: 1, y: 1)
                 
                 // Map
-                ZStack(alignment: .bottom) 
-                {
+                ZStack(alignment: .bottom) {
                     Map(coordinateRegion: $region, annotationItems: events) { event in
                         MapMarker(coordinate: event.coordinate, tint: .red)
                     }
@@ -84,16 +75,13 @@ struct EventsMapView: View
                     .ignoresSafeArea(edges: .top)
                     
                     // Event Cards Overlay
-                    VStack 
-                    {
+                    VStack {
                         Capsule()
                             .fill(Color(.systemGray4))
                             .frame(width: 60, height: 6)
                             .padding(.top, 8)
-                        VStack(spacing: 12) 
-                        {
-                            ForEach(events) 
-                            { event in
+                        VStack(spacing: 12) {
+                            ForEach(events) { event in
                                 EventCard(event: event)
                             }
                         }
@@ -113,13 +101,10 @@ struct EventsMapView: View
     }
 }
 
-struct EventCard: View 
-{
+struct EventCard: View {
     let event: Event
-    var body: some View 
-    {
-        HStack(alignment: .top, spacing: 12) 
-        {
+    var body: some View {
+        HStack(alignment: .top, spacing: 12) {
             // Event image (placeholder)
             Rectangle()
                 .fill(Color.gray.opacity(0.3))
@@ -132,13 +117,11 @@ struct EventCard: View
                         .clipped()
                 )
                 .cornerRadius(8)
-            VStack(alignment: .leading, spacing: 4) 
-            {
+            VStack(alignment: .leading, spacing: 4) {
                 Text(event.name)
                     .font(.headline)
                     .fontWeight(.semibold)
-                HStack(spacing: 4) 
-                {
+                HStack(spacing: 4) {
                     Image(systemName: "mappin.and.ellipse")
                         .foregroundColor(.gray)
                         .font(.caption)
@@ -146,8 +129,7 @@ struct EventCard: View
                         .font(.subheadline)
                         .foregroundColor(.gray)
                 }
-                HStack(spacing: 4) 
-                {
+                HStack(spacing: 4) {
                     Image(systemName: "clock")
                         .foregroundColor(.gray)
                         .font(.caption)
@@ -157,8 +139,7 @@ struct EventCard: View
                 }
             }
             Spacer()
-            ZStack 
-            {
+            ZStack {
                 Circle()
                     .fill(Color.purple.opacity(0.12))
                     .frame(width: 32, height: 32)
@@ -174,10 +155,8 @@ struct EventCard: View
     }
 }
 
-struct EventsMapView_Previews: PreviewProvider 
-{
-    static var previews: some View 
-    {
+struct EventsMapView_Previews: PreviewProvider {
+    static var previews: some View {
         EventsMapView()
     }
 } 
