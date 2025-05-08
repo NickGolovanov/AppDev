@@ -99,7 +99,7 @@ struct HomeView: View {
                 .padding()
                 .background(LinearGradient(colors: [Color.purple, Color.pink], startPoint: .leading, endPoint: .trailing))
                 .cornerRadius(15)
-                .padding(.horizontal)
+                .frame(maxWidth: .infinity)
                 .padding(.bottom, 80)
             }
             .padding(.top)
