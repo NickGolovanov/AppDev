@@ -84,23 +84,11 @@ struct HomeView: View {
                     .padding(.horizontal)
 
                 // Host Party Section
-                VStack(alignment: .leading) {
-                    Text("✨ Host your own party?")
-                        .font(.headline)
-                    Text("Create and manage your event with ease")
-                        .font(.subheadline)
-                    Button("Create Party") {}
-                        .font(.headline)
-                        .padding()
-                        .background(Color.purple)
-                        .foregroundColor(.white)
-                        .cornerRadius(10)
-                }
-                .background(LinearGradient(colors: [Color.purple, Color.pink], startPoint: .leading, endPoint: .trailing))
-                .cornerRadius(15)
-                .padding(.horizontal)
-                .padding(.bottom, 80)
+                hostPartyCard()
+                    .padding(.horizontal)
+                    .padding(.bottom, 80)
             }
+            .padding(.top)
         }
     }
 
@@ -166,6 +154,34 @@ struct HomeView: View {
         .background(Color(.systemGray6))
         .cornerRadius(12)
     }
+}
+
+    func hostPartyCard() -> some View {
+    HStack {
+        VStack(alignment: .leading, spacing: 6) {
+            Text("✨ Host your own party?")
+                .font(.headline)
+                .foregroundColor(.white)
+            Text("Create and manage your event with ease")
+                .font(.subheadline)
+                .foregroundColor(.white.opacity(0.9))
+        }
+        Spacer()
+        Button("Create Party") {
+            // Action
+        }
+        .font(.headline)
+        .padding(.horizontal, 16)
+        .padding(.vertical, 8)
+        .background(Color.white)
+        .foregroundColor(.purple)
+        .cornerRadius(10)
+    }
+    .padding()
+    .background(
+        LinearGradient(colors: [Color.purple, Color.pink], startPoint: .leading, endPoint: .trailing)
+    )
+    .cornerRadius(15)
 }
 
 struct PartyPalView_Previews: PreviewProvider {
