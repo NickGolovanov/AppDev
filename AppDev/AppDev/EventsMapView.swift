@@ -79,7 +79,7 @@ struct EventsMapView: View
                     Map(coordinateRegion: $region, annotationItems: events) { event in
                         MapMarker(coordinate: event.coordinate, tint: .red)
                     }
-                    .frame(height: 350)
+                    .frame(height: 480) // Make the map bigger
                     .cornerRadius(0)
                     .ignoresSafeArea(edges: .top)
                     
@@ -100,11 +100,12 @@ struct EventsMapView: View
                         .padding(.bottom, 16)
                     }
                     .background(Color.white)
-                    .cornerRadius(24)
-                    .shadow(radius: 8)
-                    .padding(.horizontal, 0)
-                    .offset(y: 40)
+                    .cornerRadius(28)
+                    .shadow(color: Color(.systemGray3), radius: 16, x: 0, y: 8)
+                    .padding(.horizontal, 16)
+                    .offset(y: 32)
                 }
+                .padding(.bottom, 0)
                 Spacer()
             }
         }
@@ -167,9 +168,9 @@ struct EventCard: View
         }
         .padding(10)
         .background(Color.white)
-        .cornerRadius(14)
-        .shadow(color: Color(.systemGray4).opacity(0.15), radius: 3, x: 0, y: 2)
-        .padding(.horizontal, 8)
+        .cornerRadius(18)
+        .shadow(color: Color(.systemGray4).opacity(0.18), radius: 6, x: 0, y: 3)
+        .padding(.horizontal, 2)
     }
 }
 
