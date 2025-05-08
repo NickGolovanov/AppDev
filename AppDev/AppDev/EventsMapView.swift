@@ -41,8 +41,7 @@ struct EventsMapView: View
     
     var body: some View 
     {
-        ZStack(alignment: .top) 
-        {
+        GeometryReader { geometry in
             VStack(spacing: 0) 
             {
                 // Header
@@ -73,43 +72,39 @@ struct EventsMapView: View
                 .background(Color.white)
                 .shadow(color: Color(.systemGray5), radius: 1, y: 1)
                 
-                // Map
-                ZStack(alignment: .bottom) 
-                {
-                    Map(coordinateRegion: $region, annotationItems: events) { event in
-                        MapMarker(coordinate: event.coordinate, tint: .red)
-                    }
-                    .frame(height: 480) // Make the map bigger
-                    .cornerRadius(0)
-                    .ignoresSafeArea(edges: .top)
-                    
-                    // Event Cards Overlay
-                    VStack 
-                    {
-                        Capsule()
-                            .fill(Color(.systemGray4))
-                            .frame(width: 60, height: 6)
-                            .padding(.top, 8)
-                        VStack(spacing: 12) 
-                        {
-                            ForEach(events) 
-                            { event in
-                                EventCard(event: event)
-                            }
-                        }
-                        .padding(.bottom, 16)
-                    }
-                    .background(Color.white)
-                    .cornerRadius(28)
-                    .shadow(color: Color(.systemGray3), radius: 16, x: 0, y: 8)
-                    .padding(.horizontal, 16)
-                    .offset(y: 32)
+                // Map (top 60-65% of the screen)
+                Map(coordinateRegion: $region, annotationItems: events) { event in
+                    MapMarker(coordinate: event.coordinate, tint: .red)
                 }
-                .padding(.bottom, 0)
+                .frame(height: geometry.size.height * 0.62)
+                .cornerRadius(0)
+                .ignoresSafeArea(edges: .top)
+                
+                // Event Cards (bottom, not overlapping map)
+                VStack 
+                {
+                    Capsule()
+                        .fill(Color(.systemGray4))
+                        .frame(width: 60, height: 6)
+                        .padding(.top, 8)
+                    VStack(spacing: 12) 
+                    {
+                        ForEach(events) 
+                        { event in
+                            EventCard(event: event)
+                        }
+                    }
+                    .padding(.bottom, 16)
+                }
+                .background(Color.white)
+                .cornerRadius(28)
+                .shadow(color: Color(.systemGray3), radius: 16, x: 0, y: 8)
+                .padding(.horizontal, 16)
+                .padding(.top, 0)
                 Spacer()
             }
+            .background(Color(.systemGray6).ignoresSafeArea())
         }
-        .background(Color(.systemGray6).ignoresSafeArea())
     }
 }
 
