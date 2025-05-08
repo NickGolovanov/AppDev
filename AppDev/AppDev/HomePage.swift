@@ -96,13 +96,11 @@ struct HomeView: View {
                         .foregroundColor(.white)
                         .cornerRadius(10)
                 }
-                .padding()
                 .background(LinearGradient(colors: [Color.purple, Color.pink], startPoint: .leading, endPoint: .trailing))
                 .cornerRadius(15)
                 .padding(.horizontal)
                 .padding(.bottom, 80)
             }
-            .padding(.top)
         }
     }
 
