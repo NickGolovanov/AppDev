@@ -149,8 +149,9 @@ struct HomeView: View {
                 Text(name).font(.headline)
                 Text(date).font(.caption).foregroundColor(.gray)
                 HStack {
-                    Text(dressCode).font(.caption2).foregroundColor(.blue)
-                    Text(price).font(.caption2).foregroundColor(.green)
+                    Text(dressCode).font(.caption2).padding(4).background(Color.blue.opacity(0.2)).cornerRadius(4)
+                    Text(price).font(.caption2).padding(4).background(Color.green.opacity(0.2))
+                    .cornerRadius(4)
                 }
             }
             Spacer()
@@ -174,9 +175,6 @@ struct PartyPalView_Previews: PreviewProvider {
         PartyPalView()
     }
 }
-
-
-
 
 struct RoundedCorner: Shape {
     var radius: CGFloat = .infinity
