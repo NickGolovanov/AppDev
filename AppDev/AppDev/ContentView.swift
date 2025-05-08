@@ -6,8 +6,10 @@
 //
 
 import SwiftUI
+import MapKit
 
-struct Ticket: Identifiable {
+struct Ticket: Identifiable 
+{
     let id = UUID()
     let eventName: String
     let date: String
@@ -17,21 +19,26 @@ struct Ticket: Identifiable {
     let price: String
 }
 
-struct ContentView: View {
-    let tickets = [
+struct ContentView: View 
+{
+    let tickets = 
+    [
         Ticket(eventName: "Amsterdam Student Night", date: "May 15, 2025 - 22:00", location: "Club Paradise, Amsterdam", name: "John Doe", email: "john.doe@student.uva.nl", price: "€15.00"),
         Ticket(eventName: "Rotterdam Beach Party", date: "May 20, 2025 - 14:00", location: "Hoek van Holland Beach", name: "John Doe", email: "john.doe@student.uva.nl", price: "€20.00")
     ]
     
-    var body: some View {
-        VStack(spacing: 0) {
+    var body: some View 
+    {
+        VStack(spacing: 0) 
+        {
             // Header
             HStack {
                 Text("PartyPal")
                     .font(.title2).fontWeight(.bold)
                     .foregroundColor(Color.purple)
                 Spacer()
-                ZStack(alignment: .topTrailing) {
+                ZStack(alignment: .topTrailing) 
+                {
                     Image(systemName: "bell")
                         .font(.title2)
                         .foregroundColor(.gray)
@@ -52,7 +59,8 @@ struct ContentView: View {
             .shadow(color: Color(.systemGray5), radius: 1, y: 1)
             
             // Title
-            HStack {
+            HStack 
+            {
                 Text("My Tickets")
                     .font(.title).fontWeight(.heavy)
                 Spacer()
@@ -60,9 +68,12 @@ struct ContentView: View {
             .padding([.horizontal, .top])
             
             // Tickets List
-            ScrollView {
-                VStack(spacing: 16) {
-                    ForEach(tickets) { ticket in
+            ScrollView 
+            {
+                VStack(spacing: 16) 
+                {
+                    ForEach(tickets) 
+                    { ticket in
                         TicketCard(ticket: ticket)
                     }
                 }
@@ -91,10 +102,13 @@ struct ContentView: View {
     }
 }
 
-struct TicketCard: View {
+struct TicketCard: View 
+{
     let ticket: Ticket
-    var body: some View {
-        VStack(alignment: .leading, spacing: 12) {
+    var body: some View 
+    {
+        VStack(alignment: .leading, spacing: 12) 
+        {
             Text(ticket.eventName)
                 .font(.headline)
                 .fontWeight(.semibold)
@@ -130,12 +144,15 @@ struct TicketCard: View {
     }
 }
 
-struct TabBarItem: View {
+struct TabBarItem: View 
+{
     let icon: String
     let label: String
     let isSelected: Bool
-    var body: some View {
-        VStack(spacing: 2) {
+    var body: some View 
+    {
+        VStack(spacing: 2) 
+        {
             Image(systemName: icon)
                 .font(.system(size: 22, weight: .medium))
                 .foregroundColor(isSelected ? Color.purple : Color.gray)
@@ -146,8 +163,10 @@ struct TabBarItem: View {
     }
 }
 
-struct ContentView_Previews: PreviewProvider {
-    static var previews: some View {
+struct ContentView_Previews: PreviewProvider 
+{
+    static var previews: some View 
+    {
         ContentView()
     }
 }
