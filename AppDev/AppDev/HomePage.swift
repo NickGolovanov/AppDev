@@ -1,5 +1,6 @@
 import SwiftUI
 
+// ...existing code...
 struct HomePage: View {
     var body: some View {
         VStack(spacing: 0) {
@@ -15,6 +16,7 @@ struct HomePage: View {
                 .font(.title2)
             }
             .padding()
+            .background(Color.white)
 
             ScrollView {
                 VStack(alignment: .leading, spacing: 24) {
@@ -24,7 +26,7 @@ struct HomePage: View {
                             .font(.headline)
                         // Trending Event Card
                         ZStack(alignment: .bottomLeading) {
-                            Image("party_image") 
+                            Image(uiImage: UIImage(named: "Screenshot 2025-05-08 132241") ?? UIImage())
                                 .resizable()
                                 .aspectRatio(16/9, contentMode: .fill)
                                 .cornerRadius(16)
@@ -94,6 +96,7 @@ struct HomePage: View {
                 }
                 .padding(.horizontal)
             }
+            .background(Color.white)
 
             // Bottom Navigation Bar
             HStack {
@@ -106,7 +109,7 @@ struct HomePage: View {
             .padding(.vertical, 8)
             .background(Color(.systemGray6))
         }
-        .background(Color.black.edgesIgnoringSafeArea(.all))
+        .background(Color.white.edgesIgnoringSafeArea(.all))
     }
 }
 
