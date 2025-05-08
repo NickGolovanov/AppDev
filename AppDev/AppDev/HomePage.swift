@@ -107,41 +107,41 @@ struct HomeView: View {
     }
 
     func trendingCard(title: String, subtitle: String, tags: [String], imageName: String, bgColor: Color) -> some View {
-    let cardWidth = UIScreen.main.bounds.width * 0.7
-    return VStack(alignment: .leading, spacing: 0) {
-        Image(imageName)
-            .resizable()
-            .aspectRatio(contentMode: .fill)
-            .frame(width: cardWidth, height: 80)
-            .clipped()
-            .cornerRadius(10, corners: [.topLeft, .topRight])
+        let cardWidth = UIScreen.main.bounds.width * 0.7
+        return VStack(alignment: .leading, spacing: 0) {
+            Image(imageName)
+                .resizable()
+                .aspectRatio(contentMode: .fill)
+                .frame(width: cardWidth, height: 80)
+                .clipped()
+                .cornerRadius(10, corners: [.topLeft, .topRight])
 
-        VStack(alignment: .leading, spacing: 4) {
-            HStack {
-                ForEach(tags, id: \.self) { tag in
-                    Text(tag)
-                        .font(.caption2)
-                        .padding(.horizontal, 6)
-                        .padding(.vertical, 2)
-                        .background(Color.white.opacity(0.2))
-                        .foregroundColor(.white)
-                        .cornerRadius(5)
+            VStack(alignment: .leading, spacing: 4) {
+                HStack {
+                    ForEach(tags, id: \.self) { tag in
+                        Text(tag)
+                            .font(.caption2)
+                            .padding(.horizontal, 6)
+                            .padding(.vertical, 2)
+                            .background(Color.white.opacity(0.2))
+                            .foregroundColor(.white)
+                            .cornerRadius(5)
+                    }
                 }
+                Text(title)
+                    .font(.headline)
+                    .foregroundColor(.white)
+                Text(subtitle)
+                    .font(.caption)
+                    .foregroundColor(.white.opacity(0.8))
             }
-            Text(title)
-                .font(.headline)
-                .foregroundColor(.white)
-            Text(subtitle)
-                .font(.caption)
-                .foregroundColor(.white.opacity(0.8))
+            .padding(8)
+            .frame(width: cardWidth, alignment: .leading)
         }
-        .padding(8)
-        .frame(width: cardWidth, alignment: .leading)
+        .frame(width: cardWidth)
+        .background(bgColor)
+        .cornerRadius(12)
     }
-    .frame(width: cardWidth)
-    .background(bgColor)
-    .cornerRadius(12)
-  }
 
     func eventCard(name: String, date: String, dressCode: String, price: String) -> some View {
         HStack {
