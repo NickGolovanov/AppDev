@@ -1,174 +1,126 @@
 import SwiftUI
 
-// ...existing code...
-struct HomePage: View {
+struct PartyPalView: View {
     var body: some View {
-        VStack(spacing: 0) {
-            // Header
-            HStack {
-                Text("PartyPal")
-                    .font(.title2).bold().foregroundColor(.purple)
-                Spacer()
-                HStack(spacing: 16) {
-                    Image(systemName: "bell")
-                    Image(systemName: "person.crop.circle")
-                }
-                .font(.title2)
-            }
-            .padding()
-            .background(Color.white)
-
+        NavigationView {
             ScrollView {
-                VStack(alignment: .leading, spacing: 24) {
-                    // Trending Tonight
-                    VStack(alignment: .leading, spacing: 12) {
-                        Text("🔥 Trending Tonight")
-                            .font(.headline)
-                        // Trending Event Card
-                        ZStack(alignment: .bottomLeading) {
-                            Image(uiImage: UIImage(named: "Screenshot 2025-05-08 132241") ?? UIImage())
-                                .resizable()
-                                .aspectRatio(16/9, contentMode: .fill)
-                                .cornerRadius(16)
-                            VStack(alignment: .leading, spacing: 4) {
-                                HStack {
-                                    Text("House")
-                                        .font(.caption2)
-                                        .padding(4)
-                                        .background(Color.purple.opacity(0.2))
-                                        .cornerRadius(4)
-                                    Text("Hot")
-                                        .font(.caption2)
-                                        .padding(4)
-                                        .background(Color.orange.opacity(0.2))
-                                        .cornerRadius(4)
-                                }
-                                Text("Neon Dreams")
-                                    .font(.headline).bold()
-                                Text("22:00 • Club Matrix")
-                                    .font(.caption)
-                            }
-                            .padding()
-                            .background(
-                                LinearGradient(gradient: Gradient(colors: [.black.opacity(0.7), .clear]), startPoint: .bottom, endPoint: .top)
-                            )
-                            .cornerRadius(16)
-                        }
-                        .frame(height: 140)
+                VStack(alignment: .leading, spacing: 20) {
+                    // Header
+                    Text("PartyPal")
+                        .font(.largeTitle.bold())
+                        .padding(.bottom, 10)
+                    
+                    // Trending Tonight section
+                    SectionHeader(title: "Trending Tonight")
+                    
+                    EventItem(title: "Home", subtitle: "Hot")
+                    EventItem(title: "Neon Dreams", subtitle: "22:00 - Club Matrix")
+                    EventItem(title: "Beach Beach Bl", subtitle: "20:00 - 2:01")
+                    
+                    Divider()
+                    
+                    // Upcoming Events section
+                    SectionHeader(title: "Upcoming Events")
+                    
+                    EventItem(title: "Amsterdam Student Night", subtitle: "May 3, 2025 - 21:00")
+                    TagLabel(text: "Smart Casual")
+                    EventItem(title: "TU Delft Spring Party", subtitle: "May 1, 2025 - 22:00")
+                    TagLabel(text: "€10")
+                    
+                    Button(action: {}) {
+                        Text("Join")
+                            .frame(maxWidth: .infinity)
                     }
-
-                    // Upcoming Events
-                    VStack(alignment: .leading, spacing: 12) {
-                        Text("📅 Upcoming Events")
-                            .font(.headline)
-                        VStack(spacing: 12) {
-                            EventCard(title: "Amsterdam Student Night", date: "May 5, 2025 • 21:00", tag: "Smart Casual", price: "€5")
-                            EventCard(title: "TU Delft Spring Party", date: "May 7, 2025 • 22:00", tag: "Casual", price: "€10")
-                        }
+                    .buttonStyle(.borderedProminent)
+                    .controlSize(.large)
+                    
+                    Divider()
+                    
+                    // Host section
+                    SectionHeader(title: "Host your own party?")
+                    
+                    Text("Create and manage your event with ease")
+                        .foregroundColor(.secondary)
+                    
+                    Button(action: {}) {
+                        Text("Create Party")
+                            .frame(maxWidth: .infinity)
                     }
-
-                    // Map Section (Placeholder)
-                    Image("map_placeholder")
-                        .resizable()
-                        .aspectRatio(16/9, contentMode: .fill)
-                        .cornerRadius(16)
-                        .frame(height: 120)
-
-                    // Host Your Own Party
-                    VStack(alignment: .leading, spacing: 8) {
-                        Text("✨ Host your own party?")
-                            .font(.headline)
-                        Text("Create and manage your event with ease")
-                            .font(.subheadline)
-                        Button(action: {}) {
-                            Text("Create Party")
-                                .font(.headline)
-                                .frame(maxWidth: .infinity)
-                                .padding()
-                                .background(LinearGradient(gradient: Gradient(colors: [.purple, .pink]), startPoint: .leading, endPoint: .trailing))
-                                .foregroundColor(.white)
-                                .cornerRadius(12)
-                        }
-                    }
-                    .padding()
-                    .background(Color.purple.opacity(0.1))
-                    .cornerRadius(16)
+                    .buttonStyle(.borderedProminent)
+                    .controlSize(.large)
                 }
-                .padding(.horizontal)
+                .padding()
             }
-            .background(Color.white)
-
-            // Bottom Navigation Bar
-            HStack {
-                NavBarItem(icon: "house.fill", label: "Home", selected: true)
-                NavBarItem(icon: "ticket.fill", label: "Tickets")
-                NavBarItem(icon: "calendar", label: "Events")
-                NavBarItem(icon: "bubble.left.and.bubble.right", label: "Chat")
-                NavBarItem(icon: "person.crop.circle", label: "Profile")
+            .toolbar {
+                Toolbar()
             }
-            .padding(.vertical, 8)
-            .background(Color(.systemGray6))
         }
-        .background(Color.white.edgesIgnoringSafeArea(.all))
     }
 }
 
-struct EventCard: View {
-    var title: String
-    var date: String
-    var tag: String
-    var price: String
+struct SectionHeader: View {
+    let title: String
+    
+    var body: some View {
+        Text(title)
+            .font(.title2.bold())
+    }
+}
 
+struct EventItem: View {
+    let title: String
+    let subtitle: String
+    
+    var body: some View {
+        VStack(alignment: .leading, spacing: 4) {
+            Text(title)
+                .font(.headline)
+            Text(subtitle)
+                .foregroundColor(.secondary)
+        }
+    }
+}
+
+struct TagLabel: View {
+    let text: String
+    
+    var body: some View {
+        Text(text)
+            .foregroundColor(.blue)
+            .font(.subheadline)
+    }
+}
+
+struct Toolbar: View {
     var body: some View {
         HStack {
-            VStack(alignment: .leading, spacing: 4) {
-                Text(title).bold()
-                Text(date).font(.caption)
-                HStack {
-                    Text(tag)
-                        .font(.caption2)
-                        .padding(4)
-                        .background(Color.blue.opacity(0.2))
-                        .cornerRadius(4)
-                    Text(price)
-                        .font(.caption2)
-                        .padding(4)
-                        .background(Color.green.opacity(0.2))
-                        .cornerRadius(4)
-                }
-            }
-            Spacer()
-            Button("Join") {}
-                .padding(.horizontal, 16)
-                .padding(.vertical, 8)
-                .background(Color.purple)
-                .foregroundColor(.white)
-                .cornerRadius(8)
+            TabButton(icon: "house", label: "Home")
+            TabButton(icon: "ticket", label: "Tickets")
+            TabButton(icon: "calendar", label: "Events")
+            TabButton(icon: "message", label: "Chat")
+            TabButton(icon: "person", label: "Profile")
         }
-        .padding()
-        .background(Color(.systemGray5))
-        .cornerRadius(12)
     }
 }
 
-struct NavBarItem: View {
-    var icon: String
-    var label: String
-    var selected: Bool = false
-
+struct TabButton: View {
+    let icon: String
+    let label: String
+    
     var body: some View {
-        VStack {
-            Image(systemName: icon)
-                .font(.title2)
-                .foregroundColor(selected ? .purple : .gray)
-            Text(label)
-                .font(.caption)
-                .foregroundColor(selected ? .purple : .gray)
+        Button(action: {}) {
+            VStack {
+                Image(systemName: icon)
+                Text(label)
+                    .font(.caption)
+            }
         }
         .frame(maxWidth: .infinity)
     }
 }
 
-#Preview {
-    HomePage()
+struct PartyPalView_Previews: PreviewProvider {
+    static var previews: some View {
+        PartyPalView()
+    }
 }
