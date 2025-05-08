@@ -66,123 +66,123 @@ struct EventPage: View {
                             .onTapGesture { selectedFilter = filter }
                     }
                 }
-                .padding(.horizontal)
             }
-            
-            // Featured Event
-            VStack(alignment: .leading) {
-                Text("Featured Event")
-                    .font(.headline)
-                    .padding(.horizontal)
-                ZStack(alignment: .bottomLeading) {
-                    Image(featuredEvent.image)
-                        .resizable()
-                        .aspectRatio(contentMode: .fill)
-                        .frame(height: 180)
-                        .cornerRadius(16)
-                    VStack(alignment: .leading) {
-                        Text(featuredEvent.title)
-                            .font(.title3)
-                            .bold()
-                            .foregroundColor(.white)
-                        Text("\(featuredEvent.date) • \(featuredEvent.location)")
-                            .foregroundColor(.white)
-                            .font(.subheadline)
-                    }
-                    .padding()
-                    .background(LinearGradient(gradient: Gradient(colors: [Color.black.opacity(0.7), .clear]), startPoint: .bottom, endPoint: .top))
-                }
+            .padding(.horizontal)
+        }
+        .padding(.top, 8)
+        
+        // Featured Event
+        VStack(alignment: .leading) {
+            Text("Featured Event")
+                .font(.headline)
                 .padding(.horizontal)
-            }
-            .padding(.top)
-            
-            // Upcoming Events
-            VStack(alignment: .leading) {
-                Text("Upcoming Events")
-                    .font(.headline)
-                    .padding(.horizontal)
-                ForEach(upcomingEvents) { event in
-                    HStack {
-                        Image(event.image)
-                            .resizable()
-                            .frame(width: 60, height: 60)
-                            .cornerRadius(12)
-                        VStack(alignment: .leading) {
-                            Text(event.title)
-                                .font(.headline)
-                            Text("\(event.date) • \(event.location)")
-                                .font(.subheadline)
-                                .foregroundColor(.gray)
-                            HStack {
-                                Image(systemName: "person.2.fill")
-                                    .foregroundColor(.purple)
-                                Text("\(event.attendees) going")
-                                    .font(.caption)
-                                    .foregroundColor(.purple)
-                            }
-                        }
-                        Spacer()
-                    }
-                    .padding()
-                    .background(Color(.systemGray6))
+            ZStack(alignment: .bottomLeading) {
+                Image(featuredEvent.image)
+                    .resizable()
+                    .aspectRatio(contentMode: .fill)
+                    .frame(height: 180)
                     .cornerRadius(16)
-                    .padding(.horizontal)
-                }
-            }
-            .padding(.top)
-            
-            Spacer()
-            
-            // Floating Action Button
-            HStack {
-                Spacer()
-                Button(action: {
-                    // Add event action
-                }) {
-                    Image(systemName: "plus")
-                        .font(.title)
+                VStack(alignment: .leading) {
+                    Text(featuredEvent.title)
+                        .font(.title3)
+                        .bold()
                         .foregroundColor(.white)
-                        .padding()
-                        .background(Color.purple)
-                        .clipShape(Circle())
-                        .shadow(radius: 4)
+                    Text("\(featuredEvent.date) • \(featuredEvent.location)")
+                        .foregroundColor(.white)
+                        .font(.subheadline)
                 }
                 .padding()
+                .background(LinearGradient(gradient: Gradient(colors: [Color.black.opacity(0.7), .clear]), startPoint: .bottom, endPoint: .top))
             }
-            
-            // Bottom Navigation Bar
-            HStack {
-                Spacer()
-                VStack {
-                    Image(systemName: "house")
-                    Text("Home").font(.caption)
-                }
-                Spacer()
-                VStack {
-                    Image(systemName: "ticket")
-                    Text("Tickets").font(.caption)
-                }
-                Spacer()
-                VStack {
-                    Image(systemName: "calendar")
-                    Text("Events").font(.caption)
-                }
-                Spacer()
-                VStack {
-                    Image(systemName: "bubble.left.and.bubble.right")
-                    Text("Chat").font(.caption)
-                }
-                Spacer()
-                VStack {
-                    Image(systemName: "person.crop.circle")
-                    Text("Profile").font(.caption)
-                }
-                Spacer()
-            }
-            .padding(.vertical, 8)
-            .background(Color(.systemGray6))
+            .padding(.horizontal)
         }
-        .background(Color.white.ignoresSafeArea())
+        .padding(.top)
+        
+        // Upcoming Events
+        VStack(alignment: .leading) {
+            Text("Upcoming Events")
+                .font(.headline)
+                .padding(.horizontal)
+            ForEach(upcomingEvents) { event in
+                HStack {
+                    Image(event.image)
+                        .resizable()
+                        .frame(width: 60, height: 60)
+                        .cornerRadius(12)
+                    VStack(alignment: .leading) {
+                        Text(event.title)
+                            .font(.headline)
+                        Text("\(event.date) • \(event.location)")
+                            .font(.subheadline)
+                            .foregroundColor(.gray)
+                        HStack {
+                            Image(systemName: "person.2.fill")
+                                .foregroundColor(.purple)
+                            Text("\(event.attendees) going")
+                                .font(.caption)
+                                .foregroundColor(.purple)
+                        }
+                    }
+                    Spacer()
+                }
+                .padding()
+                .background(Color(.systemGray6))
+                .cornerRadius(16)
+                .padding(.horizontal)
+            }
+        }
+        .padding(.top)
+        
+        Spacer()
+        
+        // Floating Action Button
+        HStack {
+            Spacer()
+            Button(action: {
+                // Add event action
+            }) {
+                Image(systemName: "plus")
+                    .font(.title)
+                    .foregroundColor(.white)
+                    .padding()
+                    .background(Color.purple)
+                    .clipShape(Circle())
+                    .shadow(radius: 4)
+            }
+            .padding()
+        }
+        
+        // Bottom Navigation Bar
+        HStack {
+            Spacer()
+            VStack {
+                Image(systemName: "house")
+                Text("Home").font(.caption)
+            }
+            Spacer()
+            VStack {
+                Image(systemName: "ticket")
+                Text("Tickets").font(.caption)
+            }
+            Spacer()
+            VStack {
+                Image(systemName: "calendar")
+                Text("Events").font(.caption)
+            }
+            Spacer()
+            VStack {
+                Image(systemName: "bubble.left.and.bubble.right")
+                Text("Chat").font(.caption)
+            }
+            Spacer()
+            VStack {
+                Image(systemName: "person.crop.circle")
+                Text("Profile").font(.caption)
+            }
+            Spacer()
+        }
+        .padding(.vertical, 8)
+        .background(Color(.systemGray6))
     }
 }
 
