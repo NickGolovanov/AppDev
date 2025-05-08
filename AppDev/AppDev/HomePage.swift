@@ -55,12 +55,14 @@ struct HomeView: View {
                     .padding(.horizontal)
 
                 ScrollView(.horizontal, showsIndicators: false) {
-                    HStack {
+                    HStack(spacing: 16) {
                         trendingCard(title: "Neon Dreams", subtitle: "22:00 · Club Matrix", tags: ["House", "Hot"], imageName: "party1", bgColor: .purple)
                         trendingCard(title: "Beach Blast", subtitle: "20:00 · Zandvoort", tags: ["Beach", "Chill"], imageName: "party2", bgColor: .pink)
+                        Spacer(minLength: 0)
                     }
-                    .padding(.horizontal)
+                    .padding(.leading, 20)
                 }
+                .frame(height: 130)
 
                 // Upcoming Events
                 Text("🗓️ Upcoming Events")
@@ -134,7 +136,7 @@ struct HomeView: View {
             }
             .padding(8)
         }
-        .frame(width: 160)
+        .frame(width: UIScreen.main.bounds.width * 0.7)
         .background(bgColor)
         .cornerRadius(12)
     }
