@@ -64,13 +64,16 @@ struct EventsMapView: View {
             .background(Color.white)
             .shadow(color: Color(.systemGray5), radius: 1, y: 1)
             
-            // Map (fixed height)
+            // Map (increased height)
             Map(coordinateRegion: $region, annotationItems: events) { event in
                 MapMarker(coordinate: event.coordinate, tint: .red)
             }
-            .frame(height: 340)
+            .frame(height: 420)
             .cornerRadius(0)
             .padding(.bottom, 0)
+            
+            // Spacing between map and cards
+            Spacer().frame(height: 16)
             
             // Event Cards (below the map, not overlapping)
             VStack(spacing: 0) {
