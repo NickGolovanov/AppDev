@@ -8,33 +8,39 @@
 import SwiftUI
 
 struct ContentView: View {
-    var body: some View {
-        ScrollView {
-            VStack(alignment: .leading, spacing: 20) {
-                
-                // Header Section
-                headerSection
-                
-                // Profile Info Section
-                profileInfoSection
+    // State to track navigation to EditProfileView
+    @State private var showEditProfile = false
 
-                // Edit Button
-                editProfileButton
-                
-                // Stats Section
-                statsSection
-                
-                // Recent Events Section
-                recentEventsSection
-                
-                // Footer Placeholder
-                footerPlaceholder
+    var body: some View {
+        NavigationStack {
+            ScrollView {
+                VStack(alignment: .leading, spacing: 20) {
+                    
+                    // Header Section
+                    headerSection
+                    
+                    // Profile Info Section
+                    profileInfoSection
+
+                    // Edit Button
+                    editProfileButton
+                    
+                    // Stats Section
+                    statsSection
+                    
+                    // Recent Events Section
+                    recentEventsSection
+                    
+                    // Footer Placeholder
+                    footerPlaceholder
+                }
+                .padding()
+                .navigationDestination(isPresented: $showEditProfile) {
+                    EditProfileView()  // Navigate to EditProfileView when the button is pressed
+                }
             }
-            .padding()
         }
-    
     }
-    
 }
 
 #Preview {
@@ -187,7 +193,8 @@ extension ContentView {
     // MARK: Edit Profile Button
     var editProfileButton: some View {
         Button(action: {
-            // Navigate to EditProfileView (Step 2)
+            // Navigate to EditProfileView
+            showEditProfile = true
         }) {
             Text("Edit Profile")
                 .font(.subheadline)
