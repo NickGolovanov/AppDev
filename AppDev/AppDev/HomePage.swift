@@ -149,7 +149,7 @@ struct HomeView: View {
                 Text(name).font(.headline)
                 Text(date).font(.caption).foregroundColor(.gray)
                 HStack {
-                    Text(dressCode).font(.caption2).padding(4).background(Color.blue.opacity(0.2)).cornerRadius(4)
+                    Text(dressCode).font(.caption2).padding(4).background(Color.purple.opacity(0.2)).cornerRadius(4)
                     Text(price).font(.caption2).padding(4).background(Color.green.opacity(0.2))
                     .cornerRadius(4)
                 }
@@ -158,8 +158,8 @@ struct HomeView: View {
             Button("Join") {
                 // Join action
             }
-            .padding(.horizontal, 10)
-            .padding(.vertical, 6)
+            .padding(.horizontal, 12)
+            .padding(.vertical, 5)
             .background(Color.purple)
             .foregroundColor(.white)
             .cornerRadius(8)
