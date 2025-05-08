@@ -17,6 +17,9 @@ struct ContentView: View {
                 
                 // Profile Info Section
                 profileInfoSection
+
+                // Edit Button
+                editProfileButton
                 
                 // Stats Section
                 statsSection
@@ -29,7 +32,9 @@ struct ContentView: View {
             }
             .padding()
         }
+    
     }
+    
 }
 
 #Preview {
@@ -94,7 +99,6 @@ extension ContentView {
     }
 
     
-    // MARK: Stats Section (To Be Implemented in Step 4)
     // MARK: Stats Section
     var statsSection: some View {
         HStack(spacing: 16) {
@@ -127,9 +131,6 @@ extension ContentView {
     }
 
     
-    // MARK: Recent Events (To Be Expanded in Step 5)
-    // MARK: Recent Events Section
-    // MARK: Recent Events Section
     var recentEventsSection: some View {
         VStack(alignment: .leading, spacing: 12) {
             HStack {
@@ -154,7 +155,6 @@ extension ContentView {
     }
 
 
-    // MARK: - Temporary Event Card
     func eventCard(title: String) -> some View {
         Button(action: {
             // Future event navigation
@@ -170,8 +170,7 @@ extension ContentView {
     }
 
     
-    // MARK: Footer Placeholder
-    // MARK: Footer Placeholder
+
     var footerPlaceholder: some View {
         Rectangle()
             .fill(Color.gray.opacity(0.1))
@@ -184,4 +183,23 @@ extension ContentView {
             .cornerRadius(12)
             .padding(.top, 10)
     }
+    
+    // MARK: Edit Profile Button
+    var editProfileButton: some View {
+        Button(action: {
+            // Navigate to EditProfileView (Step 2)
+        }) {
+            Text("Edit Profile")
+                .font(.subheadline)
+                .fontWeight(.medium)
+                .foregroundColor(.blue)
+                .padding(.vertical, 8)
+                .padding(.horizontal, 20)
+                .background(
+                    RoundedRectangle(cornerRadius: 10)
+                        .stroke(Color.blue, lineWidth: 1)
+                )
+        }
+    }
+
 }
