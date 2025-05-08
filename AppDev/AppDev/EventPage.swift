@@ -5,17 +5,35 @@ struct Event: Identifiable {
     let title: String
     let date: String
     let location: String
-    let image: String
+    let imageUrl: String
     let attendees: Int
 }
 
 struct EventPage: View {
     @State private var selectedFilter = "All Events"
     let filters = ["All Events", "Music", "Art", "Food"]
-    let featuredEvent = Event(title: "Summer Music Festival 2025", date: "July 15-17", location: "Central Park", image: "featured", attendees: 0)
+    let featuredEvent = Event(
+        title: "Summer Music Festival 2025",
+        date: "July 15-17",
+        location: "Central Park",
+        imageUrl: "https://images.unsplash.com/photo-1506744038136-46273834b3fb?auto=format&fit=crop&w=800&q=80",
+        attendees: 0
+    )
     let upcomingEvents = [
-        Event(title: "Modern Art Exhibition", date: "May 20", location: "Art Gallery", image: "art", attendees: 124),
-        Event(title: "Food Truck Festival", date: "May 25", location: "Downtown", image: "food", attendees: 89)
+        Event(
+            title: "Modern Art Exhibition",
+            date: "May 20",
+            location: "Art Gallery",
+            imageUrl: "https://images.unsplash.com/photo-1515168833906-d2a3b82b3029?auto=format&fit=crop&w=800&q=80",
+            attendees: 124
+        ),
+        Event(
+            title: "Food Truck Festival",
+            date: "May 25",
+            location: "Downtown",
+            imageUrl: "https://images.unsplash.com/photo-1464983953574-0892a716854b?auto=format&fit=crop&w=800&q=80",
+            attendees: 89
+        )
     ]
     
     var body: some View {
@@ -36,32 +54,33 @@ struct EventPage: View {
                         .overlay(Text("3").font(.caption2).foregroundColor(.white))
                         .offset(x: 8, y: -8)
                 }
-                Image("profile") // Replace with your profile image
-                    .resizable()
-                    .frame(width: 36, height: 36)
-                    .clipShape(Circle())
             }
-            .padding()
+            .padding(.horizontal)
+            .padding(.top, 8)
             
             // Search Bar
             HStack {
                 Image(systemName: "magnifyingglass")
+                    .foregroundColor(.gray)
                 TextField("Search events...", text: .constant(""))
             }
-            .padding()
+            .padding(12)
             .background(Color(.systemGray6))
             .cornerRadius(12)
             .padding(.horizontal)
+            .padding(.top, 4)
             
             // Filter Chips
             ScrollView(.horizontal, showsIndicators: false) {
-                HStack {
+                HStack(spacing: 12) {
                     ForEach(filters, id: \.self) { filter in
                         Text(filter)
                             .padding(.horizontal, 16)
                             .padding(.vertical, 8)
                             .background(selectedFilter == filter ? Color.purple.opacity(0.2) : Color(.systemGray5))
                             .foregroundColor(selectedFilter == filter ? .purple : .black)
+                            .font(.subheadline)
+                            .fontWeight(selectedFilter == filter ? .semibold : .regular)
                             .cornerRadius(20)
                             .onTapGesture { selectedFilter = filter }
                     }
@@ -71,52 +90,74 @@ struct EventPage: View {
             .padding(.top, 8)
             
             // Featured Event
-            VStack(alignment: .leading) {
+            VStack(alignment: .leading, spacing: 8) {
                 Text("Featured Event")
                     .font(.headline)
+                    .fontWeight(.semibold)
                     .padding(.horizontal)
                 ZStack(alignment: .bottomLeading) {
-                    Image(featuredEvent.image)
-                        .resizable()
-                        .aspectRatio(contentMode: .fill)
-                        .frame(height: 180)
+                    AsyncImage(url: URL(string: featuredEvent.imageUrl)) { image in
+                        image
+                            .resizable()
+                            .aspectRatio(contentMode: .fill)
+                            .frame(height: 160)
+                            .cornerRadius(16)
+                    } placeholder: {
+                        Rectangle()
+                            .fill(Color(.systemGray5))
+                            .frame(height: 160)
+                            .cornerRadius(16)
+                    }
+                    LinearGradient(gradient: Gradient(colors: [Color.black.opacity(0.7), .clear]), startPoint: .bottom, endPoint: .top)
                         .cornerRadius(16)
-                    VStack(alignment: .leading) {
+                        .frame(height: 80)
+                    VStack(alignment: .leading, spacing: 2) {
                         Text(featuredEvent.title)
-                            .font(.title3)
-                            .bold()
+                            .font(.headline)
+                            .fontWeight(.bold)
                             .foregroundColor(.white)
                         Text("\(featuredEvent.date) • \(featuredEvent.location)")
                             .foregroundColor(.white)
                             .font(.subheadline)
                     }
-                    .padding()
-                    .background(LinearGradient(gradient: Gradient(colors: [Color.black.opacity(0.7), .clear]), startPoint: .bottom, endPoint: .top))
+                    .padding(12)
                 }
                 .padding(.horizontal)
             }
-            .padding(.top)
+            .padding(.top, 8)
             
             // Upcoming Events
-            VStack(alignment: .leading) {
+            VStack(alignment: .leading, spacing: 8) {
                 Text("Upcoming Events")
                     .font(.headline)
+                    .fontWeight(.semibold)
                     .padding(.horizontal)
                 ForEach(upcomingEvents) { event in
-                    HStack {
-                        Image(event.image)
-                            .resizable()
-                            .frame(width: 60, height: 60)
-                            .cornerRadius(12)
-                        VStack(alignment: .leading) {
+                    HStack(spacing: 12) {
+                        AsyncImage(url: URL(string: event.imageUrl)) { image in
+                            image
+                                .resizable()
+                                .aspectRatio(contentMode: .fill)
+                                .frame(width: 56, height: 56)
+                                .cornerRadius(12)
+                        } placeholder: {
+                            Rectangle()
+                                .fill(Color(.systemGray5))
+                                .frame(width: 56, height: 56)
+                                .cornerRadius(12)
+                        }
+                        VStack(alignment: .leading, spacing: 4) {
                             Text(event.title)
                                 .font(.headline)
+                                .fontWeight(.bold)
+                                .foregroundColor(.black)
                             Text("\(event.date) • \(event.location)")
                                 .font(.subheadline)
                                 .foregroundColor(.gray)
-                            HStack {
+                            HStack(spacing: 4) {
                                 Image(systemName: "person.2.fill")
                                     .foregroundColor(.purple)
+                                    .font(.caption)
                                 Text("\(event.attendees) going")
                                     .font(.caption)
                                     .foregroundColor(.purple)
@@ -124,13 +165,13 @@ struct EventPage: View {
                         }
                         Spacer()
                     }
-                    .padding()
+                    .padding(12)
                     .background(Color(.systemGray6))
                     .cornerRadius(16)
                     .padding(.horizontal)
                 }
             }
-            .padding(.top)
+            .padding(.top, 8)
             
             Spacer()
             
@@ -143,12 +184,13 @@ struct EventPage: View {
                     Image(systemName: "plus")
                         .font(.title)
                         .foregroundColor(.white)
-                        .padding()
+                        .padding(24)
                         .background(Color.purple)
                         .clipShape(Circle())
                         .shadow(radius: 4)
                 }
-                .padding()
+                .padding(.trailing, 24)
+                .padding(.bottom, 8)
             }
             
             // Bottom Navigation Bar
