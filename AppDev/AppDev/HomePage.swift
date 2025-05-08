@@ -111,7 +111,7 @@ struct HomeView: View {
             Image(imageName)
                 .resizable()
                 .aspectRatio(contentMode: .fill)
-                .frame(width: 160, height: 100)
+                .frame(width: 150, height: 90)
                 .clipped()
                 .cornerRadius(10)
 
