@@ -93,7 +93,7 @@ struct HomeView: View {
                     .clipShape(Circle())
                     .padding(20)
                 }
-                .frame(width: 360, height: 150)
+                .frame(width: 370, height: 150)
                 .padding(.horizontal)
 
                 // Host Party Section
