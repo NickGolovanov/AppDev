@@ -76,6 +76,7 @@ struct HomeView: View {
                 .padding(.horizontal)
 
                 // Map
+                ZStack(alignment: .bottomTrailing) {
                 Image("map")
                     .resizable()
                     .aspectRatio(contentMode: .fill)
@@ -83,6 +84,17 @@ struct HomeView: View {
                     .clipShape(RoundedRectangle(cornerRadius: 12))
                     .padding(.horizontal)
                     .frame(maxWidth: .infinity, alignment: .center)
+
+                Image(systemName: "location.circle.fill")
+                    .resizable()
+                    .frame(width: 36, heigh: 36)
+                    .foregroundColor(.purple)
+                    .background(Color.white)
+                    .clipShape(Circle())
+                    .padding(20)
+                }
+                .frame(width: 360, heigh: 150)
+                .padding(.horizontal)
 
                 // Host Party Section
                 hostPartyCard()
