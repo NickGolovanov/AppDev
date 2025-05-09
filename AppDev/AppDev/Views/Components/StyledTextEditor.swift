@@ -9,7 +9,7 @@ import SwiftUI
 
 struct StyledTextEditor: View {
     @Binding var text: String
-    var placeholder: String
+    let placeholder: String
     
     var body: some View {
         TextEditor(text: $text)
@@ -21,7 +21,7 @@ struct StyledTextEditor: View {
             .scrollContentBackground(.hidden)
             .placeholder(when: text.isEmpty, alignment: .topLeading) {
                 Text(placeholder)
-                    .padding(12)
+                    .padding(20)
                     .foregroundColor(Color(hex: 0xADAEBC))
                     .font(.custom("Poppins-Regular", size: 16))
             }
