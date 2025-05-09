@@ -34,7 +34,7 @@ struct LoginPage: View {
             Image("party")
                 .resizable()
                 .aspectRatio(contentMode: .fill)
-                .frame(width: 280, height: 200)
+                .frame(width: 280, height: 300)
                 .clipShape(RoundedRectangle(cornerRadius: 20))
                 .shadow(radius: 4)
                 .padding(.bottom, 24)
