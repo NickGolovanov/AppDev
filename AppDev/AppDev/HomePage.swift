@@ -87,13 +87,13 @@ struct HomeView: View {
 
                 Image(systemName: "location.circle.fill")
                     .resizable()
-                    .frame(width: 36, heigh: 36)
+                    .frame(width: 36, height: 36)
                     .foregroundColor(.purple)
                     .background(Color.white)
                     .clipShape(Circle())
                     .padding(20)
                 }
-                .frame(width: 360, heigh: 150)
+                .frame(width: 360, height: 150)
                 .padding(.horizontal)
 
                 // Host Party Section
