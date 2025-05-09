@@ -79,9 +79,10 @@ struct HomeView: View {
                 Image("map")
                     .resizable()
                     .aspectRatio(contentMode: .fill)
-                    .frame(height: 150)
+                    .frame(width: 250, height: 150)
                     .clipShape(RoundedRectangle(cornerRadius: 12))
                     .padding(.horizontal)
+                    .frame(maxWidth: .infinity, alignment: .center)
 
                 // Host Party Section
                 hostPartyCard()
