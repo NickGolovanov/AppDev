@@ -56,7 +56,7 @@ struct HomeView: View {
 
                 ScrollView(.horizontal, showsIndicators: false) {
                     HStack(spacing: 16) {
-                        trendingCard(title: "Neon Dreams", subtitle: "22:00 · Club Matrix", tags: ["House", "Hot"], imageName: "party1", bgColor: .purple)
+                        trendingCard(title: "Neon Dreams", subtitle: "22:00 · Club Matrix", tags: ["House", "Hot"], imageName: "neodreams", bgColor: .purple)
                         trendingCard(title: "Beach Blast", subtitle: "20:00 · Zandvoort", tags: ["Beach", "Chill"], imageName: "party2", bgColor: .pink)
                         Spacer(minLength: 0)
                     }
