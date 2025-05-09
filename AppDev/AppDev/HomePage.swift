@@ -63,6 +63,7 @@ struct HomeView: View {
                     .padding(.leading, 20)
                 }
                 .frame(height: 130)
+                Spacer(minLength: 20) //space between the scroll view and the upcoming events
 
                 // Upcoming Events
                 Text("🗓️ Upcoming Events")
