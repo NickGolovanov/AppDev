@@ -80,7 +80,7 @@ struct HomeView: View {
                 Image("map")
                     .resizable()
                     .aspectRatio(contentMode: .fill)
-                    .frame(width: 360, height: 150)
+                    .frame(width: 370, height: 150)
                     .clipShape(RoundedRectangle(cornerRadius: 12))
                     .padding(.horizontal)
                     .frame(maxWidth: .infinity, alignment: .center)
