@@ -16,7 +16,7 @@ struct LoginPage: View {
             Spacer().frame(height: 32)
             Spacer()
             // Main Content
-            VStack(spacing: 30) {
+            VStack(spacing: 50) {
                 VStack(spacing: 16) {
                 Text("🎉 Welcome to PartyPal")
                     .font(.system(size: 26, weight: .bold))
