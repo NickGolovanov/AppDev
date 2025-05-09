@@ -14,10 +14,10 @@ struct LoginPage: View {
             .background(Color(red: 0.13, green: 0.13, blue: 0.15))
             
             Spacer().frame(height: 32)
-            
+            .Spacer()
             // Main Content
-            VStack(spacing: 32) {
-                VStack(spacing: 12) {
+            VStack(spacing: 40) {
+                VStack(spacing: 16) {
                 Text("🎉 Welcome to PartyPal")
                     .font(.system(size: 26, weight: .bold))
                     .foregroundColor(Color(red: 0.27, green: 0.27, blue: 0.36))
@@ -67,8 +67,7 @@ struct LoginPage: View {
         }
 
             .frame(maxWidth: .infinity)
-            .padding(.bottom, 24)
-            Spacer()
+            Spacer(minLength: 32)
             
             // Footer
             HStack {
