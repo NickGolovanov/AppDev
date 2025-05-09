@@ -76,7 +76,7 @@ struct HomeView: View {
                 .padding(.horizontal)
 
                 // Map
-                Image("map1")
+                Image("map")
                     .resizable()
                     .aspectRatio(contentMode: .fill)
                     .frame(height: 150)
