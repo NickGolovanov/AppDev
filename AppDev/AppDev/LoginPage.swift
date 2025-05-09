@@ -13,10 +13,11 @@ struct LoginPage: View {
             .padding()
             .background(Color(red: 0.13, green: 0.13, blue: 0.15))
             
-            Spacer().frame(height: 16)
+            Spacer().frame(height: 32)
             
-            // Welcome Section
-            VStack(spacing: 8) {
+            // Main Content
+            VStack(spacing: 32) {
+                VStack(spacing: 12) {
                 Text("🎉 Welcome to PartyPal")
                     .font(.system(size: 26, weight: .bold))
                     .foregroundColor(Color(red: 0.27, green: 0.27, blue: 0.36))
@@ -28,9 +29,8 @@ struct LoginPage: View {
             }
             .padding(.horizontal, 24)
             
-            Spacer().frame(height: 24)
             
-            // Illustration
+            // image
             Image("party")
                 .resizable()
                 .aspectRatio(contentMode: .fill)
@@ -39,6 +39,7 @@ struct LoginPage: View {
                 .shadow(radius: 4)
                 .padding(.bottom, 24)
             
+            VStack(spacing: 12){
             // Login Button
             Button(action: {
                 // Handle login action
@@ -62,7 +63,11 @@ struct LoginPage: View {
                 .foregroundColor(.gray)
                 .padding(.top, 8)
                 .padding(.horizontal, 24)
-            
+            }
+        }
+
+            .frame(maxWidth: .infinity)
+            .padding(.bottom, 24)
             Spacer()
             
             // Footer
