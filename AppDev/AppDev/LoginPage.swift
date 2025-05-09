@@ -31,10 +31,10 @@ struct LoginPage: View {
             Spacer().frame(height: 24)
             
             // Illustration
-            Image("party_illustration")
+            Image("party")
                 .resizable()
                 .aspectRatio(contentMode: .fill)
-                .frame(width: 260, height: 180)
+                .frame(width: 280, height: 200)
                 .clipShape(RoundedRectangle(cornerRadius: 20))
                 .shadow(radius: 4)
                 .padding(.bottom, 24)
