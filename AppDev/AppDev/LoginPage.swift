@@ -14,7 +14,7 @@ struct LoginPage: View {
             .background(Color(red: 0.13, green: 0.13, blue: 0.15))
             
             Spacer().frame(height: 32)
-            .Spacer()
+            Spacer()
             // Main Content
             VStack(spacing: 40) {
                 VStack(spacing: 16) {
