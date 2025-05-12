@@ -1,13 +1,5 @@
 import SwiftUI
-
-struct Event: Identifiable {
-    let id = UUID()
-    let title: String
-    let date: String
-    let location: String
-    let imageUrl: String
-    let attendees: Int
-}
+import MapKit
 
 struct EventPage: View {
     @State private var selectedFilter = "All Events"
@@ -16,23 +8,29 @@ struct EventPage: View {
         title: "Summer Music Festival 2025",
         date: "July 15-17",
         location: "Central Park",
+        coordinate: CLLocationCoordinate2D(latitude: 52.3676, longitude: 4.9041),
         imageUrl: "https://images.unsplash.com/photo-1506744038136-46273834b3fb?auto=format&fit=crop&w=800&q=80",
-        attendees: 0
+        attendees: 0,
+        distance: "2.5km away"
     )
     let upcomingEvents = [
         Event(
             title: "Modern Art Exhibition",
             date: "May 20",
             location: "Art Gallery",
+            coordinate: CLLocationCoordinate2D(latitude: 52.3676, longitude: 4.9041),
             imageUrl: "https://images.unsplash.com/photo-1515168833906-d2a3b82b3029?auto=format&fit=crop&w=800&q=80",
-            attendees: 124
+            attendees: 124,
+            distance: "3.1km away"
         ),
         Event(
             title: "Food Truck Festival",
             date: "May 25",
             location: "Downtown",
+            coordinate: CLLocationCoordinate2D(latitude: 52.3676, longitude: 4.9041),
             imageUrl: "https://images.unsplash.com/photo-1464983953574-0892a716854b?auto=format&fit=crop&w=800&q=80",
-            attendees: 89
+            attendees: 89,
+            distance: "3.1km away"
         )
     ]
     
@@ -229,8 +227,6 @@ struct EventPage: View {
     }
 }
 
-struct EventPage_Previews: PreviewProvider {
-    static var previews: some View {
-        EventPage()
-    }
-} 
+#Preview {
+    EventPage()
+}
