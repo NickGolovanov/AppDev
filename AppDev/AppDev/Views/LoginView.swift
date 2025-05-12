@@ -3,16 +3,6 @@ import SwiftUI
 struct LoginView: View {
     var body: some View {
         VStack(spacing: 0) {
-            // Header
-            HStack {
-                Text("PartyPal")
-                    .font(.system(size: 24, weight: .bold))
-                    .foregroundColor(Color(red: 0.58, green: 0.38, blue: 0.98))
-                Spacer()
-            }
-            .padding()
-            .background(Color(red: 0.13, green: 0.13, blue: 0.15))
-
             Spacer().frame(height: 32)
             Spacer()
             // Main Content
