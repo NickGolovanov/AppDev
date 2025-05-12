@@ -21,7 +21,7 @@ struct MainTabView: View {
                     .tag("Tickets")
                     .ignoresSafeArea(.all, edges: .bottom)
 
-                EventsView()
+                EventsMapView()
                     .tag("Events")
                     .ignoresSafeArea(.all, edges: .bottom)
 
