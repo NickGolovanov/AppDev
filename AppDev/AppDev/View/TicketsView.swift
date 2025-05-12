@@ -18,7 +18,7 @@ struct Ticket: Identifiable {
     let price: String
 }
 
-struct ContentView: View {
+struct TicketsView: View {
     let tickets = [
         Ticket(eventName: "Amsterdam Student Night", date: "May 15, 2025 - 22:00", location: "Club Paradise, Amsterdam", name: "John Doe", email: "john.doe@student.uva.nl", price: "€15.00"),
         Ticket(eventName: "Rotterdam Beach Party", date: "May 20, 2025 - 14:00", location: "Hoek van Holland Beach", name: "John Doe", email: "john.doe@student.uva.nl", price: "€20.00")
@@ -149,6 +149,6 @@ struct TabBarItem: View {
 
 struct ContentView_Previews: PreviewProvider {
     static var previews: some View {
-        ContentView()
+        TicketsView()
     }
 }
