@@ -30,7 +30,7 @@ struct StyledTextEditor: View {
 
 #Preview {
     @Previewable @State var text: String = ""
-    var placeholder: String = "Placeholder"
+    let placeholder: String = "Placeholder"
     
     StyledTextEditor(text: $text, placeholder: placeholder).frame(height: 128)
 }
