@@ -1,6 +1,6 @@
 import SwiftUI
 
-struct EventDetailPage: View {
+struct EventView: View {
     var body: some View {
         VStack(spacing: 0) {
             // Top Bar
@@ -193,44 +193,10 @@ struct EventDetailPage: View {
                 }
             }
             .background(Color(.systemGray6).ignoresSafeArea())
-            
-            // Bottom Navigation Bar
-            HStack {
-                Spacer()
-                VStack {
-                    Image(systemName: "house")
-                    Text("Home").font(.caption)
-                }
-                Spacer()
-                VStack {
-                    Image(systemName: "ticket")
-                    Text("Tickets").font(.caption)
-                }
-                Spacer()
-                VStack {
-                    Image(systemName: "calendar")
-                    Text("Events").font(.caption)
-                }
-                Spacer()
-                VStack {
-                    Image(systemName: "bubble.left.and.bubble.right")
-                    Text("Chat").font(.caption)
-                }
-                Spacer()
-                VStack {
-                    Image(systemName: "person.crop.circle")
-                    Text("Profile").font(.caption)
-                }
-                Spacer()
-            }
-            .padding(.vertical, 8)
-            .background(Color(.systemGray6))
         }
     }
 }
 
-struct EventDetailPage_Previews: PreviewProvider {
-    static var previews: some View {
-        EventDetailPage()
-    }
-} 
+#Preview {
+    EventView()
+}

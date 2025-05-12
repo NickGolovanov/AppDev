@@ -1,7 +1,7 @@
-import SwiftUI
 import MapKit
+import SwiftUI
 
-struct EventPage: View {
+struct EventsView: View {
     @State private var selectedFilter = "All Events"
     let filters = ["All Events", "Music", "Art", "Food"]
     let featuredEvent = Event(
@@ -9,7 +9,8 @@ struct EventPage: View {
         date: "July 15-17",
         location: "Central Park",
         coordinate: CLLocationCoordinate2D(latitude: 52.3676, longitude: 4.9041),
-        imageUrl: "https://images.unsplash.com/photo-1506744038136-46273834b3fb?auto=format&fit=crop&w=800&q=80",
+        imageUrl:
+            "https://images.unsplash.com/photo-1506744038136-46273834b3fb?auto=format&fit=crop&w=800&q=80",
         attendees: 0,
         distance: "2.5km away"
     )
@@ -19,7 +20,8 @@ struct EventPage: View {
             date: "May 20",
             location: "Art Gallery",
             coordinate: CLLocationCoordinate2D(latitude: 52.3676, longitude: 4.9041),
-            imageUrl: "https://images.unsplash.com/photo-1515168833906-d2a3b82b3029?auto=format&fit=crop&w=800&q=80",
+            imageUrl:
+                "https://images.unsplash.com/photo-1515168833906-d2a3b82b3029?auto=format&fit=crop&w=800&q=80",
             attendees: 124,
             distance: "3.1km away"
         ),
@@ -28,12 +30,13 @@ struct EventPage: View {
             date: "May 25",
             location: "Downtown",
             coordinate: CLLocationCoordinate2D(latitude: 52.3676, longitude: 4.9041),
-            imageUrl: "https://images.unsplash.com/photo-1464983953574-0892a716854b?auto=format&fit=crop&w=800&q=80",
+            imageUrl:
+                "https://images.unsplash.com/photo-1464983953574-0892a716854b?auto=format&fit=crop&w=800&q=80",
             attendees: 89,
             distance: "3.1km away"
-        )
+        ),
     ]
-    
+
     var body: some View {
         VStack(spacing: 0) {
             // Top Bar
@@ -55,7 +58,7 @@ struct EventPage: View {
             }
             .padding(.horizontal)
             .padding(.top, 8)
-            
+
             // Search Bar
             HStack {
                 Image(systemName: "magnifyingglass")
@@ -67,7 +70,7 @@ struct EventPage: View {
             .cornerRadius(12)
             .padding(.horizontal)
             .padding(.top, 4)
-            
+
             // Filter Chips
             ScrollView(.horizontal, showsIndicators: false) {
                 HStack(spacing: 12) {
@@ -75,7 +78,10 @@ struct EventPage: View {
                         Text(filter)
                             .padding(.horizontal, 16)
                             .padding(.vertical, 8)
-                            .background(selectedFilter == filter ? Color.purple.opacity(0.2) : Color(.systemGray5))
+                            .background(
+                                selectedFilter == filter
+                                    ? Color.purple.opacity(0.2) : Color(.systemGray5)
+                            )
                             .foregroundColor(selectedFilter == filter ? .purple : .black)
                             .font(.subheadline)
                             .fontWeight(selectedFilter == filter ? .semibold : .regular)
@@ -86,7 +92,7 @@ struct EventPage: View {
                 .padding(.horizontal)
             }
             .padding(.top, 8)
-            
+
             // Featured Event
             VStack(alignment: .leading, spacing: 8) {
                 Text("Featured Event")
@@ -106,9 +112,12 @@ struct EventPage: View {
                             .frame(height: 160)
                             .cornerRadius(16)
                     }
-                    LinearGradient(gradient: Gradient(colors: [Color.black.opacity(0.7), .clear]), startPoint: .bottom, endPoint: .top)
-                        .cornerRadius(16)
-                        .frame(height: 80)
+                    LinearGradient(
+                        gradient: Gradient(colors: [Color.black.opacity(0.7), .clear]),
+                        startPoint: .bottom, endPoint: .top
+                    )
+                    .cornerRadius(16)
+                    .frame(height: 80)
                     VStack(alignment: .leading, spacing: 2) {
                         Text(featuredEvent.title)
                             .font(.headline)
@@ -123,7 +132,7 @@ struct EventPage: View {
                 .padding(.horizontal)
             }
             .padding(.top, 8)
-            
+
             // Upcoming Events
             VStack(alignment: .leading, spacing: 8) {
                 Text("Upcoming Events")
@@ -170,9 +179,9 @@ struct EventPage: View {
                 }
             }
             .padding(.top, 8)
-            
+
             Spacer()
-            
+
             // Floating Action Button
             HStack {
                 Spacer()
@@ -190,43 +199,14 @@ struct EventPage: View {
                 .padding(.trailing, 24)
                 .padding(.bottom, 8)
             }
-            
-            // Bottom Navigation Bar
-            HStack {
-                Spacer()
-                VStack {
-                    Image(systemName: "house")
-                    Text("Home").font(.caption)
-                }
-                Spacer()
-                VStack {
-                    Image(systemName: "ticket")
-                    Text("Tickets").font(.caption)
-                }
-                Spacer()
-                VStack {
-                    Image(systemName: "calendar")
-                    Text("Events").font(.caption)
-                }
-                Spacer()
-                VStack {
-                    Image(systemName: "bubble.left.and.bubble.right")
-                    Text("Chat").font(.caption)
-                }
-                Spacer()
-                VStack {
-                    Image(systemName: "person.crop.circle")
-                    Text("Profile").font(.caption)
-                }
-                Spacer()
-            }
-            .padding(.vertical, 8)
-            .background(Color(.systemGray6))
+
+            // Footer Navigation
+//            FooterView()
         }
         .background(Color.white.ignoresSafeArea())
     }
 }
 
 #Preview {
-    EventPage()
+    EventsView()
 }
