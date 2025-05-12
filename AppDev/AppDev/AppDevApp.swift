@@ -11,7 +11,7 @@ import SwiftUI
 struct AppDevApp: App {
     var body: some Scene {
         WindowGroup {
-            ProfileView()
+            MainTabView()
         }
     }
 }

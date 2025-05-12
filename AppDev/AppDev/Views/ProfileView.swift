@@ -30,9 +30,6 @@ struct ProfileView: View {
                     
                     // Recent Events Section
                     recentEventsSection
-                    
-                    // Footer Placeholder
-                    footerPlaceholder
                 }
                 .padding()
                 .navigationDestination(isPresented: $showEditProfile) {
