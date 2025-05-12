@@ -1,5 +1,5 @@
-import SwiftUI
 import MapKit
+import SwiftUI
 
 struct PartyPalView: View {
     var body: some View {
@@ -37,7 +37,7 @@ struct HomeView: View {
     var body: some View {
         ScrollView {
             VStack(alignment: .leading, spacing: 20) {
-                
+
                 // Header
                 HStack {
                     Text("PartyPal")
@@ -56,14 +56,18 @@ struct HomeView: View {
 
                 ScrollView(.horizontal, showsIndicators: false) {
                     HStack(spacing: 16) {
-                        trendingCard(title: "Neon Dreams", subtitle: "22:00 · Club Matrix", tags: ["House", "Hot"], imageName: "neodreams", bgColor: .purple)
-                        trendingCard(title: "Beach Blast", subtitle: "20:00 · Zandvoort", tags: ["Beach", "Chill"], imageName: "beach", bgColor: .pink)
+                        trendingCard(
+                            title: "Neon Dreams", subtitle: "22:00 · Club Matrix",
+                            tags: ["House", "Hot"], imageName: "neodreams", bgColor: .purple)
+                        trendingCard(
+                            title: "Beach Blast", subtitle: "20:00 · Zandvoort",
+                            tags: ["Beach", "Chill"], imageName: "beach", bgColor: .pink)
                         Spacer(minLength: 0)
                     }
                     .padding(.leading, 20)
                 }
                 .frame(height: 130)
-                Spacer(minLength: 20) //space between the scroll view and the upcoming events
+                Spacer(minLength: 20)  //space between the scroll view and the upcoming events
 
                 // Upcoming Events
                 Text("🗓️ Upcoming Events")
@@ -71,28 +75,32 @@ struct HomeView: View {
                     .padding(.horizontal)
 
                 VStack(spacing: 15) {
-                    eventCard(name: "Amsterdam Student Night", date: "May 5, 2025 · 21:00", dressCode: "Smart Casual", price: "€5")
-                    eventCard(name: "TU Delft Spring Party", date: "May 7, 2025 · 22:00", dressCode: "Casual", price: "€10")
+                    eventCard(
+                        name: "Amsterdam Student Night", date: "May 5, 2025 · 21:00",
+                        dressCode: "Smart Casual", price: "€5")
+                    eventCard(
+                        name: "TU Delft Spring Party", date: "May 7, 2025 · 22:00",
+                        dressCode: "Casual", price: "€10")
                 }
                 .padding(.horizontal)
 
                 // Map
                 ZStack(alignment: .bottomTrailing) {
-                Image("map")
-                    .resizable()
-                    .aspectRatio(contentMode: .fill)
-                    .frame(width: 370, height: 150)
-                    .clipShape(RoundedRectangle(cornerRadius: 12))
-                    .padding(.horizontal)
-                    .frame(maxWidth: .infinity, alignment: .center)
+                    Image("map")
+                        .resizable()
+                        .aspectRatio(contentMode: .fill)
+                        .frame(width: 370, height: 150)
+                        .clipShape(RoundedRectangle(cornerRadius: 12))
+                        .padding(.horizontal)
+                        .frame(maxWidth: .infinity, alignment: .center)
 
-                Image(systemName: "location.circle.fill")
-                    .resizable()
-                    .frame(width: 36, height: 36)
-                    .foregroundColor(.purple)
-                    .background(Color.white)
-                    .clipShape(Circle())
-                    .padding(20)
+                    Image(systemName: "location.circle.fill")
+                        .resizable()
+                        .frame(width: 36, height: 36)
+                        .foregroundColor(.purple)
+                        .background(Color.white)
+                        .clipShape(Circle())
+                        .padding(20)
                 }
                 .frame(width: 370, height: 150)
                 .padding(.horizontal)
@@ -106,7 +114,9 @@ struct HomeView: View {
         }
     }
 
-    func trendingCard(title: String, subtitle: String, tags: [String], imageName: String, bgColor: Color) -> some View {
+    func trendingCard(
+        title: String, subtitle: String, tags: [String], imageName: String, bgColor: Color
+    ) -> some View {
         let cardWidth = UIScreen.main.bounds.width * 0.7
         return VStack(alignment: .leading, spacing: 0) {
             Image(imageName)
@@ -149,9 +159,10 @@ struct HomeView: View {
                 Text(name).font(.headline)
                 Text(date).font(.caption).foregroundColor(.gray)
                 HStack {
-                    Text(dressCode).font(.caption2).padding(4).background(Color.purple.opacity(0.2)).cornerRadius(4)
+                    Text(dressCode).font(.caption2).padding(4).background(Color.purple.opacity(0.2))
+                        .cornerRadius(4)
                     Text(price).font(.caption2).padding(4).background(Color.green.opacity(0.2))
-                    .cornerRadius(4)
+                        .cornerRadius(4)
                 }
             }
             Spacer()
@@ -170,7 +181,7 @@ struct HomeView: View {
     }
 }
 
-    func hostPartyCard() -> some View {
+func hostPartyCard() -> some View {
     HStack {
         VStack(alignment: .leading, spacing: 6) {
             Text("✨ Host your own party?")
@@ -193,7 +204,8 @@ struct HomeView: View {
     }
     .padding()
     .background(
-        LinearGradient(colors: [Color.purple, Color.pink], startPoint: .leading, endPoint: .trailing)
+        LinearGradient(
+            colors: [Color.purple, Color.pink], startPoint: .leading, endPoint: .trailing)
     )
     .cornerRadius(15)
 }
@@ -222,4 +234,8 @@ extension View {
     func cornerRadius(_ radius: CGFloat, corners: UIRectCorner) -> some View {
         clipShape(RoundedCorner(radius: radius, corners: corners))
     }
+}
+
+#Preview {
+    PartyPalView()
 }
