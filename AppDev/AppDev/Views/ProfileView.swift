@@ -30,9 +30,6 @@ struct ProfileView: View {
                     
                     // Recent Events Section
                     recentEventsSection
-                    
-                    // Footer Placeholder
-                    footerPlaceholder
                 }
                 .padding()
                 .navigationDestination(isPresented: $showEditProfile) {
@@ -52,27 +49,7 @@ extension ProfileView {
     
     // MARK: Header
     var headerSection: some View {
-        HStack {
-            Text("PartyPal")
-                .font(.title2)
-                .fontWeight(.bold)
-
-            Spacer()
-            
-            ZStack(alignment: .topTrailing) {
-                Image(systemName: "bell")
-                    .font(.title2)
-                
-                Circle()
-                    .fill(Color.red)
-                    .frame(width: 10, height: 10)
-                    .offset(x: 6, y: -6)
-            }
-            
-            Image(systemName: "person.crop.circle.fill")
-                .font(.largeTitle)
-                .padding(.leading, 10)
-        }
+        HeaderView()
     }
     
     // MARK: Profile Info Section
