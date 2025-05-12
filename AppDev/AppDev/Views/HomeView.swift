@@ -1,38 +1,6 @@
 import MapKit
 import SwiftUI
 
-struct PartyPalView: View {
-    var body: some View {
-        TabView {
-            HomeView()
-                .tabItem {
-                    Image(systemName: "house.fill")
-                    Text("Home")
-                }
-            Text("Tickets")
-                .tabItem {
-                    Image(systemName: "ticket.fill")
-                    Text("Tickets")
-                }
-            Text("Events")
-                .tabItem {
-                    Image(systemName: "calendar")
-                    Text("Events")
-                }
-            Text("Chat")
-                .tabItem {
-                    Image(systemName: "bubble.left.and.bubble.right")
-                    Text("Chat")
-                }
-            Text("Profile")
-                .tabItem {
-                    Image(systemName: "person.crop.circle")
-                    Text("Profile")
-                }
-        }
-    }
-}
-
 struct HomeView: View {
     var body: some View {
         ScrollView {
@@ -210,12 +178,6 @@ func hostPartyCard() -> some View {
     .cornerRadius(15)
 }
 
-struct PartyPalView_Previews: PreviewProvider {
-    static var previews: some View {
-        PartyPalView()
-    }
-}
-
 struct RoundedCorner: Shape {
     var radius: CGFloat = .infinity
     var corners: UIRectCorner = .allCorners
@@ -237,5 +199,5 @@ extension View {
 }
 
 #Preview {
-    PartyPalView()
+    HomeView()
 }
