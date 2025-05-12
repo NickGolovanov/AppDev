@@ -7,15 +7,9 @@ struct HomeView: View {
             VStack(alignment: .leading, spacing: 20) {
 
                 // Header
-                HStack {
-                    Text("PartyPal")
-                        .font(.title2).bold().foregroundColor(.purple)
-                    Spacer()
-                    Image(systemName: "bell.fill")
-                    Image(systemName: "person.circle.fill")
-                        .font(.title2)
-                }
-                .padding(.horizontal)
+                HeaderView()
+                    .padding(.horizontal)
+                    .padding(.top, 8)
 
                 // Trending Tonight
                 Text("🔥 Trending Tonight")

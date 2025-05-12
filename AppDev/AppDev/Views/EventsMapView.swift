@@ -32,30 +32,8 @@ struct EventsMapView: View {
     var body: some View {
         VStack(spacing: 0) {
             // Header
-            HStack {
-                Text("PartyPal")
-                    .font(.title2).fontWeight(.bold)
-                    .foregroundColor(Color.purple)
-                Spacer()
-                ZStack(alignment: .topTrailing) {
-                    Image(systemName: "bell")
-                        .font(.title2)
-                        .foregroundColor(.gray)
-                    Circle()
-                        .fill(Color.red)
-                        .frame(width: 18, height: 18)
-                        .overlay(Text("3").font(.caption2).foregroundColor(.white))
-                        .offset(x: 10, y: -10)
-                }
-                Image(systemName: "person.crop.circle")
-                    .resizable()
-                    .frame(width: 36, height: 36)
-                    .clipShape(Circle())
-            }
-            .padding([.horizontal, .top])
-            .padding(.bottom, 4)
-            .background(Color.white)
-            .shadow(color: Color(.systemGray5), radius: 1, y: 1)
+            HeaderView()
+                .padding(4)
             
             // Map (increased height)
             Map(coordinateRegion: $region, annotationItems: events) { event in
