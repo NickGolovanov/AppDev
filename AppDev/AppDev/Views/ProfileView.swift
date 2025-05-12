@@ -7,7 +7,7 @@
 
 import SwiftUI
 
-struct ContentView: View {
+struct ProfileView: View {
     // State to track navigation to EditProfileView
     @State private var showEditProfile = false
 
@@ -44,11 +44,11 @@ struct ContentView: View {
 }
 
 #Preview {
-    ContentView()
+    ProfileView()
 }
 
 // MARK: - Section Extensions
-extension ContentView {
+extension ProfileView {
     
     // MARK: Header
     var headerSection: some View {
