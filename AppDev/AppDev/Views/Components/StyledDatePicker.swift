@@ -1,5 +1,5 @@
 //
-//  StyledDatePicker.swift
+//  StyledDatePicker.swif
 //  AppDev
 //
 //  Created by Viktor Harhat on 09/05/2025.
@@ -10,10 +10,10 @@ import SwiftUI
 struct StyledDatePicker: View {
     @Binding var selection: Date?
     var displayedComponents: DatePicker.Components
-    
+
     private var formattedDate: String {
         switch displayedComponents {
-            
+
         case .date:
             if let date = selection {
                 let formatter = DateFormatter()
@@ -33,11 +33,11 @@ struct StyledDatePicker: View {
         default:
             return ""
         }
-        
+
     }
-    
+
     @State private var tempDate: Date = Date()
-    
+
     var body: some View {
         DatePicker(
             "",
@@ -80,11 +80,11 @@ struct StyledDatePicker: View {
             }
         )
     }
-    
+
 }
 
 #Preview {
-    @Previewable @State var date: Date? = nil
-    
+    @Previewable @State var date: Date?
+
     StyledDatePicker(selection: $date, displayedComponents: .date)
 }
