@@ -1,0 +1,109 @@
+name: DTAP Pipeline for PartyPal
+
+permissions:
+  contents: write
+
+on:
+  push:
+    branches: [develop]
+  workflow_dispatch:
+
+jobs:
+  develop:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          persist-credentials: true
+          ref: develop
+      - name: Configure Git
+        run: |
+          git config user.name "github-actions"
+          git config user.email "github-actions@github.com"
+      - name: Merge to testing
+        run: |
+          git fetch origin
+          git checkout testing
+          git merge origin/develop \
+            --allow-unrelated-histories \
+            --no-ff --no-edit \
+            -s recursive -X theirs || { echo "Merge failed"; exit 1; }
+          git push origin testing
+
+  testing:
+    needs: develop
+    runs-on: macos-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          persist-credentials: true
+          ref: testing
+      - name: Set up Xcode version
+        run: sudo xcode-select -s /Applications/Xcode_16.2.app/Contents/Developer
+      - name: Run tests
+        run: |
+          cd AppDev && xcodebuild test \
+            -project AppDev.xcodeproj \
+            -scheme AppDev \
+            -destination 'platform=iOS Simulator,name=iPhone 16 Pro,OS=18.2' \
+            CODE_SIGN_IDENTITY="" \
+            CODE_SIGNING_REQUIRED=NO \
+            ONLY_ACTIVE_ARCH=YES
+
+  acceptance:
+    needs: testing
+    runs-on: macos-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          persist-credentials: true
+          ref: testing
+      - name: Configure Git
+        run: |
+          git config user.name "github-actions"
+          git config user.email "github-actions@github.com"
+      - name: Merge to acceptance
+        run: |
+          git fetch origin
+          git checkout acceptance
+          git merge origin/testing \
+            --allow-unrelated-histories \
+            --no-ff --no-edit \
+            -s recursive -X theirs || { echo "Merge failed"; exit 1; }
+          git push origin acceptance
+      - name: Set up Swift
+        uses: fwal/setup-swift@v1
+        with:
+          swift-version: '5.8'
+      - name: Install SwiftLint
+        run: |
+          brew install swiftlint
+      - name: Run SwiftLint
+        run: |
+          swiftlint || { echo "Linting failed"; exit 1; }
+
+  main:
+    needs: acceptance
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          persist-credentials: true
+          ref: acceptance
+      - name: Configure Git
+        run: |
+          git config user.name "github-actions"
+          git config user.email "github-actions@github.com"
+      - name: Merge to main
+        run: |
+          git fetch origin
+          git checkout main
+          git merge origin/acceptance \
+            --allow-unrelated-histories \
+            --no-ff --no-edit \
+            -s recursive -X theirs || { echo "Merge failed"; exit 1; }
+          git push origin main
