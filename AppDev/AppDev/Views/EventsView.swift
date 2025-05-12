@@ -39,25 +39,9 @@ struct EventsView: View {
 
     var body: some View {
         VStack(spacing: 0) {
-            // Top Bar
-            HStack {
-                Text("PartyPal")
-                    .font(.title)
-                    .fontWeight(.bold)
-                    .foregroundColor(.purple)
-                Spacer()
-                ZStack(alignment: .topTrailing) {
-                    Image(systemName: "bell")
-                        .font(.title2)
-                    Circle()
-                        .fill(Color.red)
-                        .frame(width: 16, height: 16)
-                        .overlay(Text("3").font(.caption2).foregroundColor(.white))
-                        .offset(x: 8, y: -8)
-                }
-            }
-            .padding(.horizontal)
-            .padding(.top, 8)
+            HeaderView()
+                .padding(.horizontal)
+                .padding(.bottom, 8)
 
             // Search Bar
             HStack {
