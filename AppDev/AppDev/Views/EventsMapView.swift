@@ -1,16 +1,6 @@
 import SwiftUI
 import MapKit
 
-struct Event: Identifiable {
-    let id = UUID()
-    let name: String
-    let location: String
-    let coordinate: CLLocationCoordinate2D
-    let distance: String
-    let date: String
-    let imageName: String // Use systemName or asset name
-}
-
 struct EventsMapView: View {
     @State private var region = MKCoordinateRegion(
         center: CLLocationCoordinate2D(latitude: 52.3702, longitude: 4.8952), // Amsterdam
@@ -19,23 +9,26 @@ struct EventsMapView: View {
     
     let events = [
         Event(
-            name: "Summer Night Party",
+            title: "Summer Night Party",
+            date: "Tonight, 10:00 PM",
             location: "Club Matrix, 2.3km away",
             coordinate: CLLocationCoordinate2D(latitude: 52.3676, longitude: 4.9041),
-            distance: "2.3km away",
-            date: "Tonight, 10:00 PM",
-            imageName: "party1"
+            imageUrl: "party1",
+            attendees: 124,
+            distance: "2.3km away"
         ),
         Event(
-            name: "Live Jazz Night",
+            title: "Live Jazz Night",
+            date: "Tomorrow, 8:30 PM",
             location: "Blue Note, 3.1km away",
             coordinate: CLLocationCoordinate2D(latitude: 52.3667, longitude: 4.8945),
-            distance: "3.1km away",
-            date: "Tomorrow, 8:30 PM",
-            imageName: "party2"
+            imageUrl: "party2",
+            attendees: 124,
+            distance: "3.1km away"
         )
     ]
     
+    @available(iOS, deprecated: 17.0, message: "Will migrate soon")
     var body: some View {
         VStack(spacing: 0) {
             // Header
@@ -114,7 +107,7 @@ struct EventCard: View {
                 .fill(Color.gray.opacity(0.3))
                 .frame(width: 54, height: 54)
                 .overlay(
-                    Image(event.imageName)
+                    Image(event.imageUrl)
                         .resizable()
                         .scaledToFill()
                         .frame(width: 54, height: 54)
@@ -122,7 +115,7 @@ struct EventCard: View {
                 )
                 .cornerRadius(8)
             VStack(alignment: .leading, spacing: 4) {
-                Text(event.name)
+                Text(event.title)
                     .font(.headline)
                     .fontWeight(.semibold)
                 HStack(spacing: 4) {
