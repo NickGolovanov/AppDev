@@ -15,7 +15,7 @@
             buildForAnalyzing = "YES">
             <BuildableReference
                BuildableIdentifier = "primary"
-               BlueprintIdentifier = "F7A81BA52DC64D520049065A"
+               BlueprintIdentifier = "F7C686232DCD45E2006F3CE2"
                BuildableName = "AppDev.app"
                BlueprintName = "AppDev"
                ReferencedContainer = "container:AppDev.xcodeproj">
@@ -35,7 +35,7 @@
             parallelizable = "YES">
             <BuildableReference
                BuildableIdentifier = "primary"
-               BlueprintIdentifier = "F7A81BB52DC64D530049065A"
+               BlueprintIdentifier = "F7C686332DCD45E4006F3CE2"
                BuildableName = "AppDevTests.xctest"
                BlueprintName = "AppDevTests"
                ReferencedContainer = "container:AppDev.xcodeproj">
@@ -46,7 +46,7 @@
             parallelizable = "YES">
             <BuildableReference
                BuildableIdentifier = "primary"
-               BlueprintIdentifier = "F7A81BBF2DC64D530049065A"
+               BlueprintIdentifier = "F7C6863D2DCD45E4006F3CE2"
                BuildableName = "AppDevUITests.xctest"
                BlueprintName = "AppDevUITests"
                ReferencedContainer = "container:AppDev.xcodeproj">
@@ -68,7 +68,7 @@
          runnableDebuggingMode = "0">
          <BuildableReference
             BuildableIdentifier = "primary"
-            BlueprintIdentifier = "F7A81BA52DC64D520049065A"
+            BlueprintIdentifier = "F7C686232DCD45E2006F3CE2"
             BuildableName = "AppDev.app"
             BlueprintName = "AppDev"
             ReferencedContainer = "container:AppDev.xcodeproj">
@@ -85,7 +85,7 @@
          runnableDebuggingMode = "0">
          <BuildableReference
             BuildableIdentifier = "primary"
-            BlueprintIdentifier = "F7A81BA52DC64D520049065A"
+            BlueprintIdentifier = "F7C686232DCD45E2006F3CE2"
             BuildableName = "AppDev.app"
             BlueprintName = "AppDev"
             ReferencedContainer = "container:AppDev.xcodeproj">
