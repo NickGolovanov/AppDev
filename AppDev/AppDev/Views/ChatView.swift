@@ -23,8 +23,6 @@ struct ChatView: View {
             titleSection
             searchSection
             chatListSection
-            
-            footerSection
         }.padding()
     }
 }
@@ -86,19 +84,6 @@ extension ChatView {
                 }
             }
         }
-    }
-    
-    var footerSection: some View {
-        Rectangle()
-            .fill(Color.gray.opacity(0.1))
-            .frame(height: 60)
-            .overlay(
-                Text("Footer Placeholder")
-                    .font(.footnote)
-                    .foregroundColor(.gray)
-            )
-            .cornerRadius(12)
-            .padding(.top, 10)
     }
 }
 
