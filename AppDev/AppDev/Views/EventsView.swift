@@ -3,6 +3,7 @@ import SwiftUI
 
 struct EventsView: View {
     @State private var selectedFilter = "All Events"
+    @State private var showCreateEvent = false
     let filters = ["All Events", "Music", "Art", "Food"]
     let featuredEvent = Event(
         title: "Summer Music Festival 2025",
@@ -38,7 +39,7 @@ struct EventsView: View {
     ]
 
     var body: some View {
-        ZStack(alignment: .bottom) {
+        NavigationStack {
             ScrollView {
                 VStack(spacing: 0) {
                     HeaderView()
@@ -165,27 +166,32 @@ struct EventsView: View {
                         }
                     }
                     .padding(.top, 8)
-                    .padding(.bottom, 100) // Add padding at the bottom to ensure content doesn't get hidden behind the FAB
+
+                    Spacer()
+
+                    // Floating Action Button
+                    HStack {
+                        Spacer()
+                        Button(action: {
+                            showCreateEvent = true
+                        }) {
+                            Image(systemName: "plus")
+                                .font(.title)
+                                .foregroundColor(.white)
+                                .padding(24)
+                                .background(Color.purple)
+                                .clipShape(Circle())
+                                .shadow(radius: 4)
+                        }
+                        .padding(.trailing, 24)
+                        .padding(.bottom, 8)
+                    }
+                    .padding(.top, 16)
                 }
             }
             .background(Color.white.ignoresSafeArea())
-
-            // Floating Action Button
-            HStack {
-                Spacer()
-                Button(action: {
-                    // Add event action
-                }) {
-                    Image(systemName: "plus")
-                        .font(.title)
-                        .foregroundColor(.white)
-                        .padding(24)
-                        .background(Color.purple)
-                        .clipShape(Circle())
-                        .shadow(radius: 4)
-                }
-                .padding(.trailing, 24)
-                .padding(.bottom, 8)
+            .navigationDestination(isPresented: $showCreateEvent) {
+                CreateEventView()
             }
         }
     }
