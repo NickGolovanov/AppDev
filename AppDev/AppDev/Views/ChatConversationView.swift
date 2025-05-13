@@ -17,6 +17,8 @@ struct ChatConversationView: View {
         Message(content: "I can bring drinks!", timestamp: Date().addingTimeInterval(-900), isFromCurrentUser: false, senderName: "Sarah")
     ]
     
+    @FocusState private var isInputFocused: Bool
+    
     var body: some View {
         VStack(spacing: 0) {
             // Header
@@ -25,29 +27,50 @@ struct ChatConversationView: View {
                 .background(Color.white)
             
             // Messages List
-            ScrollView {
-                LazyVStack(spacing: 16) {
-                    ForEach(messages) { message in
-                        MessageBubble(message: message)
+            ScrollViewReader { proxy in
+                ScrollView {
+                    LazyVStack(spacing: 16) {
+                        ForEach(messages) { message in
+                            MessageBubble(message: message)
+                                .id(message.id)
+                        }
+                    }
+                    .padding(.top)
+                    .padding(.horizontal)
+                }
+                .onChange(of: messages.count) { _ in
+                    if let last = messages.last {
+                        withAnimation {
+                            proxy.scrollTo(last.id, anchor: .bottom)
+                        }
                     }
                 }
-                .padding()
-            }
-            
-            // Message Input
-            HStack(spacing: 12) {
-                StyledTextField(text: $messageText, placeholder: "Type a message...")
-                    .padding(.vertical, 8)
-                
-                Button(action: sendMessage) {
-                    Image(systemName: "paperplane.fill")
-                        .foregroundColor(.purple)
-                        .padding(8)
+                .onAppear {
+                    if let last = messages.last {
+                        proxy.scrollTo(last.id, anchor: .bottom)
+                    }
                 }
             }
-            .padding()
-            .background(Color.white)
         }
+        .safeAreaInset(edge: .bottom) {
+            VStack(spacing: 0) {
+                Divider()
+                HStack(spacing: 12) {
+                    StyledTextField(text: $messageText, placeholder: "Type a message...")
+                        .focused($isInputFocused)
+                        .padding(.vertical, 8)
+                    Button(action: sendMessage) {
+                        Image(systemName: "paperplane.fill")
+                            .foregroundColor(.purple)
+                            .padding(8)
+                    }
+                }
+                .padding(.horizontal)
+                .padding(.bottom, 8)
+                .background(Color.white)
+            }
+        }
+        .background(Color(hex: 0xF9F9F9).ignoresSafeArea())
     }
     
     private func sendMessage() {
@@ -60,6 +83,7 @@ struct ChatConversationView: View {
         )
         messages.append(newMessage)
         messageText = ""
+        isInputFocused = true
     }
 }
 
