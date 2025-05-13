@@ -38,133 +38,137 @@ struct EventsView: View {
     ]
 
     var body: some View {
-        VStack(spacing: 0) {
-            HeaderView()
-                .padding(.horizontal)
-                .padding(.bottom, 8)
+        ZStack(alignment: .bottom) {
+            ScrollView {
+                VStack(spacing: 0) {
+                    HeaderView()
+                        .padding(.horizontal)
+                        .padding(.bottom, 8)
 
-            // Search Bar
-            HStack {
-                Image(systemName: "magnifyingglass")
-                    .foregroundColor(.gray)
-                TextField("Search events...", text: .constant(""))
-            }
-            .padding(12)
-            .background(Color(.systemGray6))
-            .cornerRadius(12)
-            .padding(.horizontal)
-            .padding(.top, 4)
-
-            // Filter Chips
-            ScrollView(.horizontal, showsIndicators: false) {
-                HStack(spacing: 12) {
-                    ForEach(filters, id: \.self) { filter in
-                        Text(filter)
-                            .padding(.horizontal, 16)
-                            .padding(.vertical, 8)
-                            .background(
-                                selectedFilter == filter
-                                    ? Color.purple.opacity(0.2) : Color(.systemGray5)
-                            )
-                            .foregroundColor(selectedFilter == filter ? .purple : .black)
-                            .font(.subheadline)
-                            .fontWeight(selectedFilter == filter ? .semibold : .regular)
-                            .cornerRadius(20)
-                            .onTapGesture { selectedFilter = filter }
-                    }
-                }
-                .padding(.horizontal)
-            }
-            .padding(.top, 8)
-
-            // Featured Event
-            VStack(alignment: .leading, spacing: 8) {
-                Text("Featured Event")
-                    .font(.headline)
-                    .fontWeight(.semibold)
-                    .padding(.horizontal)
-                ZStack(alignment: .bottomLeading) {
-                    AsyncImage(url: URL(string: featuredEvent.imageUrl)) { image in
-                        image
-                            .resizable()
-                            .aspectRatio(contentMode: .fill)
-                            .frame(height: 160)
-                            .cornerRadius(16)
-                    } placeholder: {
-                        Rectangle()
-                            .fill(Color(.systemGray5))
-                            .frame(height: 160)
-                            .cornerRadius(16)
-                    }
-                    LinearGradient(
-                        gradient: Gradient(colors: [Color.black.opacity(0.7), .clear]),
-                        startPoint: .bottom, endPoint: .top
-                    )
-                    .cornerRadius(16)
-                    .frame(height: 80)
-                    VStack(alignment: .leading, spacing: 2) {
-                        Text(featuredEvent.title)
-                            .font(.headline)
-                            .fontWeight(.bold)
-                            .foregroundColor(.white)
-                        Text("\(featuredEvent.date) • \(featuredEvent.location)")
-                            .foregroundColor(.white)
-                            .font(.subheadline)
-                    }
-                    .padding(12)
-                }
-                .padding(.horizontal)
-            }
-            .padding(.top, 8)
-
-            // Upcoming Events
-            VStack(alignment: .leading, spacing: 8) {
-                Text("Upcoming Events")
-                    .font(.headline)
-                    .fontWeight(.semibold)
-                    .padding(.horizontal)
-                ForEach(upcomingEvents) { event in
-                    HStack(spacing: 12) {
-                        AsyncImage(url: URL(string: event.imageUrl)) { image in
-                            image
-                                .resizable()
-                                .aspectRatio(contentMode: .fill)
-                                .frame(width: 56, height: 56)
-                                .cornerRadius(12)
-                        } placeholder: {
-                            Rectangle()
-                                .fill(Color(.systemGray5))
-                                .frame(width: 56, height: 56)
-                                .cornerRadius(12)
-                        }
-                        VStack(alignment: .leading, spacing: 4) {
-                            Text(event.title)
-                                .font(.headline)
-                                .fontWeight(.bold)
-                                .foregroundColor(.black)
-                            Text("\(event.date) • \(event.location)")
-                                .font(.subheadline)
-                                .foregroundColor(.gray)
-                            HStack(spacing: 4) {
-                                Image(systemName: "person.2.fill")
-                                    .foregroundColor(.purple)
-                                    .font(.caption)
-                                Text("\(event.attendees) going")
-                                    .font(.caption)
-                                    .foregroundColor(.purple)
-                            }
-                        }
-                        Spacer()
+                    // Search Bar
+                    HStack {
+                        Image(systemName: "magnifyingglass")
+                            .foregroundColor(.gray)
+                        TextField("Search events...", text: .constant(""))
                     }
                     .padding(12)
                     .background(Color(.systemGray6))
-                    .cornerRadius(16)
+                    .cornerRadius(12)
                     .padding(.horizontal)
+                    .padding(.top, 4)
+
+                    // Filter Chips
+                    ScrollView(.horizontal, showsIndicators: false) {
+                        HStack(spacing: 12) {
+                            ForEach(filters, id: \.self) { filter in
+                                Text(filter)
+                                    .padding(.horizontal, 16)
+                                    .padding(.vertical, 8)
+                                    .background(
+                                        selectedFilter == filter
+                                            ? Color.purple.opacity(0.2) : Color(.systemGray5)
+                                    )
+                                    .foregroundColor(selectedFilter == filter ? .purple : .black)
+                                    .font(.subheadline)
+                                    .fontWeight(selectedFilter == filter ? .semibold : .regular)
+                                    .cornerRadius(20)
+                                    .onTapGesture { selectedFilter = filter }
+                            }
+                        }
+                        .padding(.horizontal)
+                    }
+                    .padding(.top, 8)
+
+                    // Featured Event
+                    VStack(alignment: .leading, spacing: 8) {
+                        Text("Featured Event")
+                            .font(.headline)
+                            .fontWeight(.semibold)
+                            .padding(.horizontal)
+                        ZStack(alignment: .bottomLeading) {
+                            AsyncImage(url: URL(string: featuredEvent.imageUrl)) { image in
+                                image
+                                    .resizable()
+                                    .aspectRatio(contentMode: .fill)
+                                    .frame(height: 160)
+                                    .cornerRadius(16)
+                            } placeholder: {
+                                Rectangle()
+                                    .fill(Color(.systemGray5))
+                                    .frame(height: 160)
+                                    .cornerRadius(16)
+                            }
+                            LinearGradient(
+                                gradient: Gradient(colors: [Color.black.opacity(0.7), .clear]),
+                                startPoint: .bottom, endPoint: .top
+                            )
+                            .cornerRadius(16)
+                            .frame(height: 80)
+                            VStack(alignment: .leading, spacing: 2) {
+                                Text(featuredEvent.title)
+                                    .font(.headline)
+                                    .fontWeight(.bold)
+                                    .foregroundColor(.white)
+                                Text("\(featuredEvent.date) • \(featuredEvent.location)")
+                                    .foregroundColor(.white)
+                                    .font(.subheadline)
+                            }
+                            .padding(12)
+                        }
+                        .padding(.horizontal)
+                    }
+                    .padding(.top, 8)
+
+                    // Upcoming Events
+                    VStack(alignment: .leading, spacing: 8) {
+                        Text("Upcoming Events")
+                            .font(.headline)
+                            .fontWeight(.semibold)
+                            .padding(.horizontal)
+                        ForEach(upcomingEvents) { event in
+                            HStack(spacing: 12) {
+                                AsyncImage(url: URL(string: event.imageUrl)) { image in
+                                    image
+                                        .resizable()
+                                        .aspectRatio(contentMode: .fill)
+                                        .frame(width: 56, height: 56)
+                                        .cornerRadius(12)
+                                } placeholder: {
+                                    Rectangle()
+                                        .fill(Color(.systemGray5))
+                                        .frame(width: 56, height: 56)
+                                        .cornerRadius(12)
+                                }
+                                VStack(alignment: .leading, spacing: 4) {
+                                    Text(event.title)
+                                        .font(.headline)
+                                        .fontWeight(.bold)
+                                        .foregroundColor(.black)
+                                    Text("\(event.date) • \(event.location)")
+                                        .font(.subheadline)
+                                        .foregroundColor(.gray)
+                                    HStack(spacing: 4) {
+                                        Image(systemName: "person.2.fill")
+                                            .foregroundColor(.purple)
+                                            .font(.caption)
+                                        Text("\(event.attendees) going")
+                                            .font(.caption)
+                                            .foregroundColor(.purple)
+                                    }
+                                }
+                                Spacer()
+                            }
+                            .padding(12)
+                            .background(Color(.systemGray6))
+                            .cornerRadius(16)
+                            .padding(.horizontal)
+                        }
+                    }
+                    .padding(.top, 8)
+                    .padding(.bottom, 100) // Add padding at the bottom to ensure content doesn't get hidden behind the FAB
                 }
             }
-            .padding(.top, 8)
-
-            Spacer()
+            .background(Color.white.ignoresSafeArea())
 
             // Floating Action Button
             HStack {
@@ -183,11 +187,7 @@ struct EventsView: View {
                 .padding(.trailing, 24)
                 .padding(.bottom, 8)
             }
-
-            // Footer Navigation
-//            FooterView()
         }
-        .background(Color.white.ignoresSafeArea())
     }
 }
 
