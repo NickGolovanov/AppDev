@@ -68,36 +68,49 @@ struct MessageBubble: View {
     
     var body: some View {
         HStack(alignment: .bottom, spacing: 8) {
-            if !message.isFromCurrentUser {
-                // User Avatar
+            if message.isFromCurrentUser {
+                Spacer(minLength: 40)
+                VStack(alignment: .trailing, spacing: 2) {
+                    Text(message.content)
+                        .padding(12)
+                        .background(Color.purple)
+                        .foregroundColor(.white)
+                        .cornerRadius(18)
+                        .overlay(
+                            Text(formatTimestamp(message.timestamp))
+                                .font(.caption2)
+                                .foregroundColor(.white.opacity(0.7))
+                                .padding([.bottom, .trailing], 6),
+                            alignment: .bottomTrailing
+                        )
+                }
+            } else {
                 Image(systemName: "person.circle.fill")
                     .resizable()
                     .frame(width: 32, height: 32)
-                    .foregroundColor(.purple)
-            }
-            
-            VStack(alignment: message.isFromCurrentUser ? .trailing : .leading, spacing: 4) {
-                if !message.isFromCurrentUser {
+                    .foregroundColor(.orange)
+                VStack(alignment: .leading, spacing: 2) {
                     Text(message.senderName)
                         .font(.caption)
-                        .foregroundColor(.gray)
+                        .foregroundColor(.orange)
+                        .padding(.leading, 4)
+                    Text(message.content)
+                        .padding(12)
+                        .background(Color(hex: 0x232323))
+                        .foregroundColor(.white)
+                        .cornerRadius(18)
+                        .overlay(
+                            Text(formatTimestamp(message.timestamp))
+                                .font(.caption2)
+                                .foregroundColor(.white.opacity(0.7))
+                                .padding([.bottom, .leading], 6),
+                            alignment: .bottomLeading
+                        )
                 }
-                
-                Text(message.content)
-                    .padding(12)
-                    .background(message.isFromCurrentUser ? Color.purple : Color(hex: 0xF3F4F6))
-                    .foregroundColor(message.isFromCurrentUser ? .white : .primary)
-                    .cornerRadius(16)
-                
-                Text(formatTimestamp(message.timestamp))
-                    .font(.caption2)
-                    .foregroundColor(.gray)
-            }
-            
-            if message.isFromCurrentUser {
-                Spacer()
+                Spacer(minLength: 40)
             }
         }
+        .padding(.horizontal, 2)
     }
     
     private func formatTimestamp(_ date: Date) -> String {
