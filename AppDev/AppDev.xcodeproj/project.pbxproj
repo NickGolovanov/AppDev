@@ -6,6 +6,15 @@
 	objectVersion = 77;
 	objects = {
 
+/* Begin PBXBuildFile section */
+		12B0DE71F9CED2819115FDE9 /* Pods_AppDev.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = AE8A1F18C1B23EFC174AC863 /* Pods_AppDev.framework */; };
+		F740B25F2DD354F900FF6BA1 /* FirebaseAnalytics in Frameworks */ = {isa = PBXBuildFile; productRef = F740B25E2DD354F900FF6BA1 /* FirebaseAnalytics */; };
+		F740B2612DD354F900FF6BA1 /* FirebaseAnalyticsOnDeviceConversion in Frameworks */ = {isa = PBXBuildFile; productRef = F740B2602DD354F900FF6BA1 /* FirebaseAnalyticsOnDeviceConversion */; };
+		F740B2632DD354F900FF6BA1 /* FirebaseAnalyticsWithoutAdIdSupport in Frameworks */ = {isa = PBXBuildFile; productRef = F740B2622DD354F900FF6BA1 /* FirebaseAnalyticsWithoutAdIdSupport */; };
+		F740B2652DD354F900FF6BA1 /* FirebaseAppCheck in Frameworks */ = {isa = PBXBuildFile; productRef = F740B2642DD354F900FF6BA1 /* FirebaseAppCheck */; };
+		F740B2672DD354F900FF6BA1 /* FirebaseAppDistribution-Beta in Frameworks */ = {isa = PBXBuildFile; productRef = F740B2662DD354F900FF6BA1 /* FirebaseAppDistribution-Beta */; };
+/* End PBXBuildFile section */
+
 /* Begin PBXContainerItemProxy section */
 		F7C686352DCD45E4006F3CE2 /* PBXContainerItemProxy */ = {
 			isa = PBXContainerItemProxy;
@@ -24,6 +33,9 @@
 /* End PBXContainerItemProxy section */
 
 /* Begin PBXFileReference section */
+		205326A25D4869B906199AF0 /* Pods-AppDev.debug.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-AppDev.debug.xcconfig"; path = "Target Support Files/Pods-AppDev/Pods-AppDev.debug.xcconfig"; sourceTree = "<group>"; };
+		AE8A1F18C1B23EFC174AC863 /* Pods_AppDev.framework */ = {isa = PBXFileReference; explicitFileType = wrapper.framework; includeInIndex = 0; path = Pods_AppDev.framework; sourceTree = BUILT_PRODUCTS_DIR; };
+		C82B9AD7F0CD4F152028E83D /* Pods-AppDev.release.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-AppDev.release.xcconfig"; path = "Target Support Files/Pods-AppDev/Pods-AppDev.release.xcconfig"; sourceTree = "<group>"; };
 		F7C686242DCD45E2006F3CE2 /* AppDev.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = AppDev.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		F7C686342DCD45E4006F3CE2 /* AppDevTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = AppDevTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
 		F7C6863E2DCD45E4006F3CE2 /* AppDevUITests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = AppDevUITests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
@@ -32,16 +44,22 @@
 /* Begin PBXFileSystemSynchronizedRootGroup section */
 		F7C686262DCD45E2006F3CE2 /* AppDev */ = {
 			isa = PBXFileSystemSynchronizedRootGroup;
+			exceptions = (
+			);
 			path = AppDev;
 			sourceTree = "<group>";
 		};
 		F7C686372DCD45E4006F3CE2 /* AppDevTests */ = {
 			isa = PBXFileSystemSynchronizedRootGroup;
+			exceptions = (
+			);
 			path = AppDevTests;
 			sourceTree = "<group>";
 		};
 		F7C686412DCD45E4006F3CE2 /* AppDevUITests */ = {
 			isa = PBXFileSystemSynchronizedRootGroup;
+			exceptions = (
+			);
 			path = AppDevUITests;
 			sourceTree = "<group>";
 		};
@@ -52,6 +70,12 @@
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				F740B2652DD354F900FF6BA1 /* FirebaseAppCheck in Frameworks */,
+				F740B25F2DD354F900FF6BA1 /* FirebaseAnalytics in Frameworks */,
+				F740B2672DD354F900FF6BA1 /* FirebaseAppDistribution-Beta in Frameworks */,
+				F740B2632DD354F900FF6BA1 /* FirebaseAnalyticsWithoutAdIdSupport in Frameworks */,
+				F740B2612DD354F900FF6BA1 /* FirebaseAnalyticsOnDeviceConversion in Frameworks */,
+				12B0DE71F9CED2819115FDE9 /* Pods_AppDev.framework in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -72,6 +96,24 @@
 /* End PBXFrameworksBuildPhase section */
 
 /* Begin PBXGroup section */
+		101B320F49B4D73F80459513 /* Pods */ = {
+			isa = PBXGroup;
+			children = (
+				205326A25D4869B906199AF0 /* Pods-AppDev.debug.xcconfig */,
+				C82B9AD7F0CD4F152028E83D /* Pods-AppDev.release.xcconfig */,
+			);
+			name = Pods;
+			path = Pods;
+			sourceTree = "<group>";
+		};
+		641944BE7AE065E76D218FBC /* Frameworks */ = {
+			isa = PBXGroup;
+			children = (
+				AE8A1F18C1B23EFC174AC863 /* Pods_AppDev.framework */,
+			);
+			name = Frameworks;
+			sourceTree = "<group>";
+		};
 		F7C6861B2DCD45E2006F3CE2 = {
 			isa = PBXGroup;
 			children = (
@@ -79,6 +121,8 @@
 				F7C686372DCD45E4006F3CE2 /* AppDevTests */,
 				F7C686412DCD45E4006F3CE2 /* AppDevUITests */,
 				F7C686252DCD45E2006F3CE2 /* Products */,
+				101B320F49B4D73F80459513 /* Pods */,
+				641944BE7AE065E76D218FBC /* Frameworks */,
 			);
 			sourceTree = "<group>";
 		};
@@ -99,9 +143,11 @@
 			isa = PBXNativeTarget;
 			buildConfigurationList = F7C686482DCD45E4006F3CE2 /* Build configuration list for PBXNativeTarget "AppDev" */;
 			buildPhases = (
+				797036235F7D5D8FD070FBC7 /* [CP] Check Pods Manifest.lock */,
 				F7C686202DCD45E2006F3CE2 /* Sources */,
 				F7C686212DCD45E2006F3CE2 /* Frameworks */,
 				F7C686222DCD45E2006F3CE2 /* Resources */,
+				8995AAB3FE41FF28F727F8CD /* [CP] Embed Pods Frameworks */,
 			);
 			buildRules = (
 			);
@@ -112,6 +158,11 @@
 			);
 			name = AppDev;
 			packageProductDependencies = (
+				F740B25E2DD354F900FF6BA1 /* FirebaseAnalytics */,
+				F740B2602DD354F900FF6BA1 /* FirebaseAnalyticsOnDeviceConversion */,
+				F740B2622DD354F900FF6BA1 /* FirebaseAnalyticsWithoutAdIdSupport */,
+				F740B2642DD354F900FF6BA1 /* FirebaseAppCheck */,
+				F740B2662DD354F900FF6BA1 /* FirebaseAppDistribution-Beta */,
 			);
 			productName = AppDev;
 			productReference = F7C686242DCD45E2006F3CE2 /* AppDev.app */;
@@ -134,8 +185,6 @@
 				F7C686372DCD45E4006F3CE2 /* AppDevTests */,
 			);
 			name = AppDevTests;
-			packageProductDependencies = (
-			);
 			productName = AppDevTests;
 			productReference = F7C686342DCD45E4006F3CE2 /* AppDevTests.xctest */;
 			productType = "com.apple.product-type.bundle.unit-test";
@@ -157,8 +206,6 @@
 				F7C686412DCD45E4006F3CE2 /* AppDevUITests */,
 			);
 			name = AppDevUITests;
-			packageProductDependencies = (
-			);
 			productName = AppDevUITests;
 			productReference = F7C6863E2DCD45E4006F3CE2 /* AppDevUITests.xctest */;
 			productType = "com.apple.product-type.bundle.ui-testing";
@@ -195,6 +242,9 @@
 			);
 			mainGroup = F7C6861B2DCD45E2006F3CE2;
 			minimizedProjectReferenceProxies = 1;
+			packageReferences = (
+				F740B25D2DD33A0D00FF6BA1 /* XCRemoteSwiftPackageReference "firebase-ios-sdk" */,
+			);
 			preferredProjectObjectVersion = 77;
 			productRefGroup = F7C686252DCD45E2006F3CE2 /* Products */;
 			projectDirPath = "";
@@ -230,6 +280,48 @@
 			runOnlyForDeploymentPostprocessing = 0;
 		};
 /* End PBXResourcesBuildPhase section */
+
+/* Begin PBXShellScriptBuildPhase section */
+		797036235F7D5D8FD070FBC7 /* [CP] Check Pods Manifest.lock */ = {
+			isa = PBXShellScriptBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			inputFileListPaths = (
+			);
+			inputPaths = (
+				"${PODS_PODFILE_DIR_PATH}/Podfile.lock",
+				"${PODS_ROOT}/Manifest.lock",
+			);
+			name = "[CP] Check Pods Manifest.lock";
+			outputFileListPaths = (
+			);
+			outputPaths = (
+				"$(DERIVED_FILE_DIR)/Pods-AppDev-checkManifestLockResult.txt",
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+			shellPath = /bin/sh;
+			shellScript = "diff \"${PODS_PODFILE_DIR_PATH}/Podfile.lock\" \"${PODS_ROOT}/Manifest.lock\" > /dev/null\nif [ $? != 0 ] ; then\n    # print error to STDERR\n    echo \"error: The sandbox is not in sync with the Podfile.lock. Run 'pod install' or update your CocoaPods installation.\" >&2\n    exit 1\nfi\n# This output is used by Xcode 'outputs' to avoid re-running this script phase.\necho \"SUCCESS\" > \"${SCRIPT_OUTPUT_FILE_0}\"\n";
+			showEnvVarsInLog = 0;
+		};
+		8995AAB3FE41FF28F727F8CD /* [CP] Embed Pods Frameworks */ = {
+			isa = PBXShellScriptBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			inputFileListPaths = (
+				"${PODS_ROOT}/Target Support Files/Pods-AppDev/Pods-AppDev-frameworks-${CONFIGURATION}-input-files.xcfilelist",
+			);
+			name = "[CP] Embed Pods Frameworks";
+			outputFileListPaths = (
+				"${PODS_ROOT}/Target Support Files/Pods-AppDev/Pods-AppDev-frameworks-${CONFIGURATION}-output-files.xcfilelist",
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+			shellPath = /bin/sh;
+			shellScript = "\"${PODS_ROOT}/Target Support Files/Pods-AppDev/Pods-AppDev-frameworks.sh\"\n";
+			showEnvVarsInLog = 0;
+		};
+/* End PBXShellScriptBuildPhase section */
 
 /* Begin PBXSourcesBuildPhase section */
 		F7C686202DCD45E2006F3CE2 /* Sources */ = {
@@ -390,6 +482,7 @@
 		};
 		F7C686492DCD45E4006F3CE2 /* Debug */ = {
 			isa = XCBuildConfiguration;
+			baseConfigurationReference = 205326A25D4869B906199AF0 /* Pods-AppDev.debug.xcconfig */;
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
@@ -418,6 +511,7 @@
 		};
 		F7C6864A2DCD45E4006F3CE2 /* Release */ = {
 			isa = XCBuildConfiguration;
+			baseConfigurationReference = C82B9AD7F0CD4F152028E83D /* Pods-AppDev.release.xcconfig */;
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
@@ -552,6 +646,45 @@
 			defaultConfigurationName = Release;
 		};
 /* End XCConfigurationList section */
+
+/* Begin XCRemoteSwiftPackageReference section */
+		F740B25D2DD33A0D00FF6BA1 /* XCRemoteSwiftPackageReference "firebase-ios-sdk" */ = {
+			isa = XCRemoteSwiftPackageReference;
+			repositoryURL = "https://github.com/firebase/firebase-ios-sdk";
+			requirement = {
+				kind = upToNextMajorVersion;
+				minimumVersion = 11.12.0;
+			};
+		};
+/* End XCRemoteSwiftPackageReference section */
+
+/* Begin XCSwiftPackageProductDependency section */
+		F740B25E2DD354F900FF6BA1 /* FirebaseAnalytics */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = F740B25D2DD33A0D00FF6BA1 /* XCRemoteSwiftPackageReference "firebase-ios-sdk" */;
+			productName = FirebaseAnalytics;
+		};
+		F740B2602DD354F900FF6BA1 /* FirebaseAnalyticsOnDeviceConversion */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = F740B25D2DD33A0D00FF6BA1 /* XCRemoteSwiftPackageReference "firebase-ios-sdk" */;
+			productName = FirebaseAnalyticsOnDeviceConversion;
+		};
+		F740B2622DD354F900FF6BA1 /* FirebaseAnalyticsWithoutAdIdSupport */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = F740B25D2DD33A0D00FF6BA1 /* XCRemoteSwiftPackageReference "firebase-ios-sdk" */;
+			productName = FirebaseAnalyticsWithoutAdIdSupport;
+		};
+		F740B2642DD354F900FF6BA1 /* FirebaseAppCheck */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = F740B25D2DD33A0D00FF6BA1 /* XCRemoteSwiftPackageReference "firebase-ios-sdk" */;
+			productName = FirebaseAppCheck;
+		};
+		F740B2662DD354F900FF6BA1 /* FirebaseAppDistribution-Beta */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = F740B25D2DD33A0D00FF6BA1 /* XCRemoteSwiftPackageReference "firebase-ios-sdk" */;
+			productName = "FirebaseAppDistribution-Beta";
+		};
+/* End XCSwiftPackageProductDependency section */
 	};
 	rootObject = F7C6861C2DCD45E2006F3CE2 /* Project object */;
 }

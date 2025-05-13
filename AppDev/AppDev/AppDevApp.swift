@@ -5,13 +5,17 @@
 //  Created by Nikita Golovanov on 5/8/25.
 //
 
-import SwiftUI
+import UIKit
+import FirebaseCore
 
 @main
-struct AppDevApp: App {
-    var body: some Scene {
-        WindowGroup {
-            MainTabView()
-        }
-    }
+class AppDevApp: UIResponder, UIApplicationDelegate {
+  func application(
+    _ application: UIApplication,
+    didFinishLaunchingWithOptions launchOptions: [UIApplication.LaunchOptionsKey: Any]?
+  ) -> Bool {
+    FirebaseApp.configure()
+    return true
+  }
 }
+
