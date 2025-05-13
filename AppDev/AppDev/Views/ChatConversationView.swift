@@ -38,7 +38,7 @@ struct ChatConversationView: View {
                     .padding(.top)
                     .padding(.horizontal)
                 }
-                .onChange(of: messages.count) { _ in
+                .onChange(of: messages.count) {
                     if let last = messages.last {
                         withAnimation {
                             proxy.scrollTo(last.id, anchor: .bottom)
@@ -56,9 +56,14 @@ struct ChatConversationView: View {
             VStack(spacing: 0) {
                 Divider()
                 HStack(spacing: 12) {
-                    StyledTextField(text: $messageText, placeholder: "Type a message...")
-                        .focused($isInputFocused)
-                        .padding(.vertical, 8)
+                    TextField("Type a message...", text: $messageText)
+                        .padding(12)
+                        .font(.custom("Poppins-Regular", size: 16))
+                        .foregroundColor(.primary)
+                        .background(
+                            RoundedRectangle(cornerRadius: 8)
+                                .stroke(Color(hex: 0xD1D5DB))
+                        )
                     Button(action: sendMessage) {
                         Image(systemName: "paperplane.fill")
                             .foregroundColor(.purple)
