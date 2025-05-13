@@ -76,13 +76,10 @@ struct MessageBubble: View {
                         .background(Color.purple)
                         .foregroundColor(.white)
                         .cornerRadius(18)
-                        .overlay(
-                            Text(formatTimestamp(message.timestamp))
-                                .font(.caption2)
-                                .foregroundColor(.white.opacity(0.7))
-                                .padding([.bottom, .trailing], 6),
-                            alignment: .bottomTrailing
-                        )
+                    Text(formatTimestamp(message.timestamp))
+                        .font(.caption2)
+                        .foregroundColor(.gray)
+                        .padding(.trailing, 4)
                 }
             } else {
                 Image(systemName: "person.circle.fill")
@@ -96,16 +93,13 @@ struct MessageBubble: View {
                         .padding(.leading, 4)
                     Text(message.content)
                         .padding(12)
-                        .background(Color(hex: 0x232323))
-                        .foregroundColor(.white)
+                        .background(Color(hex: 0xF3F4F6))
+                        .foregroundColor(.primary)
                         .cornerRadius(18)
-                        .overlay(
-                            Text(formatTimestamp(message.timestamp))
-                                .font(.caption2)
-                                .foregroundColor(.white.opacity(0.7))
-                                .padding([.bottom, .leading], 6),
-                            alignment: .bottomLeading
-                        )
+                    Text(formatTimestamp(message.timestamp))
+                        .font(.caption2)
+                        .foregroundColor(.gray)
+                        .padding(.leading, 4)
                 }
                 Spacer(minLength: 40)
             }
