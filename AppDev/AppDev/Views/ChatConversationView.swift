@@ -83,7 +83,6 @@ struct ChatConversationView: View {
         )
         messages.append(newMessage)
         messageText = ""
-        isInputFocused = true
     }
 }
 
