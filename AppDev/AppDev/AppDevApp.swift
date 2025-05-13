@@ -5,17 +5,17 @@
 //  Created by Nikita Golovanov on 5/8/25.
 //
 
-import UIKit
+import SwiftUI
 import FirebaseCore
 
 @main
-class AppDevApp: UIResponder, UIApplicationDelegate {
-  func application(
-    _ application: UIApplication,
-    didFinishLaunchingWithOptions launchOptions: [UIApplication.LaunchOptionsKey: Any]?
-  ) -> Bool {
-    FirebaseApp.configure()
-    return true
-  }
+struct AppDevApp: App {
+    // register app delegate for Firebase setup
+    @UIApplicationDelegateAdaptor(AppDelegate.self) var delegate
+    
+    var body: some Scene {
+        WindowGroup {
+            MainTabView()
+        }
+    }
 }
-
