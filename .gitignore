@@ -1,36 +1,74 @@
-# macOS
-*.DS_Store
-
 # Xcode
-build/
-*.pbxuser
-!default.pbxuser
-*.mode1v3
-!default.mode1v3
-*.mode2v3
-!default.mode2v3
-*.perspectivev3
-!default.perspectivev3
-xcuserdata/
-*.xccheckout
-DerivedData/
-*.moved-aside
 *.xcuserstate
+*.xcscmblueprint
+*.xccheckout
+*.xcodeproj/project.xcworkspace/
+*.xcodeproj/xcuserdata/
+*.xcworkspace/xcuserdata/
+*.xcuserdatad
+DerivedData/
+.idea/
+*.hmap
+*.ipa
+*.dSYM.zip
+*.dSYM
+*.xcarchive
+*.xcworkspace/
 
 # Swift Package Manager
 .build/
+.swiftpm/
+.swiftpm/xcode/package.xcworkspace/
 
 # CocoaPods
 Pods/
+Podfile.lock
+project.xcworkspace/
+
+# Firebase
+# This is the Firebase config file that contains API keys and project info.
+# Do not commit it unless you're sure it's safe for your project/repo.
+GoogleService-Info.plist
+firebase-crashlytics.log
+crashlytics-build.properties
 
 # Carthage
+Carthage/
 Carthage/Build/
 
 # Fastlane
 fastlane/report.xml
 fastlane/Preview.html
-fastlane/screenshots
+fastlane/screenshots/**/*.png
 fastlane/test_output
+fastlane/.env
+fastlane/.env.*
 
-# Other
-*.xcworkspace
+# Archives
+*.xcarchive
+
+# Playgrounds
+timeline.xctimeline
+playground.xcworkspace
+
+# Logs & temp files
+*.log
+*.tmp
+*.swp
+*~.nib
+
+# macOS system files
+.DS_Store
+.AppleDouble
+.LSOverride
+Icon?
+._*
+
+# Xcode Server
+bot/
+bots/
+integration_logs/
+
+# Environment files
+.env
+.env.*
