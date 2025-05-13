@@ -2,7 +2,7 @@
 //  AppDevUITests.swift
 //  AppDevUITests
 //
-//  Created by Nikita Golovanov on 5/3/25.
+//  Created by Nikita Golovanov on 5/8/25.
 //
 
 import XCTest
@@ -29,6 +29,7 @@ final class AppDevUITests: XCTestCase {
         app.launch()
 
         // Use XCTAssert and related functions to verify your tests produce the correct results.
+        XCTAssertTrue(true)
     }
 
     @MainActor
