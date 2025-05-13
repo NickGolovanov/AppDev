@@ -6,6 +6,7 @@
 //
 
 import Foundation
+import FirebaseFirestore
 
 import SwiftUI
 
@@ -13,6 +14,11 @@ struct EditProfileView: View {
     @State private var fullName: String = ""
     @State private var username: String = ""
     @State private var bio: String = ""
+    @State private var userId: String = ""
+    @State private var email: String = ""
+    @State private var profileImageUrl: String = ""
+    @State private var showAlert = false
+    @State private var alertMessage = ""
 
     var body: some View {
         ScrollView {
@@ -59,11 +65,54 @@ struct EditProfileView: View {
                         .overlay(RoundedRectangle(cornerRadius: 8).stroke(Color.gray.opacity(0.3)))
                 }
 
+                // User ID Field
+                VStack(alignment: .leading) {
+                    Text("User ID")
+                        .font(.caption)
+                        .foregroundColor(.gray)
+                    TextField("Enter user ID", text: $userId)
+                        .textFieldStyle(RoundedBorderTextFieldStyle())
+                }
+
+                // Email Field
+                VStack(alignment: .leading) {
+                    Text("Email")
+                        .font(.caption)
+                        .foregroundColor(.gray)
+                    TextField("Enter your email", text: $email)
+                        .textFieldStyle(RoundedBorderTextFieldStyle())
+                }
+
+                // Profile Image URL Field
+                VStack(alignment: .leading) {
+                    Text("Profile Image URL")
+                        .font(.caption)
+                        .foregroundColor(.gray)
+                    TextField("Enter profile image URL", text: $profileImageUrl)
+                        .textFieldStyle(RoundedBorderTextFieldStyle())
+                }
+
                 // Save Button
                 Button(action: {
-                    // Save profile later
+                    let db = Firestore.firestore()
+                    let userData: [String: Any] = [
+                        "fullName": fullName,
+                        "username": username,
+                        "description": bio,
+                        "email": email,
+                        "profileImageUrl": profileImageUrl,
+                        "joinedEventIds": [],
+                        "organizedEventIds": []
+                    ]
+                    db.collection("users").document(userId).setData(userData) { error in
+                        if let error = error {
+                            print("Error writing user data: \(error)")
+                        } else {
+                            print("User data successfully written!")
+                        }
+                    }
                 }) {
-                    Text("Save")
+                    Text("Save Profile")
                         .frame(maxWidth: .infinity)
                         .padding()
                         .background(Color.blue)
@@ -71,6 +120,9 @@ struct EditProfileView: View {
                         .cornerRadius(10)
                 }
                 .padding(.top, 30)
+                .alert(isPresented: $showAlert) {
+                    Alert(title: Text("Profile Update"), message: Text(alertMessage), dismissButton: .default(Text("OK")))
+                }
             }
             .padding()
         }
