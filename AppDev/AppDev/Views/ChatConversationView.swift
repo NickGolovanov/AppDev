@@ -21,6 +21,8 @@ struct ChatConversationView: View {
         VStack(spacing: 0) {
             // Header
             HeaderView(title: chatTitle, showBackButton: true)
+                .padding()
+                .background(Color.white)
             
             // Messages List
             ScrollView {
