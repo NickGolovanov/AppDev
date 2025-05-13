@@ -17,13 +17,15 @@ struct ChatView: View {
     ]
     
     var body: some View {
-        VStack(alignment: .leading, spacing: 20){
-            headerSection
-            
-            titleSection
-            searchSection
-            chatListSection
-        }.padding()
+        NavigationStack {
+            VStack(alignment: .leading, spacing: 20){
+                headerSection
+                
+                titleSection
+                searchSection
+                chatListSection
+            }.padding()
+        }
     }
 }
 
