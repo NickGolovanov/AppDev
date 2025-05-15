@@ -12,13 +12,23 @@ import FirebaseAuth
 
 struct Ticket: Identifiable, Codable {
     let id: String
-    let eventId: String
+    let eventName: String
+    let date: String
+    let location: String
+    let name: String
+    let email: String
+    let price: String
     let qrcodeUrl: String
     let userId: String
     
     enum CodingKeys: String, CodingKey {
         case id
-        case eventId
+        case eventName
+        case date
+        case location
+        case name
+        case email
+        case price
         case qrcodeUrl
         case userId
     }
@@ -112,13 +122,46 @@ struct TicketCard: View {
     
     var body: some View {
         VStack(alignment: .leading, spacing: 12) {
-            Text("Event ID: \(ticket.eventId)")
+            Text(ticket.eventName)
                 .font(.headline)
                 .fontWeight(.semibold)
-            Text("QR Code URL: \(ticket.qrcodeUrl)")
-                .font(.subheadline)
-            Text("User ID: \(ticket.userId)")
-                .font(.subheadline)
+            HStack(spacing: 12) {
+                Label(ticket.date, systemImage: "calendar")
+                    .font(.subheadline)
+                Spacer()
+            }
+            HStack(spacing: 12) {
+                Label(ticket.location, systemImage: "mappin.and.ellipse")
+                    .font(.subheadline)
+                Spacer()
+            }
+            Divider()
+            VStack(alignment: .leading, spacing: 4) {
+                Text("Name: ") + Text(ticket.name).fontWeight(.medium)
+                Text("Email: ") + Text(ticket.email).fontWeight(.medium)
+                Text("Ticket Price: ") + Text(ticket.price).fontWeight(.medium)
+            }
+            .font(.subheadline)
+            .foregroundColor(.gray)
+            Spacer(minLength: 8)
+            if let url = URL(string: ticket.qrcodeUrl), !ticket.qrcodeUrl.isEmpty {
+                AsyncImage(url: url) { image in
+                    image
+                        .resizable()
+                        .aspectRatio(contentMode: .fit)
+                } placeholder: {
+                    Rectangle().fill(Color.black)
+                }
+                .frame(width: 100, height: 100)
+                .cornerRadius(8)
+                .frame(maxWidth: .infinity, alignment: .center)
+            } else {
+                Rectangle()
+                    .fill(Color.black)
+                    .frame(width: 100, height: 100)
+                    .cornerRadius(8)
+                    .frame(maxWidth: .infinity, alignment: .center)
+            }
         }
         .padding()
         .background(Color.white)
