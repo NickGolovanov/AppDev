@@ -6,6 +6,8 @@
 //
 
 import SwiftUI
+import FirebaseFirestore
+import FirebaseStorage
 
 struct CreateEventView: View {
     @State private var eventTitle: String = ""
@@ -15,10 +17,14 @@ struct CreateEventView: View {
     @State private var endTime: Date? = nil
     @State private var location: String = ""
     @State private var description: String = ""
-    @State private var maxCapacity: Int = 0
-    @State private var price: Double = 0.0
+    @State private var maxCapacity: String = ""
+    @State private var price: String = ""
     @State private var coverImage: Image? = nil
+    @State private var coverUIImage: UIImage? = nil
     @State private var showImagePicker: Bool = false
+    @State private var showAlert: Bool = false
+    @State private var alertMessage: String = ""
+    @State private var isLoading: Bool = false
     
     let categories = ["House Party", "Concert", "Meetup", "Workshop"]
     
@@ -70,7 +76,18 @@ extension CreateEventView {
             }
         }
         .sheet(isPresented: $showImagePicker) {
-            ImagePicker(image: $coverImage)
+            ImagePicker(image: Binding(
+                get: { coverImage },
+                set: { newImage in
+                    coverImage = newImage
+                    if let newImage = newImage {
+                        // Convert SwiftUI Image to UIImage
+                        if let uiImage = newImage.asUIImage() {
+                            coverUIImage = uiImage
+                        }
+                    }
+                }
+            ))
         }
     }
     
@@ -121,13 +138,11 @@ extension CreateEventView {
             HStack(spacing: 16) {
                 VStack(alignment: .leading) {
                     FormLabel(text: "Max Capacity")
-                    StyledTextField(text: $eventTitle, placeholder: "0").keyboardType(.numberPad)
-                    
+                    StyledTextField(text: $maxCapacity, placeholder: "0").keyboardType(.numberPad)
                 }
-                
                 VStack(alignment: .leading, spacing: 8) {
                     FormLabel(text: "Price (€)")
-                    StyledTextField(text: $eventTitle, placeholder: "0.00").keyboardType(.decimalPad)
+                    StyledTextField(text: $price, placeholder: "0.00").keyboardType(.decimalPad)
                 }
             }
             
@@ -136,14 +151,26 @@ extension CreateEventView {
     
     var createButtonSection: some View {
         Button(action: {
-            // Handle create event action
+            createEvent()
         }) {
-            Text("Create Event")
-                .frame(maxWidth: .infinity)
-                .padding()
-                .background(Color.purple)
-                .foregroundColor(.white)
-                .cornerRadius(10)
+            if isLoading {
+                ProgressView()
+                    .frame(maxWidth: .infinity)
+                    .padding()
+                    .background(Color.purple)
+                    .foregroundColor(.white)
+                    .cornerRadius(10)
+            } else {
+                Text("Create Event")
+                    .frame(maxWidth: .infinity)
+                    .padding()
+                    .background(Color.purple)
+                    .foregroundColor(.white)
+                    .cornerRadius(10)
+            }
+        }
+        .alert(isPresented: $showAlert) {
+            Alert(title: Text("Event Creation"), message: Text(alertMessage), dismissButton: .default(Text("OK")))
         }
     }
     
@@ -163,4 +190,107 @@ extension CreateEventView {
 
 #Preview {
     CreateEventView()
+}
+
+// MARK: - Helper for SwiftUI Image to UIImage
+extension Image {
+    func asUIImage() -> UIImage? {
+        let controller = UIHostingController(rootView: self.resizable())
+        let view = controller.view
+        let targetSize = CGSize(width: 300, height: 192)
+        view?.bounds = CGRect(origin: .zero, size: targetSize)
+        view?.backgroundColor = .clear
+        let renderer = UIGraphicsImageRenderer(size: targetSize)
+        return renderer.image { _ in
+            view?.drawHierarchy(in: view?.bounds ?? CGRect.zero, afterScreenUpdates: true)
+        }
+    }
+}
+
+// MARK: - Event Creation Logic
+extension CreateEventView {
+    func createEvent() {
+        // Validation
+        guard !eventTitle.trimmingCharacters(in: .whitespaces).isEmpty else {
+            showError("Event title is required."); return
+        }
+        guard let eventDate = date else {
+            showError("Date is required."); return
+        }
+        guard !category.isEmpty else {
+            showError("Category is required."); return
+        }
+        guard let start = startTime, let end = endTime else {
+            showError("Start and end time are required."); return
+        }
+        guard end > start else {
+            showError("End time must be after start time."); return
+        }
+        guard !location.trimmingCharacters(in: .whitespaces).isEmpty else {
+            showError("Location is required."); return
+        }
+        guard !description.trimmingCharacters(in: .whitespaces).isEmpty else {
+            showError("Description is required."); return
+        }
+        guard let maxCap = Int(maxCapacity), maxCap > 0 else {
+            showError("Max capacity must be a positive number."); return
+        }
+        guard let priceValue = Double(price), priceValue >= 0 else {
+            showError("Price must be a non-negative number."); return
+        }
+        guard let uiImage = coverUIImage else {
+            showError("Cover image is required."); return
+        }
+        isLoading = true
+        // Upload image to Firebase Storage
+        let storageRef = Storage.storage().reference().child("event_covers/")
+        let imageName = UUID().uuidString + ".jpg"
+        let imageRef = storageRef.child(imageName)
+        guard let imageData = uiImage.jpegData(compressionQuality: 0.8) else {
+            showError("Failed to process image."); isLoading = false; return
+        }
+        imageRef.putData(imageData, metadata: nil) { metadata, error in
+            if let error = error {
+                showError("Image upload failed: \(error.localizedDescription)"); isLoading = false; return
+            }
+            imageRef.downloadURL { url, error in
+                if let error = error {
+                    showError("Failed to get image URL: \(error.localizedDescription)"); isLoading = false; return
+                }
+                guard let imageUrl = url?.absoluteString else {
+                    showError("Image URL is invalid."); isLoading = false; return
+                }
+                // Save event data to Firestore
+                let db = Firestore.firestore()
+                let eventData: [String: Any] = [
+                    "title": eventTitle,
+                    "date": ISO8601DateFormatter().string(from: eventDate),
+                    "category": category,
+                    "startTime": ISO8601DateFormatter().string(from: start),
+                    "endTime": ISO8601DateFormatter().string(from: end),
+                    "location": location,
+                    "description": description,
+                    "maxCapacity": maxCap,
+                    "price": priceValue,
+                    "imageUrl": imageUrl,
+                    "attendees": 0,
+                    "createdAt": FieldValue.serverTimestamp()
+                ]
+                db.collection("events").addDocument(data: eventData) { error in
+                    isLoading = false
+                    if let error = error {
+                        showError("Failed to create event: \(error.localizedDescription)")
+                    } else {
+                        alertMessage = "Event created successfully!"
+                        showAlert = true
+                        // Optionally, reset fields here
+                    }
+                }
+            }
+        }
+    }
+    func showError(_ message: String) {
+        alertMessage = message
+        showAlert = true
+    }
 }
