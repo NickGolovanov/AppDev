@@ -40,7 +40,7 @@ struct EventsMapView: View {
 
                 // Map (increased height)
                 Map(coordinateRegion: $region, annotationItems: events) { event in
-                    MapMarker(coordinate: event.coordinate, tint: .red)
+                    MapMarker(coordinate: event.coordinate ?? region.center, tint: .red)
                 }
                 .frame(height: 420)
                 .cornerRadius(0)
