@@ -19,12 +19,15 @@ struct HomeView: View {
 
                     ScrollView(.horizontal, showsIndicators: false) {
                         HStack(spacing: 16) {
-                            trendingCard(
-                                title: "Neon Dreams", subtitle: "22:00 · Club Matrix",
-                                tags: ["House", "Hot"], imageName: "neodreams", bgColor: .purple)
-                            trendingCard(
-                                title: "Beach Blast", subtitle: "20:00 · Zandvoort",
-                                tags: ["Beach", "Chill"], imageName: "beach", bgColor: .pink)
+                            ForEach(viewModel.trendingEvents) {event in
+                                trendingCard(
+                                    title: event.title,
+                                    subtitle: event.subtitle,
+                                    tags: event.tags,
+                                    imageName: event.imageName,
+                                    bgColor: Color(event.bgColor)
+                                ) 
+                            }
                             Spacer(minLength: 0)
                         }
                         .padding(.leading, 20)
@@ -38,12 +41,14 @@ struct HomeView: View {
                         .padding(.horizontal)
 
                     VStack(spacing: 15) {
-                        eventCard(
-                            name: "Amsterdam Student Night", date: "May 5, 2025 · 21:00",
-                            dressCode: "Smart Casual", price: "€5")
-                        eventCard(
-                            name: "TU Delft Spring Party", date: "May 7, 2025 · 22:00",
-                            dressCode: "Casual", price: "€10")
+                        ForEach(viewModel.upcomingEvents) { event in 
+                            eventCard(
+                                name: event.title,
+                                date: event.subtitle,
+                                dressCode: event.tags.first ?? "",
+                                price: "€10"
+                            )
+                        }
                     }
                     .padding(.horizontal)
 
