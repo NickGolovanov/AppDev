@@ -2,6 +2,7 @@ import MapKit
 import SwiftUI
 
 struct HomeView: View {
+    @StateObject private var viewModel = HomeViewModel()
     var body: some View {
         NavigationView {
             ScrollView {
