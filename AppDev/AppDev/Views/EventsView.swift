@@ -137,6 +137,10 @@ struct EventsView: View {
                                         }
                                     }
                                     Spacer()
+                                    NavigationLink(destination: EventView(eventId: event.id)) {
+                                        Image(systemName: "arrow.right")
+                                            .foregroundColor(Color.purple)
+                                    }
                                 }
                                 .padding(12)
                                 .background(Color(.systemGray6))
@@ -193,6 +197,7 @@ struct EventsView: View {
             }
             events = documents.compactMap { doc in
                 let data = doc.data()
+                let id = doc.documentID
                 // Map Firestore data to Event model
                 guard let title = data["title"] as? String,
                       let date = data["date"] as? String,
@@ -202,9 +207,9 @@ struct EventsView: View {
                     return nil
                 }
                 // Dummy values for coordinate and distance
-                let coordinate = CLLocationCoordinate2D(latitude: 52.3676, longitude: 4.9041)
-                let distance = "-"
-                return Event(title: title, date: date, location: location, coordinate: coordinate, imageUrl: imageUrl, attendees: attendees, distance: distance)
+                let coordinate: CLLocationCoordinate2D? = CLLocationCoordinate2D(latitude: 52.3676, longitude: 4.9041)
+                let distance: String? = "-"
+                return Event(id: id, title: title, date: date, location: location, coordinate: coordinate, imageUrl: imageUrl, attendees: attendees, distance: distance)
             }
         }
     }
