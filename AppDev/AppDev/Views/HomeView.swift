@@ -20,7 +20,7 @@ struct HomeView: View {
 
                     ScrollView(.horizontal, showsIndicators: false) {
                         HStack(spacing: 16) {
-                            ForEach(viewModel.trendingEvents) {event in
+                            ForEach(viewModel.upcomingEvents) {event in
                                 trendingCard(
                                     title: event.title,
                                     subtitle: event.subtitle,
