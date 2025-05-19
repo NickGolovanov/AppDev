@@ -24,11 +24,9 @@ struct HomeView: View {
                             ForEach(viewModel.upcomingEvents) {event in
                                 trendingCard(
                                     title: event.title,
-                                    description: event.description,
-                                    date: event.date,
-                                    imageUrl: event.imageUrl,
+                                    subtitle: event.date,
                                     category: event.category,
-                                    price: event.price
+                                    imageUrl: event.imageUrl,
                                 ) 
                             }
                             Spacer(minLength: 0)
