@@ -46,8 +46,8 @@ struct HomeView: View {
                             eventCard(
                                 name: event.title,
                                 date: event.subtitle,
-                                dressCode: event.tags.first ?? "",
-                                price: "€10"
+                                category: event.category,
+                                price: "€\(event.price ?? 0)"
                             )
                         }
                     }
@@ -88,30 +88,29 @@ struct HomeView: View {
     }
 
     func trendingCard(
-        title: String, subtitle: String, tags: [String], imageName: String, bgColor: Color
+        title: String, subtitle: String, category: String, imageUrl: String
     ) -> some View {
         let cardWidth = UIScreen.main.bounds.width * 0.7
         return NavigationLink(destination: EventView()) {
             VStack(alignment: .leading, spacing: 0) {
-                Image(imageName)
-                    .resizable()
-                    .aspectRatio(contentMode: .fill)
-                    .frame(width: cardWidth, height: 80)
-                    .clipped()
-                    .cornerRadius(10, corners: [.topLeft, .topRight])
+                AsyncImage(url: URL(string: imageUrl)) { image in
+                    image.resizable()
+                } placeholder: {
+                    Color.gray
+                }
+                .aspectRatio(contentMode: .fill)
+                .frame(width: cardWidth, height: 80)
+                .clipped()
+                .cornerRadius(10, corners: [.topLeft, .topRight])
 
                 VStack(alignment: .leading, spacing: 4) {
-                    HStack {
-                        ForEach(tags, id: \.self) { tag in
-                            Text(tag)
-                                .font(.caption2)
-                                .padding(.horizontal, 6)
-                                .padding(.vertical, 2)
-                                .background(Color.white.opacity(0.2))
-                                .foregroundColor(.white)
-                                .cornerRadius(5)
-                        }
-                    }
+                    Text(category)
+                        .font(.caption2)
+                        .padding(.horizontal, 6)
+                        .padding(.vertical, 2)
+                        .background(Color.white.opacity(0.2))
+                        .foregroundColor(.white)
+                        .cornerRadius(5)
                     Text(title)
                         .font(.headline)
                         .foregroundColor(.white)
@@ -123,7 +122,7 @@ struct HomeView: View {
                 .frame(width: cardWidth, alignment: .leading)
             }
             .frame(width: cardWidth)
-            .background(bgColor)
+            .background(Color.purple)
             .cornerRadius(12)
         }
     }
