@@ -46,7 +46,8 @@ struct HomeView: View {
                             eventCard(
                                 name: event.title,
                                 date: event.date,
-                                category: event.category
+                                dressCode: event.category,
+                                price: "€\(event.price)"
                             )
                         }
                     }
