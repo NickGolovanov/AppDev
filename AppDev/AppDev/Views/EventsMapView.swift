@@ -9,6 +9,7 @@ struct EventsMapView: View {
 
     let events = [
         Event(
+            id: "1",
             title: "Summer Night Party",
             date: "Tonight, 10:00 PM",
             location: "Club Matrix, 2.3km away",
@@ -18,6 +19,7 @@ struct EventsMapView: View {
             distance: "2.3km away"
         ),
         Event(
+            id: "2",
             title: "Live Jazz Night",
             date: "Tomorrow, 8:30 PM",
             location: "Blue Note, 3.1km away",
@@ -38,7 +40,7 @@ struct EventsMapView: View {
 
                 // Map (increased height)
                 Map(coordinateRegion: $region, annotationItems: events) { event in
-                    MapMarker(coordinate: event.coordinate, tint: .red)
+                    MapMarker(coordinate: event.coordinate ?? region.center, tint: .red)
                 }
                 .frame(height: 420)
                 .cornerRadius(0)
@@ -81,7 +83,7 @@ struct EventsMapView: View {
 struct EventCard: View {
     let event: Event
     var body: some View {
-        NavigationLink(destination: EventView()) {
+        NavigationLink(destination: EventView(eventId: event.id)) {
             HStack(alignment: .top, spacing: 12) {
                 // Event image (placeholder)
                 Rectangle()
