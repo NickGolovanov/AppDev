@@ -22,15 +22,19 @@ struct EventView: View {
                     VStack(spacing: 0) {
                         ZStack(alignment: .topLeading) {
                             // Event Image
-                            AsyncImage(
-                                url: URL(string: event.imageUrl)
-                            ) { image in
-                                image
-                                    .resizable()
-                                    .aspectRatio(contentMode: .fill)
-                                    .frame(height: 200)
-                                    .clipped()
-                            } placeholder: {
+                            if let imageUrl = URL(string: event.imageUrl) {
+                                AsyncImage(url: imageUrl) { image in
+                                    image
+                                        .resizable()
+                                        .aspectRatio(contentMode: .fill)
+                                        .frame(height: 200)
+                                        .clipped()
+                                } placeholder: {
+                                    Rectangle()
+                                        .fill(Color(.systemGray5))
+                                        .frame(height: 200)
+                                }
+                            } else {
                                 Rectangle()
                                     .fill(Color(.systemGray5))
                                     .frame(height: 200)

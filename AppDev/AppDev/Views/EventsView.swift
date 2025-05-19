@@ -60,13 +60,20 @@ struct EventsView: View {
                                 .fontWeight(.semibold)
                                 .padding(.horizontal)
                             ZStack(alignment: .bottomLeading) {
-                                AsyncImage(url: URL(string: firstEvent.imageUrl)) { image in
-                                    image
-                                        .resizable()
-                                        .aspectRatio(contentMode: .fill)
-                                        .frame(height: 160)
-                                        .cornerRadius(16)
-                                } placeholder: {
+                                if let imageUrl = URL(string: firstEvent.imageUrl) {
+                                    AsyncImage(url: imageUrl) { image in
+                                        image
+                                            .resizable()
+                                            .aspectRatio(contentMode: .fill)
+                                            .frame(height: 160)
+                                            .cornerRadius(16)
+                                    } placeholder: {
+                                        Rectangle()
+                                            .fill(Color(.systemGray5))
+                                            .frame(height: 160)
+                                            .cornerRadius(16)
+                                    }
+                                } else {
                                     Rectangle()
                                         .fill(Color(.systemGray5))
                                         .frame(height: 160)
@@ -107,13 +114,20 @@ struct EventsView: View {
                         } else {
                             ForEach(events) { event in
                                 HStack(spacing: 12) {
-                                    AsyncImage(url: URL(string: event.imageUrl)) { image in
-                                        image
-                                            .resizable()
-                                            .aspectRatio(contentMode: .fill)
-                                            .frame(width: 56, height: 56)
-                                            .cornerRadius(12)
-                                    } placeholder: {
+                                    if let imageUrl = URL(string: event.imageUrl) {
+                                        AsyncImage(url: imageUrl) { image in
+                                            image
+                                                .resizable()
+                                                .aspectRatio(contentMode: .fill)
+                                                .frame(width: 56, height: 56)
+                                                .cornerRadius(12)
+                                        } placeholder: {
+                                            Rectangle()
+                                                .fill(Color(.systemGray5))
+                                                .frame(width: 56, height: 56)
+                                                .cornerRadius(12)
+                                        }
+                                    } else {
                                         Rectangle()
                                             .fill(Color(.systemGray5))
                                             .frame(width: 56, height: 56)
