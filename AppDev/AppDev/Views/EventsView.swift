@@ -280,12 +280,26 @@ struct EventsView: View {
                       let location = data["location"] as? String,
                       let imageUrl = data["imageUrl"] as? String,
                       let attendees = data["attendees"] as? Int else {
-                    return nil
+                    // Instead of returning nil, return a default Event with dummy category and price
+                    return Event(
+                        id: id,
+                        title: title ?? "Untitled",
+                        date: date ?? "",
+                        location: location ?? "",
+                        coordinate: CLLocationCoordinate2D(latitude: 52.3676, longitude: 4.9041),
+                        imageUrl: imageUrl ?? "",
+                        attendees: attendees ?? 0,
+                        distance: "-",
+                        category: data["category"] as? String ?? "Other",
+                        price: data["price"] as? Double ?? 0.0
+                    )
                 }
                 // Dummy values for coordinate and distance
                 let coordinate: CLLocationCoordinate2D? = CLLocationCoordinate2D(latitude: 52.3676, longitude: 4.9041)
                 let distance: String? = "-"
-                return Event(id: id, title: title, date: date, location: location, coordinate: coordinate, imageUrl: imageUrl, attendees: attendees, distance: distance)
+                let category = data["category"] as? String ?? "Other"
+                let price = data["price"] as? Double ?? 0.0
+                return Event(id: id, title: title, date: date, location: location, coordinate: coordinate, imageUrl: imageUrl, attendees: attendees, distance: distance, category: category, price: price)
             }
         }
     }
