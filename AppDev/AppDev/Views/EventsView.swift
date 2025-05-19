@@ -62,12 +62,12 @@ struct EventsView: View {
                             ZStack(alignment: .bottomLeading) {
                                 if let imageUrl = URL(string: firstEvent.imageUrl) {
                                     AsyncImage(url: imageUrl) { image in
-                                        image
-                                            .resizable()
-                                            .aspectRatio(contentMode: .fill)
+                                    image
+                                        .resizable()
+                                        .aspectRatio(contentMode: .fill)
                                             .frame(height: 200)
-                                            .cornerRadius(16)
-                                    } placeholder: {
+                                        .cornerRadius(16)
+                                } placeholder: {
                                         Rectangle()
                                             .fill(
                                                 LinearGradient(
@@ -113,7 +113,7 @@ struct EventsView: View {
                                             .foregroundColor(.white.opacity(0.9))
                                         Text(firstEvent.location)
                                             .foregroundColor(.white.opacity(0.9))
-                                            .font(.subheadline)
+                                        .font(.subheadline)
                                             .lineLimit(1)
                                     }
                                 }
@@ -140,12 +140,12 @@ struct EventsView: View {
                                 HStack(spacing: 16) {
                                     if let imageUrl = URL(string: event.imageUrl) {
                                         AsyncImage(url: imageUrl) { image in
-                                            image
-                                                .resizable()
-                                                .aspectRatio(contentMode: .fill)
+                                        image
+                                            .resizable()
+                                            .aspectRatio(contentMode: .fill)
                                                 .frame(width: 80, height: 80)
-                                                .cornerRadius(12)
-                                        } placeholder: {
+                                            .cornerRadius(12)
+                                    } placeholder: {
                                             Rectangle()
                                                 .fill(
                                                     LinearGradient(
@@ -191,8 +191,8 @@ struct EventsView: View {
                                                 .foregroundColor(.purple)
                                                 .font(.caption)
                                             Text(event.location)
-                                                .font(.subheadline)
-                                                .foregroundColor(.gray)
+                                            .font(.subheadline)
+                                            .foregroundColor(.gray)
                                                 .lineLimit(1)
                                         }
                                         
@@ -280,19 +280,10 @@ struct EventsView: View {
                       let location = data["location"] as? String,
                       let imageUrl = data["imageUrl"] as? String,
                       let attendees = data["attendees"] as? Int else {
-                    // Instead of returning nil, return a default Event with dummy category and price
-                    return Event(
-                        id: id,
-                        title: title ?? "Untitled",
-                        date: date ?? "",
-                        location: location ?? "",
-                        coordinate: CLLocationCoordinate2D(latitude: 52.3676, longitude: 4.9041),
-                        imageUrl: imageUrl ?? "",
-                        attendees: attendees ?? 0,
-                        distance: "-",
-                        category: data["category"] as? String ?? "Other",
-                        price: data["price"] as? Double ?? 0.0
-                    )
+                    // Instead of returning nil, return a default Event with fallback values
+                    let coordinate: CLLocationCoordinate2D? = CLLocationCoordinate2D(latitude: 52.3676, longitude: 4.9041)
+                    let distance: String? = "-"
+                    return Event(id: id, title: "Untitled", date: "", location: "", coordinate: coordinate, imageUrl: "", attendees: 0, distance: distance, category: "Other", price: 0.0)
                 }
                 // Dummy values for coordinate and distance
                 let coordinate: CLLocationCoordinate2D? = CLLocationCoordinate2D(latitude: 52.3676, longitude: 4.9041)

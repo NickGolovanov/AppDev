@@ -269,12 +269,12 @@ extension CreateEventView {
                 return
             }
             
-            imageRef.downloadURL { url, error in
-                if let error = error {
+                imageRef.downloadURL { url, error in
+                    if let error = error {
                     showError("Failed to get image URL: \(error.localizedDescription)")
                     isLoading = false
                     return
-                }
+                    }
                 
                 let imageUrl = url?.absoluteString ?? "https://firebasestorage.googleapis.com/v0/b/your-app.appspot.com/o/default_event_image.jpg"
                 self.createEventInFirestore(imageUrl: imageUrl)
@@ -283,29 +283,29 @@ extension CreateEventView {
     }
     
     private func createEventInFirestore(imageUrl: String) {
-        let db = Firestore.firestore()
-        let eventData: [String: Any] = [
-            "title": eventTitle,
+                    let db = Firestore.firestore()
+                    let eventData: [String: Any] = [
+                        "title": eventTitle,
             "date": ISO8601DateFormatter().string(from: date!),
-            "category": category,
+                        "category": category,
             "startTime": ISO8601DateFormatter().string(from: startTime!),
             "endTime": ISO8601DateFormatter().string(from: endTime!),
-            "location": location,
-            "description": description,
+                        "location": location,
+                        "description": description,
             "maxCapacity": Int(maxCapacity)!,
             "price": Double(price)!,
-            "imageUrl": imageUrl,
-            "attendees": 0,
-            "createdAt": FieldValue.serverTimestamp()
-        ]
+                        "imageUrl": imageUrl,
+                        "attendees": 0,
+                        "createdAt": FieldValue.serverTimestamp()
+                    ]
         
-        db.collection("events").addDocument(data: eventData) { error in
-            isLoading = false
-            if let error = error {
-                showError("Failed to create event: \(error.localizedDescription)")
-            } else {
-                alertMessage = "Event created successfully!"
-                showAlert = true
+                    db.collection("events").addDocument(data: eventData) { error in
+                        isLoading = false
+                        if let error = error {
+                            showError("Failed to create event: \(error.localizedDescription)")
+                        } else {
+                            alertMessage = "Event created successfully!"
+                            showAlert = true
                 // Reset fields here if needed
             }
         }
