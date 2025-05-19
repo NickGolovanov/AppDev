@@ -82,7 +82,7 @@ struct HomeView: View {
                 .padding(.top)
             }
             .onAppear {
-                viewModel.fetchedEvents()
+                viewModel.fetchEvents()
             }
         }
     }
