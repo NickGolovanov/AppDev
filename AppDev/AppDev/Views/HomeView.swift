@@ -45,9 +45,8 @@ struct HomeView: View {
                         ForEach(viewModel.upcomingEvents) { event in 
                             eventCard(
                                 name: event.title,
-                                date: event.subtitle,
-                                category: event.category,
-                                price: "€\(event.price ?? 0)"
+                                date: event.date,
+                                category: event.category
                             )
                         }
                     }
