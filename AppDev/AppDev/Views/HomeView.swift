@@ -1,78 +1,7 @@
 import MapKit
 import SwiftUI
 import FirebaseFirestore
-
-class HomeViewModel: ObservableObject {
-    @Published var upcomingEvents: [Event] = []
-    @Published var isLoading: Bool = false
-    @Published var errorMessage: String? = nil
-    
-    func fetchEvents() {
-        isLoading = true
-        errorMessage = nil
-        
-        let db = Firestore.firestore()
-        db.collection("events")
-            .order(by: "createdAt", descending: true)
-            .limit(to: 5) // Limit to 5 events for the home page
-            .getDocuments { [weak self] snapshot, error in
-                DispatchQueue.main.async {
-                    self?.isLoading = false
-                    
-                    if let error = error {
-                        self?.errorMessage = "Failed to load events: \(error.localizedDescription)"
-                        return
-                    }
-                    
-                    guard let documents = snapshot?.documents else {
-                        self?.errorMessage = "No events found."
-                        return
-                    }
-                    
-                    self?.upcomingEvents = documents.compactMap { doc in
-                        let data = doc.data()
-                        let id = doc.documentID
-                        
-                        guard let title = data["title"] as? String,
-                              let date = data["date"] as? String,
-                              let location = data["location"] as? String,
-                              let imageUrl = data["imageUrl"] as? String,
-                              let attendees = data["attendees"] as? Int,
-                              let category = data["category"] as? String,
-                              let price = data["price"] as? Double else {
-                            return nil
-                        }
-                        
-                        return Event(
-                            id: id,
-                            title: title,
-                            date: date,
-                            location: location,
-                            coordinate: nil,
-                            imageUrl: imageUrl,
-                            attendees: attendees,
-                            distance: nil,
-                            category: category,
-                            price: price
-                        )
-                    }
-                }
-            }
-    }
-}
-
-struct Event: Identifiable {
-    let id: String
-    let title: String
-    let date: String
-    let location: String
-    let coordinate: CLLocationCoordinate2D?
-    let imageUrl: String
-    let attendees: Int
-    let distance: String?
-    let category: String
-    let price: Double
-}
+// import AppDev.Views.HomeViewModel (if needed, but likely not)
 
 struct HomeView: View {
     @StateObject private var viewModel = HomeViewModel()

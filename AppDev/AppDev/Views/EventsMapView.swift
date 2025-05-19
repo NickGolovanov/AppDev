@@ -16,7 +16,9 @@ struct EventsMapView: View {
             coordinate: CLLocationCoordinate2D(latitude: 52.3676, longitude: 4.9041),
             imageUrl: "party1",
             attendees: 124,
-            distance: "2.3km away"
+            distance: "2.3km away",
+            category: "House Party",
+            price: 10.0
         ),
         Event(
             id: "2",
@@ -26,7 +28,9 @@ struct EventsMapView: View {
             coordinate: CLLocationCoordinate2D(latitude: 52.3667, longitude: 4.8945),
             imageUrl: "party2",
             attendees: 124,
-            distance: "3.1km away"
+            distance: "3.1km away",
+            category: "Concert",
+            price: 15.0
         ),
     ]
 

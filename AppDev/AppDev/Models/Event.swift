@@ -17,4 +17,6 @@ struct Event: Identifiable {
     let imageUrl: String
     let attendees: Int
     let distance: String?
+    let category: String
+    let price: Double
 }
