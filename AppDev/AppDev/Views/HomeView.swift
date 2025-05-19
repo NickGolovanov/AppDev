@@ -1,14 +1,14 @@
 import MapKit
 import SwiftUI
-import Foundation
+import FirebaseFirestore
 
 struct HomeView: View {
     @StateObject private var viewModel = HomeViewModel()
+    
     var body: some View {
         NavigationView {
             ScrollView {
                 VStack(alignment: .leading, spacing: 20) {
-
                     // Header
                     HeaderView()
                         .padding(.horizontal)
@@ -19,39 +19,50 @@ struct HomeView: View {
                         .font(.headline)
                         .padding(.horizontal)
 
-                    ScrollView(.horizontal, showsIndicators: false) {
-                        HStack(spacing: 16) {
-                            ForEach(viewModel.upcomingEvents) {event in
-                                trendingCard(
-                                    title: event.title,
-                                    subtitle: event.date,
-                                    category: event.category,
-                                    imageUrl: event.imageUrl,
-                                ) 
+                    if viewModel.isLoading {
+                        ProgressView()
+                            .frame(maxWidth: .infinity, alignment: .center)
+                            .frame(height: 130)
+                    } else if let error = viewModel.errorMessage {
+                        Text(error)
+                            .foregroundColor(.red)
+                            .frame(maxWidth: .infinity, alignment: .center)
+                            .frame(height: 130)
+                    } else {
+                        ScrollView(.horizontal, showsIndicators: false) {
+                            HStack(spacing: 16) {
+                                ForEach(viewModel.upcomingEvents) { event in
+                                    trendingCard(event: event)
+                                }
+                                Spacer(minLength: 0)
                             }
-                            Spacer(minLength: 0)
+                            .padding(.leading, 20)
                         }
-                        .padding(.leading, 20)
+                        .frame(height: 130)
                     }
-                    .frame(height: 130)
-                    Spacer(minLength: 20)  //space between the scroll view and the upcoming events
+                    
+                    Spacer(minLength: 20)
 
                     // Upcoming Events
                     Text("🗓️ Upcoming Events")
                         .font(.headline)
                         .padding(.horizontal)
 
-                    VStack(spacing: 15) {
-                        ForEach(viewModel.upcomingEvents) { event in 
-                            eventCard(
-                                name: event.title,
-                                date: event.date,
-                                dressCode: event.category,
-                                price: "€\(event.price)"
-                            )
+                    if viewModel.isLoading {
+                        ProgressView()
+                            .frame(maxWidth: .infinity, alignment: .center)
+                    } else if let error = viewModel.errorMessage {
+                        Text(error)
+                            .foregroundColor(.red)
+                            .frame(maxWidth: .infinity, alignment: .center)
+                    } else {
+                        VStack(spacing: 15) {
+                            ForEach(viewModel.upcomingEvents) { event in 
+                                eventCard(event: event)
+                            }
                         }
+                        .padding(.horizontal)
                     }
-                    .padding(.horizontal)
 
                     // Map
                     ZStack(alignment: .bottomTrailing) {
@@ -87,34 +98,57 @@ struct HomeView: View {
         }
     }
 
-    func trendingCard(
-        title: String, subtitle: String, category: String, imageUrl: String
-    ) -> some View {
+    func trendingCard(event: Event) -> some View {
         let cardWidth = UIScreen.main.bounds.width * 0.7
-        return NavigationLink(destination: EventView()) {
+        return NavigationLink(destination: EventView(eventId: event.id)) {
             VStack(alignment: .leading, spacing: 0) {
-                AsyncImage(url: URL(string: imageUrl)) { image in
-                    image.resizable()
-                } placeholder: {
-                    Color.gray
+                if let imageUrl = URL(string: event.imageUrl) {
+                    AsyncImage(url: imageUrl) { image in
+                        image
+                            .resizable()
+                            .aspectRatio(contentMode: .fill)
+                            .frame(width: cardWidth, height: 80)
+                            .clipped()
+                            .cornerRadius(10, corners: [.topLeft, .topRight])
+                    } placeholder: {
+                        Rectangle()
+                            .fill(
+                                LinearGradient(
+                                    gradient: Gradient(colors: [Color.purple.opacity(0.7), Color.blue.opacity(0.5)]),
+                                    startPoint: .topLeading,
+                                    endPoint: .bottomTrailing
+                                )
+                            )
+                            .frame(width: cardWidth, height: 80)
+                            .cornerRadius(10, corners: [.topLeft, .topRight])
+                    }
+                } else {
+                    Rectangle()
+                        .fill(
+                            LinearGradient(
+                                gradient: Gradient(colors: [Color.purple.opacity(0.7), Color.blue.opacity(0.5)]),
+                                startPoint: .topLeading,
+                                endPoint: .bottomTrailing
+                            )
+                        )
+                        .frame(width: cardWidth, height: 80)
+                        .cornerRadius(10, corners: [.topLeft, .topRight])
                 }
-                .aspectRatio(contentMode: .fill)
-                .frame(width: cardWidth, height: 80)
-                .clipped()
-                .cornerRadius(10, corners: [.topLeft, .topRight])
 
                 VStack(alignment: .leading, spacing: 4) {
-                    Text(category)
-                        .font(.caption2)
-                        .padding(.horizontal, 6)
-                        .padding(.vertical, 2)
-                        .background(Color.white.opacity(0.2))
-                        .foregroundColor(.white)
-                        .cornerRadius(5)
-                    Text(title)
+                    HStack {
+                        Text(event.category)
+                            .font(.caption2)
+                            .padding(.horizontal, 6)
+                            .padding(.vertical, 2)
+                            .background(Color.white.opacity(0.2))
+                            .foregroundColor(.white)
+                            .cornerRadius(5)
+                    }
+                    Text(event.title)
                         .font(.headline)
                         .foregroundColor(.white)
-                    Text(subtitle)
+                    Text(event.date)
                         .font(.caption)
                         .foregroundColor(.white.opacity(0.8))
                 }
@@ -122,27 +156,40 @@ struct HomeView: View {
                 .frame(width: cardWidth, alignment: .leading)
             }
             .frame(width: cardWidth)
-            .background(Color.purple)
+            .background(
+                LinearGradient(
+                    gradient: Gradient(colors: [Color.purple.opacity(0.8), Color.blue.opacity(0.8)]),
+                    startPoint: .topLeading,
+                    endPoint: .bottomTrailing
+                )
+            )
             .cornerRadius(12)
         }
     }
 
-    func eventCard(name: String, date: String, dressCode: String, price: String) -> some View {
+    func eventCard(event: Event) -> some View {
         return HStack {
             VStack(alignment: .leading) {
-                Text(name).font(.headline)
-                Text(date).font(.caption).foregroundColor(.gray)
+                Text(event.title)
+                    .font(.headline)
+                Text(event.date)
+                    .font(.caption)
+                    .foregroundColor(.gray)
                 HStack {
-                    Text(dressCode).font(.caption2).padding(4).background(
-                        Color.purple.opacity(0.2)
-                    )
-                    .cornerRadius(4)
-                    Text(price).font(.caption2).padding(4).background(Color.green.opacity(0.2))
+                    Text(event.category)
+                        .font(.caption2)
+                        .padding(4)
+                        .background(Color.purple.opacity(0.2))
+                        .cornerRadius(4)
+                    Text("€\(String(format: "%.2f", event.price))")
+                        .font(.caption2)
+                        .padding(4)
+                        .background(Color.green.opacity(0.2))
                         .cornerRadius(4)
                 }
             }
             Spacer()
-            NavigationLink(destination: EventView()) {
+            NavigationLink(destination: EventView(eventId: event.id)) {
                 Text("Join")
                     .padding(.horizontal, 12)
                     .padding(.vertical, 5)
