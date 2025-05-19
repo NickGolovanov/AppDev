@@ -238,64 +238,79 @@ extension CreateEventView {
         guard let priceValue = Double(price), priceValue >= 0 else {
             showError("Price must be a non-negative number."); return
         }
-        guard let uiImage = coverUIImage else {
-            showError("Cover image is required."); return
-        }
+        
         isLoading = true
-        // Upload image to Firebase Storage
+        
+        // If there's an image, upload it first
+        if let uiImage = coverUIImage {
+            uploadImageAndCreateEvent(uiImage: uiImage)
+        } else {
+            // Use a default image URL if no image is provided
+            let defaultImageUrl = "https://firebasestorage.googleapis.com/v0/b/your-app.appspot.com/o/default_event_image.jpg"
+            createEventInFirestore(imageUrl: defaultImageUrl)
+        }
+    }
+    
+    private func uploadImageAndCreateEvent(uiImage: UIImage) {
         let storageRef = Storage.storage().reference().child("event_covers/")
         let imageName = UUID().uuidString + ".jpg"
         let imageRef = storageRef.child(imageName)
+        
         guard let imageData = uiImage.jpegData(compressionQuality: 0.8) else {
-            showError("Failed to process image data. Please try a different image."); isLoading = false; return
+            showError("Failed to process image data. Please try a different image.")
+            isLoading = false
+            return
         }
+        
         imageRef.putData(imageData, metadata: nil) { metadata, error in
             if let error = error {
-                showError("Image upload failed: \(error.localizedDescription)"); isLoading = false; return
+                showError("Image upload failed: \(error.localizedDescription)")
+                isLoading = false
+                return
             }
-            // Double-check upload success
-            imageRef.getMetadata { meta, metaError in
-                if let metaError = metaError {
-                    showError("Image upload metadata error: \(metaError.localizedDescription)"); isLoading = false; return
+            
+            imageRef.downloadURL { url, error in
+                if let error = error {
+                    showError("Failed to get image URL: \(error.localizedDescription)")
+                    isLoading = false
+                    return
                 }
-                // Now get the download URL
-                imageRef.downloadURL { url, error in
-                    if let error = error {
-                        showError("Failed to get image URL: \(error.localizedDescription)"); isLoading = false; return
-                    }
-                    guard let imageUrl = url?.absoluteString else {
-                        showError("Image URL is invalid."); isLoading = false; return
-                    }
-                    // Save event data to Firestore
-                    let db = Firestore.firestore()
-                    let eventData: [String: Any] = [
-                        "title": eventTitle,
-                        "date": ISO8601DateFormatter().string(from: eventDate),
-                        "category": category,
-                        "startTime": ISO8601DateFormatter().string(from: start),
-                        "endTime": ISO8601DateFormatter().string(from: end),
-                        "location": location,
-                        "description": description,
-                        "maxCapacity": maxCap,
-                        "price": priceValue,
-                        "imageUrl": imageUrl,
-                        "attendees": 0,
-                        "createdAt": FieldValue.serverTimestamp()
-                    ]
-                    db.collection("events").addDocument(data: eventData) { error in
-                        isLoading = false
-                        if let error = error {
-                            showError("Failed to create event: \(error.localizedDescription)")
-                        } else {
-                            alertMessage = "Event created successfully!"
-                            showAlert = true
-                            // Optionally, reset fields here
-                        }
-                    }
-                }
+                
+                let imageUrl = url?.absoluteString ?? "https://firebasestorage.googleapis.com/v0/b/your-app.appspot.com/o/default_event_image.jpg"
+                self.createEventInFirestore(imageUrl: imageUrl)
             }
         }
     }
+    
+    private func createEventInFirestore(imageUrl: String) {
+        let db = Firestore.firestore()
+        let eventData: [String: Any] = [
+            "title": eventTitle,
+            "date": ISO8601DateFormatter().string(from: date!),
+            "category": category,
+            "startTime": ISO8601DateFormatter().string(from: startTime!),
+            "endTime": ISO8601DateFormatter().string(from: endTime!),
+            "location": location,
+            "description": description,
+            "maxCapacity": Int(maxCapacity)!,
+            "price": Double(price)!,
+            "imageUrl": imageUrl,
+            "attendees": 0,
+            "createdAt": FieldValue.serverTimestamp()
+        ]
+        
+        db.collection("events").addDocument(data: eventData) { error in
+            isLoading = false
+            if let error = error {
+                showError("Failed to create event: \(error.localizedDescription)")
+            } else {
+                alertMessage = "Event created successfully!"
+                showAlert = true
+                // Reset fields here if needed
+            }
+        }
+    }
+    
     func showError(_ message: String) {
         alertMessage = message
         showAlert = true
