@@ -24,12 +24,12 @@ struct EventView: View {
                             // Event Image
                             if let imageUrl = URL(string: event.imageUrl) {
                                 AsyncImage(url: imageUrl) { image in
-                                    image
-                                        .resizable()
-                                        .aspectRatio(contentMode: .fill)
+                                image
+                                    .resizable()
+                                    .aspectRatio(contentMode: .fill)
                                         .frame(height: 240)
-                                        .clipped()
-                                } placeholder: {
+                                    .clipped()
+                            } placeholder: {
                                     Rectangle()
                                         .fill(
                                             LinearGradient(
@@ -90,17 +90,17 @@ struct EventView: View {
                                         .foregroundColor(.purple)
                                         .font(.system(size: 16))
                                     Text("\(event.date) · \(event.startTime)")
-                                        .font(.subheadline)
-                                        .foregroundColor(.gray)
-                                }
+                                    .font(.subheadline)
+                                    .foregroundColor(.gray)
+                            }
                                 
                                 HStack(spacing: 12) {
                                     Image(systemName: "mappin.circle.fill")
-                                        .foregroundColor(.purple)
+                                    .foregroundColor(.purple)
                                         .font(.system(size: 16))
-                                    Text(event.location)
-                                        .font(.subheadline)
-                                        .foregroundColor(.gray)
+                                Text(event.location)
+                                    .font(.subheadline)
+                                    .foregroundColor(.gray)
                                 }
                             }
 
@@ -124,9 +124,9 @@ struct EventView: View {
                                     Image(systemName: "person.2.fill")
                                         .foregroundColor(.purple)
                                         .font(.system(size: 16))
-                                    Text("\(event.attendees) going")
-                                        .font(.subheadline)
-                                        .foregroundColor(.purple)
+                                Text("\(event.attendees) going")
+                                    .font(.subheadline)
+                                    .foregroundColor(.purple)
                                 }
                             }
 
