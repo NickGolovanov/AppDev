@@ -27,32 +27,46 @@ struct EventView: View {
                                     image
                                         .resizable()
                                         .aspectRatio(contentMode: .fill)
-                                        .frame(height: 200)
+                                        .frame(height: 240)
                                         .clipped()
                                 } placeholder: {
                                     Rectangle()
-                                        .fill(Color(.systemGray5))
-                                        .frame(height: 200)
+                                        .fill(
+                                            LinearGradient(
+                                                gradient: Gradient(colors: [Color.purple.opacity(0.7), Color.blue.opacity(0.5)]),
+                                                startPoint: .topLeading,
+                                                endPoint: .bottomTrailing
+                                            )
+                                        )
+                                        .frame(height: 240)
                                 }
                             } else {
                                 Rectangle()
-                                    .fill(Color(.systemGray5))
-                                    .frame(height: 200)
+                                    .fill(
+                                        LinearGradient(
+                                            gradient: Gradient(colors: [Color.purple.opacity(0.7), Color.blue.opacity(0.5)]),
+                                            startPoint: .topLeading,
+                                            endPoint: .bottomTrailing
+                                        )
+                                    )
+                                    .frame(height: 240)
                             }
+                            
+                            // Back and Favorite buttons
                             HStack {
                                 Button(action: {}) {
                                     Image(systemName: "chevron.left")
-                                        .foregroundColor(.black)
-                                        .padding(10)
-                                        .background(Color.white.opacity(0.8))
+                                        .foregroundColor(.white)
+                                        .padding(12)
+                                        .background(Color.black.opacity(0.3))
                                         .clipShape(Circle())
                                 }
                                 Spacer()
                                 Button(action: {}) {
                                     Image(systemName: "heart")
-                                        .foregroundColor(.black)
-                                        .padding(10)
-                                        .background(Color.white.opacity(0.8))
+                                        .foregroundColor(.white)
+                                        .padding(12)
+                                        .background(Color.black.opacity(0.3))
                                         .clipShape(Circle())
                                 }
                             }
@@ -61,61 +75,74 @@ struct EventView: View {
                         }
 
                         // Event Card
-                        VStack(alignment: .leading, spacing: 20) {
+                        VStack(alignment: .leading, spacing: 24) {
                             // Title
                             Text(event.title)
-                                .font(.title2)
+                                .font(.title)
                                 .fontWeight(.bold)
                                 .foregroundColor(.black)
                                 .padding(.top, 8)
 
                             // Date, Time, Location
-                            HStack(spacing: 16) {
-                                Label("\(event.date) · \(event.startTime)", systemImage: "calendar")
-                                    .font(.subheadline)
-                                    .foregroundColor(.gray)
-                            }
-                            HStack(spacing: 8) {
-                                Image(systemName: "mappin.and.ellipse")
-                                    .foregroundColor(.purple)
-                                Text(event.location)
-                                    .font(.subheadline)
-                                    .foregroundColor(.gray)
+                            VStack(spacing: 12) {
+                                HStack(spacing: 12) {
+                                    Image(systemName: "calendar")
+                                        .foregroundColor(.purple)
+                                        .font(.system(size: 16))
+                                    Text("\(event.date) · \(event.startTime)")
+                                        .font(.subheadline)
+                                        .foregroundColor(.gray)
+                                }
+                                
+                                HStack(spacing: 12) {
+                                    Image(systemName: "mappin.circle.fill")
+                                        .foregroundColor(.purple)
+                                        .font(.system(size: 16))
+                                    Text(event.location)
+                                        .font(.subheadline)
+                                        .foregroundColor(.gray)
+                                }
                             }
 
-                            // Organizer (placeholder, as not in model)
                             // About Event
-                            VStack(alignment: .leading, spacing: 8) {
+                            VStack(alignment: .leading, spacing: 12) {
                                 Text("About Event")
                                     .font(.headline)
                                     .fontWeight(.semibold)
                                 Text(event.description)
                                     .font(.subheadline)
                                     .foregroundColor(.gray)
+                                    .lineSpacing(4)
                             }
 
-                            // People Attending (placeholder, as not in model)
-                            VStack(alignment: .leading, spacing: 8) {
+                            // People Attending
+                            VStack(alignment: .leading, spacing: 12) {
                                 Text("People Attending")
                                     .font(.headline)
                                     .fontWeight(.semibold)
-                                Text("\(event.attendees) going")
-                                    .font(.subheadline)
-                                    .foregroundColor(.purple)
+                                HStack(spacing: 8) {
+                                    Image(systemName: "person.2.fill")
+                                        .foregroundColor(.purple)
+                                        .font(.system(size: 16))
+                                    Text("\(event.attendees) going")
+                                        .font(.subheadline)
+                                        .foregroundColor(.purple)
+                                }
                             }
 
                             // Price and Tickets
                             HStack {
-                                VStack(alignment: .leading) {
+                                VStack(alignment: .leading, spacing: 4) {
                                     Text("Price per ticket")
                                         .font(.caption)
                                         .foregroundColor(.gray)
                                     Text("€\(String(format: "%.2f", event.price))")
                                         .font(.title3)
                                         .fontWeight(.bold)
+                                        .foregroundColor(.purple)
                                 }
                                 Spacer()
-                                VStack(alignment: .trailing) {
+                                VStack(alignment: .trailing, spacing: 4) {
                                     Text("Available tickets")
                                         .font(.caption)
                                         .foregroundColor(.gray)
@@ -125,7 +152,7 @@ struct EventView: View {
                                         .foregroundColor(.blue)
                                 }
                             }
-                            .padding(12)
+                            .padding(16)
                             .background(Color(.systemGray6))
                             .cornerRadius(12)
 
@@ -136,10 +163,17 @@ struct EventView: View {
                                     .foregroundColor(.white)
                                     .frame(maxWidth: .infinity)
                                     .padding()
-                                    .background(Color.blue)
-                                    .cornerRadius(10)
+                                    .background(
+                                        LinearGradient(
+                                            gradient: Gradient(colors: [Color.purple, Color.blue]),
+                                            startPoint: .leading,
+                                            endPoint: .trailing
+                                        )
+                                    )
+                                    .cornerRadius(12)
                             }
-                            .padding(.top, 4)
+                            .padding(.top, 8)
+                            .shadow(color: Color.purple.opacity(0.3), radius: 8, x: 0, y: 4)
                         }
                         .padding(20)
                         .background(Color.white)
