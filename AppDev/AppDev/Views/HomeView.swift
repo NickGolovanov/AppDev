@@ -89,9 +89,9 @@ struct HomeView: View {
 
     func trendingCard(
         title: String, subtitle: String, tags: [String], imageName: String, bgColor: Color
-    ) -> some View {
+    , eventId: String = "dummyId") -> some View {
         let cardWidth = UIScreen.main.bounds.width * 0.7
-        return NavigationLink(destination: EventView()) {
+        return NavigationLink(destination: EventView(eventId: eventId)) {
             VStack(alignment: .leading, spacing: 0) {
                 Image(imageName)
                     .resizable()
@@ -128,7 +128,7 @@ struct HomeView: View {
         }
     }
 
-    func eventCard(name: String, date: String, dressCode: String, price: String) -> some View {
+    func eventCard(name: String, date: String, dressCode: String, price: String, eventId: String = "dummyId") -> some View {
         return HStack {
             VStack(alignment: .leading) {
                 Text(name).font(.headline)
@@ -143,7 +143,7 @@ struct HomeView: View {
                 }
             }
             Spacer()
-            NavigationLink(destination: EventView()) {
+            NavigationLink(destination: EventView(eventId: eventId)) {
                 Text("Join")
                     .padding(.horizontal, 12)
                     .padding(.vertical, 5)
