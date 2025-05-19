@@ -65,38 +65,62 @@ struct EventsView: View {
                                         image
                                             .resizable()
                                             .aspectRatio(contentMode: .fill)
-                                            .frame(height: 160)
+                                            .frame(height: 200)
                                             .cornerRadius(16)
                                     } placeholder: {
                                         Rectangle()
-                                            .fill(Color(.systemGray5))
-                                            .frame(height: 160)
+                                            .fill(
+                                                LinearGradient(
+                                                    gradient: Gradient(colors: [Color.purple.opacity(0.7), Color.blue.opacity(0.5)]),
+                                                    startPoint: .topLeading,
+                                                    endPoint: .bottomTrailing
+                                                )
+                                            )
+                                            .frame(height: 200)
                                             .cornerRadius(16)
                                     }
                                 } else {
                                     Rectangle()
-                                        .fill(Color(.systemGray5))
-                                        .frame(height: 160)
+                                        .fill(
+                                            LinearGradient(
+                                                gradient: Gradient(colors: [Color.purple.opacity(0.7), Color.blue.opacity(0.5)]),
+                                                startPoint: .topLeading,
+                                                endPoint: .bottomTrailing
+                                            )
+                                        )
+                                        .frame(height: 200)
                                         .cornerRadius(16)
                                 }
                                 LinearGradient(
                                     gradient: Gradient(colors: [Color.black.opacity(0.7), .clear]),
-                                    startPoint: .bottom, endPoint: .top
+                                    startPoint: .bottom,
+                                    endPoint: .top
                                 )
                                 .cornerRadius(16)
-                                .frame(height: 80)
-                                VStack(alignment: .leading, spacing: 2) {
+                                .frame(height: 200)
+                                
+                                VStack(alignment: .leading, spacing: 4) {
                                     Text(firstEvent.title)
-                                        .font(.headline)
+                                        .font(.title3)
                                         .fontWeight(.bold)
                                         .foregroundColor(.white)
-                                    Text("\(firstEvent.date) • \(firstEvent.location)")
-                                        .foregroundColor(.white)
-                                        .font(.subheadline)
+                                        .lineLimit(2)
+                                    HStack {
+                                        Text(firstEvent.date)
+                                            .foregroundColor(.white.opacity(0.9))
+                                            .font(.subheadline)
+                                        Text("•")
+                                            .foregroundColor(.white.opacity(0.9))
+                                        Text(firstEvent.location)
+                                            .foregroundColor(.white.opacity(0.9))
+                                            .font(.subheadline)
+                                            .lineLimit(1)
+                                    }
                                 }
-                                .padding(12)
+                                .padding(16)
                             }
                             .padding(.horizontal)
+                            .shadow(color: Color.black.opacity(0.1), radius: 8, x: 0, y: 4)
                         }
                         .padding(.top, 8)
                     }
@@ -113,34 +137,65 @@ struct EventsView: View {
                             Text(errorMessage).foregroundColor(.red).padding()
                         } else {
                             ForEach(events) { event in
-                                HStack(spacing: 12) {
+                                HStack(spacing: 16) {
                                     if let imageUrl = URL(string: event.imageUrl) {
                                         AsyncImage(url: imageUrl) { image in
                                             image
                                                 .resizable()
                                                 .aspectRatio(contentMode: .fill)
-                                                .frame(width: 56, height: 56)
+                                                .frame(width: 80, height: 80)
                                                 .cornerRadius(12)
                                         } placeholder: {
                                             Rectangle()
-                                                .fill(Color(.systemGray5))
-                                                .frame(width: 56, height: 56)
+                                                .fill(
+                                                    LinearGradient(
+                                                        gradient: Gradient(colors: [Color.purple.opacity(0.7), Color.blue.opacity(0.5)]),
+                                                        startPoint: .topLeading,
+                                                        endPoint: .bottomTrailing
+                                                    )
+                                                )
+                                                .frame(width: 80, height: 80)
                                                 .cornerRadius(12)
                                         }
                                     } else {
                                         Rectangle()
-                                            .fill(Color(.systemGray5))
-                                            .frame(width: 56, height: 56)
+                                            .fill(
+                                                LinearGradient(
+                                                    gradient: Gradient(colors: [Color.purple.opacity(0.7), Color.blue.opacity(0.5)]),
+                                                    startPoint: .topLeading,
+                                                    endPoint: .bottomTrailing
+                                                )
+                                            )
+                                            .frame(width: 80, height: 80)
                                             .cornerRadius(12)
                                     }
-                                    VStack(alignment: .leading, spacing: 4) {
+                                    
+                                    VStack(alignment: .leading, spacing: 6) {
                                         Text(event.title)
                                             .font(.headline)
                                             .fontWeight(.bold)
                                             .foregroundColor(.black)
-                                        Text("\(event.date) • \(event.location)")
-                                            .font(.subheadline)
-                                            .foregroundColor(.gray)
+                                            .lineLimit(2)
+                                        
+                                        HStack(spacing: 4) {
+                                            Image(systemName: "calendar")
+                                                .foregroundColor(.purple)
+                                                .font(.caption)
+                                            Text(event.date)
+                                                .font(.subheadline)
+                                                .foregroundColor(.gray)
+                                        }
+                                        
+                                        HStack(spacing: 4) {
+                                            Image(systemName: "mappin.circle.fill")
+                                                .foregroundColor(.purple)
+                                                .font(.caption)
+                                            Text(event.location)
+                                                .font(.subheadline)
+                                                .foregroundColor(.gray)
+                                                .lineLimit(1)
+                                        }
+                                        
                                         HStack(spacing: 4) {
                                             Image(systemName: "person.2.fill")
                                                 .foregroundColor(.purple)
@@ -150,15 +205,22 @@ struct EventsView: View {
                                                 .foregroundColor(.purple)
                                         }
                                     }
+                                    
                                     Spacer()
+                                    
                                     NavigationLink(destination: EventView(eventId: event.id)) {
-                                        Image(systemName: "arrow.right")
-                                            .foregroundColor(Color.purple)
+                                        Image(systemName: "chevron.right")
+                                            .foregroundColor(.purple)
+                                            .font(.system(size: 14, weight: .semibold))
+                                            .padding(8)
+                                            .background(Color.purple.opacity(0.1))
+                                            .clipShape(Circle())
                                     }
                                 }
-                                .padding(12)
-                                .background(Color(.systemGray6))
+                                .padding(16)
+                                .background(Color.white)
                                 .cornerRadius(16)
+                                .shadow(color: Color.black.opacity(0.05), radius: 8, x: 0, y: 2)
                                 .padding(.horizontal)
                             }
                         }
