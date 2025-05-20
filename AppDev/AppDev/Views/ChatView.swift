@@ -17,13 +17,15 @@ struct ChatView: View {
     ]
     
     var body: some View {
-        VStack(alignment: .leading, spacing: 20){
-            headerSection
-            
-            titleSection
-            searchSection
-            chatListSection
-        }.padding()
+        NavigationStack {
+            VStack(alignment: .leading, spacing: 20){
+                headerSection
+                
+                titleSection
+                searchSection
+                chatListSection
+            }.padding()
+        }
     }
 }
 
@@ -72,46 +74,49 @@ struct ChatRow: View {
     let chat: ChatItem
     
     var body: some View {
-        HStack(alignment: .center, spacing: 12) {
-            // Icon (placeholder system icon)
-            Image(systemName: chat.iconName)
-                .resizable()
-                .scaledToFill()
-                .frame(width: 48, height: 48)
-                .clipShape(RoundedRectangle(cornerRadius: 8))
-            
-            VStack(alignment: .leading, spacing: 4) {
-                HStack {
-                    Text(chat.title)
-                        .font(.system(size: 16))
-                        .fontWeight(.semibold)
-                        .foregroundColor(.primary)
-                    Spacer()
-                    Text(chat.timeAgo)
-                        .font(.system(size: 12))
-                        .foregroundColor(Color(hex: 0x6B7280))
+        NavigationLink(destination: ChatConversationView(chatTitle: chat.title)) {
+            HStack(alignment: .center, spacing: 12) {
+                // Icon (placeholder system icon)
+                Image(systemName: chat.iconName)
+                    .resizable()
+                    .scaledToFill()
+                    .frame(width: 48, height: 48)
+                    .clipShape(RoundedRectangle(cornerRadius: 8))
+                
+                VStack(alignment: .leading, spacing: 4) {
+                    HStack {
+                        Text(chat.title)
+                            .font(.system(size: 16))
+                            .fontWeight(.semibold)
+                            .foregroundColor(.primary)
+                        Spacer()
+                        Text(chat.timeAgo)
+                            .font(.system(size: 12))
+                            .foregroundColor(Color(hex: 0x6B7280))
+                    }
+                    Text(chat.messagePreview)
+                        .font(.system(size: 14))
+                        .foregroundColor(.gray)
+                        .lineLimit(1)
                 }
-                Text(chat.messagePreview)
-                    .font(.system(size: 14))
-                    .foregroundColor(.gray)
-                    .lineLimit(1)
+                
+                // Unread badge
+                if chat.unreadCount > 0 {
+                    Text("\(chat.unreadCount)")
+                        .font(.system(size: 12))
+                        .foregroundColor(.white)
+                        .frame(width: 24, height: 24)
+                        .background(Circle().fill(Color.purple))
+                }
             }
-            
-            // Unread badge
-            if chat.unreadCount > 0 {
-                Text("\(chat.unreadCount)")
-                    .font(.system(size: 12))
-                    .foregroundColor(.white)
-                    .frame(width: 24, height: 24)
-                    .background(Circle().fill(Color.purple))
-            }
+            .padding()
+            .background(
+                RoundedRectangle(cornerRadius: 12)
+                    .fill(Color.white)
+                    .shadow(color: Color.black.opacity(0.05), radius: 2, x: 0, y: 1)
+            )
         }
-        .padding()
-        .background(
-            RoundedRectangle(cornerRadius: 12)
-                .fill(Color.white)
-                .shadow(color: Color.black.opacity(0.05), radius: 2, x: 0, y: 1)
-        )
+        .buttonStyle(PlainButtonStyle())
     }
 }
 
