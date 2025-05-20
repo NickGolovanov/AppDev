@@ -4,6 +4,7 @@
 //
 //  Created by Nikita Golovanov on 5/8/25.
 //
+
 import SwiftUI
 
 struct ProfileView: View {
@@ -13,7 +14,7 @@ struct ProfileView: View {
         NavigationStack {
             ScrollView {
                 VStack(spacing: 16) {
-                    headerSection
+                    HeaderView() // From develop branch
                     profileInfoSection
                     editProfileButton
                     statsSection
@@ -24,32 +25,6 @@ struct ProfileView: View {
                     EditProfileView()
                 }
             }
-        }
-    }
-
-    var headerSection: some View {
-        HStack {
-            Text("PartyPal")
-                .font(.title2)
-                .fontWeight(.bold)
-                .foregroundColor(Color(hex: "#7131C5"))
-
-            Spacer()
-
-            ZStack(alignment: .topTrailing) {
-                Image(systemName: "bell.fill")
-                    .foregroundColor(.gray)
-                    .padding(.trailing, 4)
-                Circle()
-                    .fill(Color.red)
-                    .frame(width: 20, height: 20)
-                    .overlay(Text("3").font(.caption2).foregroundColor(.white))
-            }
-
-            Image(systemName: "person.crop.circle.fill")
-                .resizable()
-                .frame(width: 36, height: 36)
-                .foregroundColor(Color(hex: "#7131C5"))
         }
     }
 
