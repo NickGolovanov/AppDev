@@ -75,20 +75,20 @@ extension CreateEventView {
                 }
             }
         }
-        .sheet(isPresented: $showImagePicker) {
-            ImagePicker(image: Binding(
-                get: { coverImage },
-                set: { newImage in
-                    coverImage = newImage
-                    if let newImage = newImage {
-                        // Convert SwiftUI Image to UIImage
-                        if let uiImage = newImage.asUIImage() {
-                            coverUIImage = uiImage
-                        }
-                    }
-                }
-            ))
-        }
+        // .sheet(isPresented: $showImagePicker) {
+        //     ImagePicker(image: Binding(
+        //         get: { coverImage },
+        //         set: { newImage in
+        //             coverImage = newImage
+        //             if let newImage = newImage {
+        //                 // Convert SwiftUI Image to UIImage
+        //                 if let uiImage = newImage.asUIImage() {
+        //                     coverUIImage = uiImage
+        //                 }
+        //             }
+        //         }
+        //     ))
+        // }
     }
     
     var eventFormSection: some View {
