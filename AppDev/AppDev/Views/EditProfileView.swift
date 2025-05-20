@@ -5,6 +5,7 @@
 //  Created by Nikita Golovanov on 5/8/25.
 //
 
+import Foundation
 import SwiftUI
 import Firebase
 import FirebaseFirestore
@@ -19,8 +20,8 @@ struct EditProfileView: View {
     @State private var showImagePicker = false
     @State private var alertMessage = ""
     @State private var showAlert = false
-
     @AppStorage("userId") var userId: String = ""
+    @State private var profileImageUrl: String = ""
 
     var body: some View {
         ScrollView {
@@ -44,7 +45,7 @@ struct EditProfileView: View {
                     }
                 }
                 .sheet(isPresented: $showImagePicker) {
-                    ImagePicker(image: $profileImage) // uses your existing ImagePicker returning UIImage
+                    ImagePicker(image: $profileImage)
                 }
 
                 labeledTextField("Full Name", text: $fullName)
@@ -52,6 +53,7 @@ struct EditProfileView: View {
                 labeledTextEditor("Description", text: $bio)
                 labeledTextField("Email", text: $email, keyboardType: .emailAddress)
 
+                // Save Button
                 Button(action: saveProfile) {
                     Text("Save Changes")
                         .frame(maxWidth: .infinity)
@@ -60,8 +62,10 @@ struct EditProfileView: View {
                         .foregroundColor(.white)
                         .cornerRadius(12)
                 }
-                .padding(.top, 20)
-
+                .padding(.top, 30)
+                .alert(isPresented: $showAlert) {
+                    Alert(title: Text("Profile Update"), message: Text(alertMessage), dismissButton: .default(Text("OK")))
+                }
             }
             .padding()
         }
@@ -100,7 +104,9 @@ struct EditProfileView: View {
             "username": username,
             "description": bio,
             "email": email,
-            "profileImageUrl": profileImageUrl
+            "profileImageUrl": profileImageUrl,
+            "joinedEventIds": [],
+            "organizedEventIds": []
         ]
 
         Firestore.firestore().collection("users").document(userId).setData(userData, merge: true) { error in
@@ -157,4 +163,3 @@ struct EditProfileView: View {
 #Preview {
     EditProfileView()
 }
-

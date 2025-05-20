@@ -19,18 +19,16 @@ struct CreateEventView: View {
     @State private var price: Double = 0.0
     @State private var coverImage: UIImage? = nil
     @State private var showImagePicker: Bool = false
-    
+
     let categories = ["House Party", "Concert", "Meetup", "Workshop"]
     
     var body: some View {
         ScrollView {
             VStack(alignment: .leading, spacing: 20){
                 headerSection
-                
                 imagePickerSection
                 eventFormSection
                 createButtonSection
-                
                 footerSection
             }.padding()
         }
@@ -41,7 +39,7 @@ extension CreateEventView {
     var headerSection: some View {
         HeaderView()
     }
-    
+
     var imagePickerSection: some View {
         Button(action: {
             showImagePicker = true
@@ -51,6 +49,7 @@ extension CreateEventView {
                     .fill(Color(hex: 0xE5E7EB))
                     .frame(height: 192)
                     .cornerRadius(8)
+                
                 if let uiImage = coverImage {
                     Image(uiImage: uiImage)
                         .resizable()
@@ -64,7 +63,8 @@ extension CreateEventView {
                             .font(.system(size: 30))
                             .foregroundColor(Color(hex: 0x9CA3AF)).padding(.bottom, 2)
                         Text("Upload Cover Photo")
-                            .foregroundColor(Color(hex: 0x6B7280)).font(.custom("Poppins-Regular", size: 14))
+                            .foregroundColor(Color(hex: 0x6B7280))
+                            .font(.custom("Poppins-Regular", size: 14))
                             .fontWeight(.regular)
                     }
                 }
@@ -74,67 +74,62 @@ extension CreateEventView {
             ImagePicker(image: $coverImage)
         }
     }
-    
+
     var eventFormSection: some View {
-        Group{
+        Group {
             VStack(alignment: .leading, spacing: 8) {
                 FormLabel(text: "Event Title")
                 StyledTextField(text: $eventTitle, placeholder: "Enter event title")
             }
-            
+
             HStack(spacing: 16){
                 VStack(alignment: .leading) {
                     FormLabel(text: "Date")
                     StyledDatePicker(selection: $date, displayedComponents: .date)
-                    
                 }
-                
+
                 VStack(alignment: .leading, spacing: 8) {
                     FormLabel(text: "Category")
                     StyledPicker(selection: $category, options: categories, optionLabel: { $0 })
                 }
             }
-            
+
             HStack(spacing: 16) {
                 VStack(alignment: .leading) {
                     FormLabel(text: "Start Time")
                     StyledDatePicker(selection: $startTime, displayedComponents: .hourAndMinute)
-                    
                 }
-                
+
                 VStack(alignment: .leading, spacing: 8) {
                     FormLabel(text: "End Time")
                     StyledDatePicker(selection: $endTime, displayedComponents: .hourAndMinute)
                 }
             }
-            
-            
+
             VStack(alignment: .leading, spacing: 8) {
                 FormLabel(text: "Location")
                 StyledTextField(text: $location, placeholder: "Enter venue address")
             }
-            
+
             VStack(alignment: .leading, spacing: 8) {
                 FormLabel(text: "Description")
                 StyledTextEditor(text: $description, placeholder: "Describe your event").frame(height: 128)
             }
-            
+
             HStack(spacing: 16) {
                 VStack(alignment: .leading) {
                     FormLabel(text: "Max Capacity")
-                    StyledTextField(text: $eventTitle, placeholder: "0").keyboardType(.numberPad)
-                    
+                    StyledTextField(text: .constant("\(maxCapacity)"), placeholder: "0").keyboardType(.numberPad)
                 }
-                
+
                 VStack(alignment: .leading, spacing: 8) {
                     FormLabel(text: "Price (€)")
-                    StyledTextField(text: $eventTitle, placeholder: "0.00").keyboardType(.decimalPad)
+                    StyledTextField(text: .constant("\(price)"), placeholder: "0.00").keyboardType(.decimalPad)
                 }
             }
-            
         }
     }
-    
+
     var createButtonSection: some View {
         Button(action: {
             // Handle create event action
@@ -147,7 +142,7 @@ extension CreateEventView {
                 .cornerRadius(10)
         }
     }
-    
+
     var footerSection: some View {
         Rectangle()
             .fill(Color.gray.opacity(0.1))

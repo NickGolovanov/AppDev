@@ -5,8 +5,6 @@
 //  Created by Viktor Harhat on 09/05/2025.
 //
 
-// Updated ImagePicker.swift using UIImage instead of SwiftUI.Image
-
 import SwiftUI
 
 struct ImagePicker: UIViewControllerRepresentable {
