@@ -9,22 +9,28 @@ struct EventsMapView: View {
 
     let events = [
         Event(
+            id: "1",
             title: "Summer Night Party",
             date: "Tonight, 10:00 PM",
             location: "Club Matrix, 2.3km away",
             coordinate: CLLocationCoordinate2D(latitude: 52.3676, longitude: 4.9041),
             imageUrl: "party1",
             attendees: 124,
-            distance: "2.3km away"
+            distance: "2.3km away",
+            category: "House Party",
+            price: 10.0
         ),
         Event(
+            id: "2",
             title: "Live Jazz Night",
             date: "Tomorrow, 8:30 PM",
             location: "Blue Note, 3.1km away",
             coordinate: CLLocationCoordinate2D(latitude: 52.3667, longitude: 4.8945),
             imageUrl: "party2",
             attendees: 124,
-            distance: "3.1km away"
+            distance: "3.1km away",
+            category: "Concert",
+            price: 15.0
         ),
     ]
 
@@ -38,7 +44,7 @@ struct EventsMapView: View {
 
                 // Map (increased height)
                 Map(coordinateRegion: $region, annotationItems: events) { event in
-                    MapMarker(coordinate: event.coordinate, tint: .red)
+                    MapMarker(coordinate: event.coordinate ?? region.center, tint: .red)
                 }
                 .frame(height: 420)
                 .cornerRadius(0)
@@ -81,7 +87,7 @@ struct EventsMapView: View {
 struct EventCard: View {
     let event: Event
     var body: some View {
-        NavigationLink(destination: EventView()) {
+        NavigationLink(destination: EventView(eventId: event.id)) {
             HStack(alignment: .top, spacing: 12) {
                 // Event image (placeholder)
                 Rectangle()
