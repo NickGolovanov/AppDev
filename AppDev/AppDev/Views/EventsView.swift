@@ -293,4 +293,4 @@ struct EventsView: View {
 
 #Preview {
     EventsView()
-}
+}  
