@@ -106,14 +106,17 @@ struct EventsView: View {
                                         .foregroundColor(.white)
                                         .lineLimit(2)
                                     HStack {
-                                        Text(firstEvent.date)
+                                        Text(firstEvent.formattedDate)
+                                            .foregroundColor(.white.opacity(0.9))
+                                            .font(.subheadline)
+                                        Text(firstEvent.formattedTime)
                                             .foregroundColor(.white.opacity(0.9))
                                             .font(.subheadline)
                                         Text("•")
                                             .foregroundColor(.white.opacity(0.9))
                                         Text(firstEvent.location)
                                             .foregroundColor(.white.opacity(0.9))
-                                        .font(.subheadline)
+                                            .font(.subheadline)
                                             .lineLimit(1)
                                     }
                                 }
@@ -181,7 +184,10 @@ struct EventsView: View {
                                             Image(systemName: "calendar")
                                                 .foregroundColor(.purple)
                                                 .font(.caption)
-                                            Text(event.date)
+                                            Text(event.formattedDate)
+                                                .font(.subheadline)
+                                                .foregroundColor(.gray)
+                                            Text(event.formattedTime)
                                                 .font(.subheadline)
                                                 .foregroundColor(.gray)
                                         }
@@ -191,8 +197,8 @@ struct EventsView: View {
                                                 .foregroundColor(.purple)
                                                 .font(.caption)
                                             Text(event.location)
-                                            .font(.subheadline)
-                                            .foregroundColor(.gray)
+                                                .font(.subheadline)
+                                                .foregroundColor(.gray)
                                                 .lineLimit(1)
                                         }
                                         
