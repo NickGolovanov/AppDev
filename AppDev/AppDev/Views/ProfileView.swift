@@ -4,16 +4,22 @@
 //
 //  Created by Nikita Golovanov on 5/8/25.
 //
+
 import SwiftUI
+import FirebaseFirestore
 
 struct ProfileView: View {
     @State private var showEditProfile = false
+    @AppStorage("userId") var userId: String = ""
+    @State private var joinedEvents: [Event] = []
+    @State private var organizedEvents: [Event] = []
+    @State private var showAllEvents = false
 
     var body: some View {
         NavigationStack {
             ScrollView {
                 VStack(spacing: 16) {
-                    headerSection
+                    HeaderView() // From develop branch
                     profileInfoSection
                     editProfileButton
                     statsSection
@@ -23,34 +29,12 @@ struct ProfileView: View {
                 .navigationDestination(isPresented: $showEditProfile) {
                     EditProfileView()
                 }
+                .navigationDestination(isPresented: $showAllEvents) {
+                    AllEventsView()
+                }
             }
         }
-    }
-
-    var headerSection: some View {
-        HStack {
-            Text("PartyPal")
-                .font(.title2)
-                .fontWeight(.bold)
-                .foregroundColor(Color(hex: "#7131C5"))
-
-            Spacer()
-
-            ZStack(alignment: .topTrailing) {
-                Image(systemName: "bell.fill")
-                    .foregroundColor(.gray)
-                    .padding(.trailing, 4)
-                Circle()
-                    .fill(Color.red)
-                    .frame(width: 20, height: 20)
-                    .overlay(Text("3").font(.caption2).foregroundColor(.white))
-            }
-
-            Image(systemName: "person.crop.circle.fill")
-                .resizable()
-                .frame(width: 36, height: 36)
-                .foregroundColor(Color(hex: "#7131C5"))
-        }
+        .onAppear(perform: fetchRecentEvents)
     }
 
     var profileInfoSection: some View {
@@ -134,7 +118,7 @@ struct ProfileView: View {
                 Text("Recent Events")
                     .font(.headline)
                 Spacer()
-                Button(action: {}) {
+                Button(action: { showAllEvents = true }) {
                     Text("See All")
                         .font(.subheadline)
                         .foregroundColor(Color(hex: "#7131C5"))
@@ -142,26 +126,53 @@ struct ProfileView: View {
             }
 
             VStack(spacing: 12) {
-                eventCard(title: "Summer Beach Party", date: "Jun 15, 2025", icon: "music.note", badge: "Joined", badgeColor: Color.green.opacity(0.2))
-                eventCard(title: "Club Night Special", date: "Jun 10, 2025", icon: "martini", badge: "Organized", badgeColor: Color.blue.opacity(0.2))
+                ForEach(joinedEvents) { event in
+                    NavigationLink(destination: EventView(eventId: event.id)) {
+                        eventCard(event: event, badge: "Joined", badgeColor: Color.green.opacity(0.2))
+                    }
+                }
+
+                ForEach(organizedEvents) { event in
+                    NavigationLink(destination: EventView(eventId: event.id)) {
+                        eventCard(event: event, badge: "Organized", badgeColor: Color.blue.opacity(0.2))
+                    }
+                }
+
+                if joinedEvents.isEmpty && organizedEvents.isEmpty {
+                    Text("No recent events.")
+                        .foregroundColor(.gray)
+                }
             }
         }
     }
 
-    func eventCard(title: String, date: String, icon: String, badge: String, badgeColor: Color) -> some View {
+    func eventCard(event: Event, badge: String, badgeColor: Color) -> some View {
         HStack(spacing: 12) {
             ZStack {
                 RoundedRectangle(cornerRadius: 8)
                     .fill(Color(hex: "#E9DDFD"))
                     .frame(width: 40, height: 40)
-                Image(systemName: icon)
-                    .foregroundColor(Color(hex: "#7131C5"))
+                if let imageUrl = URL(string: event.imageUrl), !event.imageUrl.isEmpty {
+                    AsyncImage(url: imageUrl) {
+                        image in image.resizable()
+                            .aspectRatio(contentMode: .fill)
+                            .frame(width: 40, height: 40)
+                            .cornerRadius(8)
+                    } placeholder: {
+                        Image(systemName: "calendar")
+                            .foregroundColor(Color(hex: "#7131C5"))
+                    }
+                } else {
+                    Image(systemName: "calendar")
+                        .foregroundColor(Color(hex: "#7131C5"))
+                }
             }
 
             VStack(alignment: .leading, spacing: 4) {
-                Text(title)
+                Text(event.title)
                     .fontWeight(.semibold)
-                Text(date)
+                    .foregroundColor(.primary)
+                Text("\(event.formattedDate), \(event.formattedTime)")
                     .font(.subheadline)
                     .foregroundColor(.gray)
             }
@@ -178,6 +189,75 @@ struct ProfileView: View {
         .background(Color.white)
         .cornerRadius(12)
         .shadow(color: Color.black.opacity(0.05), radius: 4, x: 0, y: 2)
+    }
+
+    func fetchRecentEvents() {
+        guard !userId.isEmpty else { return }
+
+        let db = Firestore.firestore()
+        let userRef = db.collection("users").document(userId)
+
+        userRef.getDocument { document, error in
+            if let document = document, document.exists {
+                let data = document.data()
+                let joinedEventIds = data?["joinedEventIds"] as? [String] ?? []
+                let organizedEventIds = data?["organizedEventIds"] as? [String] ?? []
+
+                if !joinedEventIds.isEmpty {
+                    db.collection("events").whereField(FieldPath.documentID(), in: joinedEventIds).getDocuments { snapshot, error in
+                        if let snapshot = snapshot {
+                            self.joinedEvents = snapshot.documents.compactMap { doc in
+                                try? doc.data(as: Event.self)
+                            }
+                        } else if let error = error {
+                            print("Error fetching joined events: \(error.localizedDescription)")
+                        }
+                    }
+                }
+
+                if !organizedEventIds.isEmpty {
+                    db.collection("events").whereField(FieldPath.documentID(), in: organizedEventIds).getDocuments { snapshot, error in
+                        if let snapshot = snapshot {
+                            self.organizedEvents = snapshot.documents.compactMap { doc in
+                                try? doc.data(as: Event.self)
+                            }
+                        } else if let error = error {
+                            print("Error fetching organized events: \(error.localizedDescription)")
+                        }
+                    }
+                }
+
+            } else {
+                print("User document not found: \(error?.localizedDescription ?? "Unknown error")")
+            }
+        }
+    }
+}
+
+extension Event: Decodable {
+    enum CodingKeys: String, CodingKey {
+        case id
+        case title
+        case date
+        case location
+        case imageUrl
+        case attendees
+        case category
+        case price
+    }
+
+    init(from decoder: Decoder) throws {
+        let container = try decoder.container(keyedBy: CodingKeys.self)
+        id = try container.decode(String.self, forKey: .id)
+        title = try container.decode(String.self, forKey: .title)
+        date = try container.decode(String.self, forKey: .date)
+        location = try container.decode(String.self, forKey: .location)
+        imageUrl = try container.decode(String.self, forKey: .imageUrl)
+        attendees = try container.decode(Int.self, forKey: .attendees)
+        category = try container.decode(String.self, forKey: .category)
+        price = try container.decode(Double.self, forKey: .price)
+        coordinate = nil
+        distance = nil
     }
 }
 
