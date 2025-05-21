@@ -5,6 +5,7 @@
 //  Created by Nikita Golovanov on 5/8/25.
 //
 
+
 import SwiftUI
 import FirebaseFirestore
 
@@ -19,7 +20,7 @@ struct ProfileView: View {
         NavigationStack {
             ScrollView {
                 VStack(spacing: 16) {
-                    HeaderView() // From develop branch
+                    HeaderView()
                     profileInfoSection
                     editProfileButton
                     statsSection
@@ -90,8 +91,8 @@ struct ProfileView: View {
 
     var statsSection: some View {
         HStack(spacing: 16) {
-            statBox(title: "24", subtitle: "Events Joined")
-            statBox(title: "8", subtitle: "Organized")
+            statBox(title: "\(joinedEvents.count)", subtitle: "Events Joined")
+            statBox(title: "\(organizedEvents.count)", subtitle: "Organized")
             statBox(title: "156", subtitle: "Connections")
         }
     }
@@ -152,9 +153,10 @@ struct ProfileView: View {
                 RoundedRectangle(cornerRadius: 8)
                     .fill(Color(hex: "#E9DDFD"))
                     .frame(width: 40, height: 40)
+
                 if let imageUrl = URL(string: event.imageUrl), !event.imageUrl.isEmpty {
-                    AsyncImage(url: imageUrl) {
-                        image in image.resizable()
+                    AsyncImage(url: imageUrl) { image in
+                        image.resizable()
                             .aspectRatio(contentMode: .fill)
                             .frame(width: 40, height: 40)
                             .cornerRadius(8)
@@ -172,10 +174,12 @@ struct ProfileView: View {
                 Text(event.title)
                     .fontWeight(.semibold)
                     .foregroundColor(.primary)
+
                 Text("\(event.formattedDate), \(event.formattedTime)")
                     .font(.subheadline)
                     .foregroundColor(.gray)
             }
+
             Spacer()
 
             Text(badge)
@@ -198,42 +202,42 @@ struct ProfileView: View {
         let userRef = db.collection("users").document(userId)
 
         userRef.getDocument { document, error in
-            if let document = document, document.exists {
-                let data = document.data()
-                let joinedEventIds = data?["joinedEventIds"] as? [String] ?? []
-                let organizedEventIds = data?["organizedEventIds"] as? [String] ?? []
-
-                if !joinedEventIds.isEmpty {
-                    db.collection("events").whereField(FieldPath.documentID(), in: joinedEventIds).getDocuments { snapshot, error in
-                        if let snapshot = snapshot {
-                            self.joinedEvents = snapshot.documents.compactMap { doc in
-                                try? doc.data(as: Event.self)
-                            }
-                        } else if let error = error {
-                            print("Error fetching joined events: \(error.localizedDescription)")
-                        }
-                    }
-                }
-
-                if !organizedEventIds.isEmpty {
-                    db.collection("events").whereField(FieldPath.documentID(), in: organizedEventIds).getDocuments { snapshot, error in
-                        if let snapshot = snapshot {
-                            self.organizedEvents = snapshot.documents.compactMap { doc in
-                                try? doc.data(as: Event.self)
-                            }
-                        } else if let error = error {
-                            print("Error fetching organized events: \(error.localizedDescription)")
-                        }
-                    }
-                }
-
-            } else {
+            guard let document = document, document.exists, let data = document.data() else {
                 print("User document not found: \(error?.localizedDescription ?? "Unknown error")")
+                return
+            }
+
+            let joinedEventIds = data["joinedEventIds"] as? [String] ?? []
+            let organizedEventIds = data["organizedEventIds"] as? [String] ?? []
+
+            if !joinedEventIds.isEmpty {
+                db.collection("events").whereField(FieldPath.documentID(), in: joinedEventIds).getDocuments { snapshot, error in
+                    if let snapshot = snapshot {
+                        self.joinedEvents = snapshot.documents.compactMap { doc in
+                            try? doc.data(as: Event.self)
+                        }
+                    } else {
+                        print("Error fetching joined events: \(error?.localizedDescription ?? "")")
+                    }
+                }
+            }
+
+            if !organizedEventIds.isEmpty {
+                db.collection("events").whereField(FieldPath.documentID(), in: organizedEventIds).getDocuments { snapshot, error in
+                    if let snapshot = snapshot {
+                        self.organizedEvents = snapshot.documents.compactMap { doc in
+                            try? doc.data(as: Event.self)
+                        }
+                    } else {
+                        print("Error fetching organized events: \(error?.localizedDescription ?? "")")
+                    }
+                }
             }
         }
     }
 }
 
+// MARK: - Event Decoding for Firebase
 extension Event: Decodable {
     enum CodingKeys: String, CodingKey {
         case id
@@ -248,16 +252,16 @@ extension Event: Decodable {
 
     init(from decoder: Decoder) throws {
         let container = try decoder.container(keyedBy: CodingKeys.self)
-        id = try container.decode(String.self, forKey: .id)
-        title = try container.decode(String.self, forKey: .title)
-        date = try container.decode(String.self, forKey: .date)
-        location = try container.decode(String.self, forKey: .location)
-        imageUrl = try container.decode(String.self, forKey: .imageUrl)
-        attendees = try container.decode(Int.self, forKey: .attendees)
-        category = try container.decode(String.self, forKey: .category)
-        price = try container.decode(Double.self, forKey: .price)
-        coordinate = nil
-        distance = nil
+        self.id = try container.decode(String.self, forKey: .id)
+        self.title = try container.decode(String.self, forKey: .title)
+        self.date = try container.decode(String.self, forKey: .date)
+        self.location = try container.decode(String.self, forKey: .location)
+        self.imageUrl = try container.decode(String.self, forKey: .imageUrl)
+        self.attendees = try container.decode(Int.self, forKey: .attendees)
+        self.category = try container.decode(String.self, forKey: .category)
+        self.price = try container.decode(Double.self, forKey: .price)
+        self.coordinate = nil
+        self.distance = nil
     }
 }
 
