@@ -89,7 +89,7 @@ struct EventView: View {
                                     Image(systemName: "calendar")
                                         .foregroundColor(.purple)
                                         .font(.system(size: 16))
-                                    Text("event.formattedDate · event.formattedTime")
+                                    Text("\(event.formattedDate) · \(event.formattedTime)")
                                         .font(.subheadline)
                                         .foregroundColor(.gray)
                                 }

@@ -119,7 +119,7 @@ struct EventCard: View {
                         Image(systemName: "clock")
                             .foregroundColor(.gray)
                             .font(.caption)
-                        Text("event.formattedDate, event.formattedTime")
+                        Text("\(event.formattedDate), \(event.formattedTime)")
                             .font(.subheadline)
                             .foregroundColor(.gray)
                     }
