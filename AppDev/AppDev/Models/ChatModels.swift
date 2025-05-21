@@ -81,13 +81,20 @@ class ChatService: ObservableObject {
             timestamp: Date(),
             isFromCurrentUser: true
         )
-        
+        // Save with Firestore Timestamp
         try await db.collection("chats")
             .document(eventId)
             .collection("messages")
             .document(message.id)
-            .setData(message.dictionary)
-        
+            .setData([
+                "id": message.id,
+                "eventId": message.eventId,
+                "content": message.content,
+                "senderId": message.senderId,
+                "senderName": message.senderName,
+                "timestamp": Timestamp(date: message.timestamp),
+                "isFromCurrentUser": message.isFromCurrentUser
+            ])
         // Update last message in chat
         try await db.collection("chats")
             .document(eventId)
