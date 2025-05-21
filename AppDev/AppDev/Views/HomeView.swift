@@ -147,7 +147,7 @@ struct HomeView: View {
                     Text(event.title)
                         .font(.headline)
                         .foregroundColor(.white)
-                    Text("event.formattedDate, event.formattedTime")
+                    Text("\(event.formattedDate), \(event.formattedTime)")
                         .font(.caption)
                         .foregroundColor(.gray)
                 }
@@ -171,7 +171,7 @@ struct HomeView: View {
             VStack(alignment: .leading) {
                 Text(event.title)
                     .font(.headline)
-                Text("event.formattedDate, event.formattedTime")
+                Text("\(event.formattedDate), \(event.formattedTime)")
                     .font(.caption)
                     .foregroundColor(.gray)
                 HStack {
