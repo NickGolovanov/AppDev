@@ -89,18 +89,19 @@ struct EventView: View {
                                     Image(systemName: "calendar")
                                         .foregroundColor(.purple)
                                         .font(.system(size: 16))
-                                    Text("\(event.date) · \(event.startTime)")
-                                    .font(.subheadline)
-                                    .foregroundColor(.gray)
-                            }
+                                    Text("event.formattedDate · event.formattedTime")
+                                        .font(.subheadline)
+                                        .foregroundColor(.gray)
+                                }
                                 
                                 HStack(spacing: 12) {
                                     Image(systemName: "mappin.circle.fill")
-                                    .foregroundColor(.purple)
+                                        .foregroundColor(.purple)
                                         .font(.system(size: 16))
-                                Text(event.location)
-                                    .font(.subheadline)
-                                    .foregroundColor(.gray)
+                                    Text(event.location)
+                                        .font(.subheadline)
+                                        .foregroundColor(.gray)
+                                        .frame(maxWidth: .infinity, alignment: .leading)
                                 }
                             }
 
