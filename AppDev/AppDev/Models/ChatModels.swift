@@ -46,52 +46,32 @@ class ChatService: ObservableObject {
     private let db = Firestore.firestore()
     @Published var chats: [ChatItem] = []
     @Published var messages: [String: [ChatMessage]] = [:] // eventId: messages
-    private var userId: String? {
-        Auth.auth().currentUser?.uid
-    }
+    private let userId: String = "guest"
+    private let userName: String = "Guest"
     
     func fetchUserChats() async throws {
-        guard let userId = userId else { return }
-        
-        // Get user's tickets
-        let ticketsSnapshot = try await db.collection("tickets")
-            .whereField("userId", isEqualTo: userId)
-            .getDocuments()
-        
-        // Get chats for each ticket's event
-        for ticketDoc in ticketsSnapshot.documents {
-            let ticketData = ticketDoc.data()
-            guard let eventId = ticketData["eventId"] as? String else { continue }
-            
-            // Get chat info
-            let chatDoc = try await db.collection("chats")
-                .document(eventId)
-                .getDocument()
-            
-            if let chatData = chatDoc.data() {
-                let chat = ChatItem(
-                    id: eventId,
-                    eventId: eventId,
-                    eventName: chatData["eventName"] as? String ?? "",
-                    iconName: "bubble.left.and.bubble.right.fill",
-                    lastMessage: chatData["lastMessage"] as? String ?? "",
-                    lastMessageTime: (chatData["lastMessageTime"] as? Timestamp)?.dateValue() ?? Date(),
-                    unreadCount: 0
-                )
-                
-                DispatchQueue.main.async {
-                    if !self.chats.contains(where: { $0.id == chat.id }) {
-                        self.chats.append(chat)
-                    }
+        // No user filtering, fetch all chats
+        let chatsSnapshot = try await db.collection("chats").getDocuments()
+        for chatDoc in chatsSnapshot.documents {
+            let chatData = chatDoc.data()
+            let chat = ChatItem(
+                id: chatDoc.documentID,
+                eventId: chatDoc.documentID,
+                eventName: chatData["eventName"] as? String ?? "",
+                iconName: "bubble.left.and.bubble.right.fill",
+                lastMessage: chatData["lastMessage"] as? String ?? "",
+                lastMessageTime: (chatData["lastMessageTime"] as? Timestamp)?.dateValue() ?? Date(),
+                unreadCount: 0
+            )
+            DispatchQueue.main.async {
+                if !self.chats.contains(where: { $0.id == chat.id }) {
+                    self.chats.append(chat)
                 }
             }
         }
     }
     
     func sendMessage(eventId: String, content: String) async throws {
-        guard let userId = userId,
-              let userName = Auth.auth().currentUser?.displayName else { return }
-        
         let message = ChatMessage(
             id: UUID().uuidString,
             eventId: eventId,
@@ -124,14 +104,13 @@ class ChatService: ObservableObject {
             .order(by: "timestamp")
             .addSnapshotListener { [weak self] snapshot, error in
                 guard let documents = snapshot?.documents else { return }
-                
                 let messages = documents.compactMap { doc -> ChatMessage? in
                     var data = doc.data()
                     data["id"] = doc.documentID
-                    data["isFromCurrentUser"] = data["senderId"] as? String == self?.userId
+                    // All messages are from 'guest' in this mode
+                    data["isFromCurrentUser"] = true
                     return try? Firestore.Decoder().decode(ChatMessage.self, from: data)
                 }
-                
                 DispatchQueue.main.async {
                     self?.messages[eventId] = messages
                 }
@@ -139,19 +118,15 @@ class ChatService: ObservableObject {
     }
     
     func createChatForTicket(ticket: Ticket) async throws {
-        // Check if chat already exists
         let chatDoc = try await db.collection("chats")
             .document(ticket.eventId)
             .getDocument()
-        
-        // Only create if it doesn't exist
         if !chatDoc.exists {
             let chatData: [String: Any] = [
                 "eventName": ticket.eventName,
                 "lastMessage": "Welcome to the \(ticket.eventName) chat!",
                 "lastMessageTime": Timestamp(date: Date())
             ]
-            
             try await db.collection("chats")
                 .document(ticket.eventId)
                 .setData(chatData)
