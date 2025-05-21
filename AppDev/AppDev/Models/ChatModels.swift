@@ -50,22 +50,36 @@ class ChatService: ObservableObject {
     private let userName: String = "Guest"
     
     func fetchUserChats() async throws {
-        // No user filtering, fetch all chats
-        let chatsSnapshot = try await db.collection("chats").getDocuments()
-        for chatDoc in chatsSnapshot.documents {
-            let chatData = chatDoc.data()
-            let chat = ChatItem(
-                id: chatDoc.documentID,
-                eventId: chatDoc.documentID,
-                eventName: chatData["eventName"] as? String ?? "",
-                iconName: "bubble.left.and.bubble.right.fill",
-                lastMessage: chatData["lastMessage"] as? String ?? "",
-                lastMessageTime: (chatData["lastMessageTime"] as? Timestamp)?.dateValue() ?? Date(),
-                unreadCount: 0
-            )
-            DispatchQueue.main.async {
-                if !self.chats.contains(where: { $0.id == chat.id }) {
-                    self.chats.append(chat)
+        // Get all tickets
+        let ticketsSnapshot = try await db.collection("tickets").getDocuments()
+        let eventIdToEventName = Dictionary(uniqueKeysWithValues: ticketsSnapshot.documents.compactMap { doc in
+            guard let eventId = doc.data()["eventId"] as? String,
+                  let eventName = doc.data()["eventName"] as? String else { return nil }
+            return (eventId, eventName)
+        })
+        // Get chats for those eventIds
+        for (eventId, ticketEventName) in eventIdToEventName {
+            let chatDoc = try await db.collection("chats").document(eventId).getDocument()
+            if let chatData = chatDoc.data() {
+                let firestoreEventName = chatData["eventName"] as? String ?? ""
+                let eventName = firestoreEventName.isEmpty ? ticketEventName : firestoreEventName
+                // If eventName in chat is missing or incorrect, update it
+                if firestoreEventName != ticketEventName && !ticketEventName.isEmpty {
+                    try? await db.collection("chats").document(eventId).updateData(["eventName": ticketEventName])
+                }
+                let chat = ChatItem(
+                    id: eventId,
+                    eventId: eventId,
+                    eventName: eventName,
+                    iconName: "bubble.left.and.bubble.right.fill",
+                    lastMessage: chatData["lastMessage"] as? String ?? "",
+                    lastMessageTime: (chatData["lastMessageTime"] as? Timestamp)?.dateValue() ?? Date(),
+                    unreadCount: 0
+                )
+                DispatchQueue.main.async {
+                    if !self.chats.contains(where: { $0.id == chat.id }) {
+                        self.chats.append(chat)
+                    }
                 }
             }
         }
