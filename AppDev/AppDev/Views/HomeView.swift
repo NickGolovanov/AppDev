@@ -147,9 +147,9 @@ struct HomeView: View {
                     Text(event.title)
                         .font(.headline)
                         .foregroundColor(.white)
-                    Text(event.date)
+                    Text("\(event.formattedDate), \(event.formattedTime)")
                         .font(.caption)
-                        .foregroundColor(.white.opacity(0.8))
+                        .foregroundColor(.white)
                 }
                 .padding(8)
                 .frame(width: cardWidth, alignment: .leading)
@@ -171,7 +171,7 @@ struct HomeView: View {
             VStack(alignment: .leading) {
                 Text(event.title)
                     .font(.headline)
-                Text(event.date)
+                Text("\(event.formattedDate), \(event.formattedTime)")
                     .font(.caption)
                     .foregroundColor(.gray)
                 HStack {
