@@ -85,16 +85,16 @@ struct EventView: View {
 
                             // Date, Time, Location
                             VStack(spacing: 12) {
-                                HStack(spacing: 12) {
+                                HStack(alignment: .center, spacing: 8) {
                                     Image(systemName: "calendar")
                                         .foregroundColor(.purple)
                                         .font(.system(size: 16))
                                     Text("\(event.formattedDate) · \(event.formattedTime)")
                                         .font(.subheadline)
                                         .foregroundColor(.gray)
+                                    Spacer()
                                 }
-                                
-                                HStack(spacing: 12) {
+                                HStack(alignment: .center, spacing: 8) {
                                     Image(systemName: "mappin.circle.fill")
                                         .foregroundColor(.purple)
                                         .font(.system(size: 16))

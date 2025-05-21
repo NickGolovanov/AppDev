@@ -149,7 +149,7 @@ struct HomeView: View {
                         .foregroundColor(.white)
                     Text("\(event.formattedDate), \(event.formattedTime)")
                         .font(.caption)
-                        .foregroundColor(.gray)
+                        .foregroundColor(.white)
                 }
                 .padding(8)
                 .frame(width: cardWidth, alignment: .leading)
