@@ -52,7 +52,7 @@ class ChatService: ObservableObject {
     func fetchUserChats() async throws {
         // Get all tickets
         let ticketsSnapshot = try await db.collection("tickets").getDocuments()
-        let eventIdToEventName = Dictionary(uniqueKeysWithValues: ticketsSnapshot.documents.compactMap { doc in
+        let eventIdToEventName: [String: String] = Dictionary(uniqueKeysWithValues: ticketsSnapshot.documents.compactMap { doc in
             guard let eventId = doc.data()["eventId"] as? String,
                   let eventName = doc.data()["eventName"] as? String else { return nil }
             return (eventId, eventName)
