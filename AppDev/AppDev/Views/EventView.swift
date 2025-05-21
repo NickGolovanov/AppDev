@@ -6,6 +6,7 @@ struct EventView: View {
     @State private var event: EventDetails? = nil
     @State private var isLoading = false
     @State private var errorMessage: String? = nil
+    @State private var showGetTicket = false
 
     var body: some View {
         VStack(spacing: 0) {
@@ -158,7 +159,12 @@ struct EventView: View {
                             .cornerRadius(12)
 
                             // Get Ticket Button
-                            Button(action: {}) {
+                            NavigationLink(destination: GetTicketView(eventName: event.title, date: "\(event.formattedDate) · \(event.formattedTime)", location: event.location, price: "€\(String(format: "%.2f", event.price))"), isActive: $showGetTicket) {
+                                EmptyView()
+                            }
+                            Button(action: {
+                                showGetTicket = true
+                            }) {
                                 Text("Get Ticket Now")
                                     .font(.headline)
                                     .foregroundColor(.white)
