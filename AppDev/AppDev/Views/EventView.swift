@@ -85,22 +85,23 @@ struct EventView: View {
 
                             // Date, Time, Location
                             VStack(spacing: 12) {
-                                HStack(spacing: 12) {
+                                HStack(alignment: .center, spacing: 8) {
                                     Image(systemName: "calendar")
                                         .foregroundColor(.purple)
                                         .font(.system(size: 16))
-                                    Text("\(event.date) · \(event.startTime)")
-                                    .font(.subheadline)
-                                    .foregroundColor(.gray)
-                            }
-                                
-                                HStack(spacing: 12) {
+                                    Text("\(event.formattedDate) · \(event.formattedTime)")
+                                        .font(.subheadline)
+                                        .foregroundColor(.gray)
+                                    Spacer()
+                                }
+                                HStack(alignment: .center, spacing: 8) {
                                     Image(systemName: "mappin.circle.fill")
-                                    .foregroundColor(.purple)
+                                        .foregroundColor(.purple)
                                         .font(.system(size: 16))
-                                Text(event.location)
-                                    .font(.subheadline)
-                                    .foregroundColor(.gray)
+                                    Text(event.location)
+                                        .font(.subheadline)
+                                        .foregroundColor(.gray)
+                                        .frame(maxWidth: .infinity, alignment: .leading)
                                 }
                             }
 
@@ -231,6 +232,27 @@ struct EventDetails {
     let maxCapacity: Int
     let price: Double
     let description: String
+}
+
+extension EventDetails {
+    var formattedDate: String {
+        let isoFormatter = ISO8601DateFormatter()
+        if let dateObj = isoFormatter.date(from: self.date) {
+            let formatter = DateFormatter()
+            formatter.dateFormat = "d MMM yyyy"
+            return formatter.string(from: dateObj)
+        }
+        return self.date
+    }
+    var formattedTime: String {
+        let isoFormatter = ISO8601DateFormatter()
+        if let dateObj = isoFormatter.date(from: self.date) {
+            let formatter = DateFormatter()
+            formatter.dateFormat = "HH:mm"
+            return formatter.string(from: dateObj)
+        }
+        return ""
+    }
 }
 
 #Preview {

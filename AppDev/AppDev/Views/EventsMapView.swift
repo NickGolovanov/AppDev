@@ -113,12 +113,13 @@ struct EventCard: View {
                         Text(event.location)
                             .font(.subheadline)
                             .foregroundColor(.gray)
+                            .frame(maxWidth: .infinity, alignment: .leading)
                     }
                     HStack(spacing: 4) {
                         Image(systemName: "clock")
                             .foregroundColor(.gray)
                             .font(.caption)
-                        Text(event.date)
+                        Text("\(event.formattedDate), \(event.formattedTime)")
                             .font(.subheadline)
                             .foregroundColor(.gray)
                     }
