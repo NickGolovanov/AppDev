@@ -12,6 +12,7 @@ import FirebaseAuth
 
 struct Ticket: Identifiable, Codable {
     let id: String
+    let eventId: String
     let eventName: String
     let date: String
     let location: String
@@ -23,6 +24,7 @@ struct Ticket: Identifiable, Codable {
     
     enum CodingKeys: String, CodingKey {
         case id
+        case eventId
         case eventName
         case date
         case location

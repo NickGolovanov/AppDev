@@ -1,4 +1,5 @@
 import SwiftUI
+import FirebaseFirestore
 
 struct Message: Identifiable {
     let id = UUID()
@@ -9,14 +10,10 @@ struct Message: Identifiable {
 }
 
 struct ChatConversationView: View {
+    let chatId: String
     let chatTitle: String
+    @StateObject private var chatService = ChatService()
     @State private var messageText: String = ""
-    @State private var messages: [Message] = [
-        Message(content: "Hey everyone! Don't forget to bring snacks!", timestamp: Date().addingTimeInterval(-3600), isFromCurrentUser: false, senderName: "John"),
-        Message(content: "I'll bring some chips and dip!", timestamp: Date().addingTimeInterval(-1800), isFromCurrentUser: true, senderName: "You"),
-        Message(content: "I can bring drinks!", timestamp: Date().addingTimeInterval(-900), isFromCurrentUser: false, senderName: "Sarah")
-    ]
-    
     @FocusState private var isInputFocused: Bool
     
     var body: some View {
@@ -30,24 +27,22 @@ struct ChatConversationView: View {
             ScrollViewReader { proxy in
                 ScrollView {
                     LazyVStack(spacing: 16) {
-                        ForEach(messages) { message in
-                            MessageBubble(message: message)
-                                .id(message.id)
+                        if let messages = chatService.messages[chatId] {
+                            ForEach(messages) { message in
+                                MessageBubble(message: message)
+                                    .id(message.id)
+                            }
                         }
                     }
                     .padding(.top)
                     .padding(.horizontal)
                 }
-                .onChange(of: messages.count) {
-                    if let last = messages.last {
+                .onChange(of: chatService.messages[chatId]?.count ?? 0) {
+                    if let messages = chatService.messages[chatId],
+                       let last = messages.last {
                         withAnimation {
                             proxy.scrollTo(last.id, anchor: .bottom)
                         }
-                    }
-                }
-                .onAppear {
-                    if let last = messages.last {
-                        proxy.scrollTo(last.id, anchor: .bottom)
                     }
                 }
             }
@@ -58,7 +53,7 @@ struct ChatConversationView: View {
                 HStack(spacing: 12) {
                     TextField("Type a message...", text: $messageText)
                         .padding(12)
-                        .font(.custom("Poppins-Regular", size: 16))
+                        .font(.system(size: 16))
                         .foregroundColor(.primary)
                         .background(
                             RoundedRectangle(cornerRadius: 8)
@@ -76,23 +71,26 @@ struct ChatConversationView: View {
             }
         }
         .background(Color(hex: 0xF9F9F9).ignoresSafeArea())
+        .onAppear {
+            chatService.observeMessages(eventId: chatId)
+        }
     }
     
     private func sendMessage() {
         guard !messageText.isEmpty else { return }
-        let newMessage = Message(
-            content: messageText,
-            timestamp: Date(),
-            isFromCurrentUser: true,
-            senderName: "You"
-        )
-        messages.append(newMessage)
-        messageText = ""
+        Task {
+            do {
+                try await chatService.sendMessage(eventId: chatId, content: messageText)
+                messageText = ""
+            } catch {
+                print("Error sending message: \(error)")
+            }
+        }
     }
 }
 
 struct MessageBubble: View {
-    let message: Message
+    let message: ChatMessage
     
     var body: some View {
         HStack(alignment: .bottom, spacing: 8) {
@@ -143,5 +141,5 @@ struct MessageBubble: View {
 }
 
 #Preview {
-    ChatConversationView(chatTitle: "Summer Beach Party")
+    ChatConversationView(chatId: "preview", chatTitle: "Summer Beach Party")
 } 
