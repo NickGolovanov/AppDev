@@ -234,6 +234,27 @@ struct EventDetails {
     let description: String
 }
 
+extension EventDetails {
+    var formattedDate: String {
+        let isoFormatter = ISO8601DateFormatter()
+        if let dateObj = isoFormatter.date(from: self.date) {
+            let formatter = DateFormatter()
+            formatter.dateFormat = "d MMM yyyy"
+            return formatter.string(from: dateObj)
+        }
+        return self.date
+    }
+    var formattedTime: String {
+        let isoFormatter = ISO8601DateFormatter()
+        if let dateObj = isoFormatter.date(from: self.date) {
+            let formatter = DateFormatter()
+            formatter.dateFormat = "HH:mm"
+            return formatter.string(from: dateObj)
+        }
+        return ""
+    }
+}
+
 #Preview {
     EventView(eventId: "someEventId")
 }
