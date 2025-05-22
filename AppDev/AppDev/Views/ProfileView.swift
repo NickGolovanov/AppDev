@@ -9,6 +9,7 @@ import SwiftUI
 
 struct ProfileView: View {
     @State private var showEditProfile = false
+    @State private var showQRCodeScanner = false
 
     var body: some View {
         NavigationStack {
@@ -16,13 +17,16 @@ struct ProfileView: View {
                 VStack(spacing: 16) {
                     HeaderView() // From develop branch
                     profileInfoSection
-                    editProfileButton
+                    editAndScanButtons
                     statsSection
                     recentEventsSection
                 }
                 .padding()
                 .navigationDestination(isPresented: $showEditProfile) {
                     EditProfileView()
+                }
+                .navigationDestination(isPresented: $showQRCodeScanner) {
+                    QRCodeScannerView()
                 }
             }
         }
@@ -62,19 +66,35 @@ struct ProfileView: View {
         .padding(.top)
     }
 
-    var editProfileButton: some View {
-        Button(action: {
-            showEditProfile = true
-        }) {
-            Text("Edit Profile")
-                .fontWeight(.medium)
-                .foregroundColor(Color(hex: "#7131C5"))
-                .padding(.vertical, 8)
-                .padding(.horizontal, 30)
-                .overlay(
-                    RoundedRectangle(cornerRadius: 10)
-                        .stroke(Color(hex: "#7131C5"), lineWidth: 1.5)
-                )
+    var editAndScanButtons: some View {
+        HStack(spacing: 20) {
+            Button(action: {
+                showEditProfile = true
+            }) {
+                Text("Edit Profile")
+                    .fontWeight(.medium)
+                    .foregroundColor(Color(hex: "#7131C5"))
+                    .padding(.vertical, 8)
+                    .padding(.horizontal, 20)
+                    .overlay(
+                        RoundedRectangle(cornerRadius: 10)
+                            .stroke(Color(hex: "#7131C5"), lineWidth: 1.5)
+                    )
+            }
+
+            Button(action: {
+                showQRCodeScanner = true
+            }) {
+                Text("Scan QR Code")
+                    .fontWeight(.medium)
+                    .foregroundColor(Color(hex: "#7131C5"))
+                    .padding(.vertical, 8)
+                    .padding(.horizontal, 20)
+                    .overlay(
+                        RoundedRectangle(cornerRadius: 10)
+                            .stroke(Color(hex: "#7131C5"), lineWidth: 1.5)
+                    )
+            }
         }
         .padding(.top, 12)
     }
