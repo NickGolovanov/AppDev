@@ -1,6 +1,6 @@
 //
 //  CreateEventView.swift
-//  AppDev
+//  AppDevp
 //
 //  Created by Viktor Harhat on 08/05/2025.
 //
