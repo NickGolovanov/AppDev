@@ -1,6 +1,6 @@
 //
 //  CreateEventView.swift
-//  AppDev
+//  AppDevp
 //
 //  Created by Viktor Harhat on 08/05/2025.
 //
@@ -25,22 +25,24 @@ struct CreateEventView: View {
     @State private var showAlert: Bool = false
     @State private var alertMessage: String = ""
     @State private var isLoading: Bool = false
-    
+
     let categories = ["House Party", "Concert", "Meetup", "Workshop"]
 
     var body: some View {
         ScrollView {
-            VStack(alignment: .leading, spacing: 20){
+            VStack(alignment: .leading, spacing: 20) {
                 headerSection
                 imagePickerSection
                 eventFormSection
                 createButtonSection
                 footerSection
-            }.padding()
+            }
+            .padding()
         }
     }
 }
 
+// MARK: - View Sections
 extension CreateEventView {
     var headerSection: some View {
         HeaderView()
@@ -71,7 +73,6 @@ extension CreateEventView {
                         Text("Upload Cover Photo")
                             .foregroundColor(Color(hex: 0x6B7280))
                             .font(.custom("Poppins-Regular", size: 14))
-                            .fontWeight(.regular)
                     }
                 }
             }
@@ -85,7 +86,7 @@ extension CreateEventView {
                 StyledTextField(text: $eventTitle, placeholder: "Enter event title")
             }
 
-            HStack(spacing: 16){
+            HStack(spacing: 16) {
                 VStack(alignment: .leading) {
                     FormLabel(text: "Date")
                     StyledDatePicker(selection: $date, displayedComponents: .date)
@@ -116,7 +117,8 @@ extension CreateEventView {
 
             VStack(alignment: .leading, spacing: 8) {
                 FormLabel(text: "Description")
-                StyledTextEditor(text: $description, placeholder: "Describe your event").frame(height: 128)
+                StyledTextEditor(text: $description, placeholder: "Describe your event")
+                    .frame(height: 128)
             }
 
             HStack(spacing: 16) {
@@ -171,10 +173,6 @@ extension CreateEventView {
     }
 }
 
-#Preview {
-    CreateEventView()
-}
-
 // MARK: - Event Creation Logic
 extension CreateEventView {
     func createEvent() {
@@ -227,7 +225,7 @@ extension CreateEventView {
             return
         }
 
-        imageRef.putData(imageData, metadata: nil) { metadata, error in
+        imageRef.putData(imageData, metadata: nil) { _, error in
             if let error = error {
                 showError("Image upload failed: \(error.localizedDescription)")
                 isLoading = false
@@ -241,8 +239,8 @@ extension CreateEventView {
                     return
                 }
 
-                let imageUrl = url?.absoluteString ?? "https://firebasestorage.googleapis.com/v0/b/your-app.appspot.com/o/default_event_image.jpg"
-                self.createEventInFirestore(imageUrl: imageUrl)
+                let imageUrl = url?.absoluteString ?? ""
+                createEventInFirestore(imageUrl: imageUrl)
             }
         }
     }
@@ -271,7 +269,7 @@ extension CreateEventView {
             } else {
                 alertMessage = "Event created successfully!"
                 showAlert = true
-                // Reset fields if needed
+                // Optional: Reset form fields here
             }
         }
     }

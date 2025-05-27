@@ -5,16 +5,17 @@
 //  Created by Nikita Golovanov on 5/8/25.
 //
 
-
 import SwiftUI
 import FirebaseFirestore
 
 struct ProfileView: View {
-    @State private var showEditProfile = false
     @AppStorage("userId") var userId: String = ""
+    @State private var showEditProfile = false
+    @State private var showQRCodeScanner = false
+    @State private var showAllEvents = false
+
     @State private var joinedEvents: [Event] = []
     @State private var organizedEvents: [Event] = []
-    @State private var showAllEvents = false
 
     var body: some View {
         NavigationStack {
@@ -22,13 +23,16 @@ struct ProfileView: View {
                 VStack(spacing: 16) {
                     HeaderView()
                     profileInfoSection
-                    editProfileButton
+                    editAndScanButtons
                     statsSection
                     recentEventsSection
                 }
                 .padding()
                 .navigationDestination(isPresented: $showEditProfile) {
                     EditProfileView()
+                }
+                .navigationDestination(isPresented: $showQRCodeScanner) {
+                    QRCodeScannerView()
                 }
                 .navigationDestination(isPresented: $showAllEvents) {
                     AllEventsView()
@@ -72,19 +76,35 @@ struct ProfileView: View {
         .padding(.top)
     }
 
-    var editProfileButton: some View {
-        Button(action: {
-            showEditProfile = true
-        }) {
-            Text("Edit Profile")
-                .fontWeight(.medium)
-                .foregroundColor(Color(hex: "#7131C5"))
-                .padding(.vertical, 8)
-                .padding(.horizontal, 30)
-                .overlay(
-                    RoundedRectangle(cornerRadius: 10)
-                        .stroke(Color(hex: "#7131C5"), lineWidth: 1.5)
-                )
+    var editAndScanButtons: some View {
+        HStack(spacing: 20) {
+            Button(action: {
+                showEditProfile = true
+            }) {
+                Text("Edit Profile")
+                    .fontWeight(.medium)
+                    .foregroundColor(Color(hex: "#7131C5"))
+                    .padding(.vertical, 8)
+                    .padding(.horizontal, 20)
+                    .overlay(
+                        RoundedRectangle(cornerRadius: 10)
+                            .stroke(Color(hex: "#7131C5"), lineWidth: 1.5)
+                    )
+            }
+
+            Button(action: {
+                showQRCodeScanner = true
+            }) {
+                Text("Scan QR Code")
+                    .fontWeight(.medium)
+                    .foregroundColor(Color(hex: "#7131C5"))
+                    .padding(.vertical, 8)
+                    .padding(.horizontal, 20)
+                    .overlay(
+                        RoundedRectangle(cornerRadius: 10)
+                            .stroke(Color(hex: "#7131C5"), lineWidth: 1.5)
+                    )
+            }
         }
         .padding(.top, 12)
     }
@@ -240,14 +260,7 @@ struct ProfileView: View {
 // MARK: - Event Decoding for Firebase
 extension Event: Decodable {
     enum CodingKeys: String, CodingKey {
-        case id
-        case title
-        case date
-        case location
-        case imageUrl
-        case attendees
-        case category
-        case price
+        case id, title, date, location, imageUrl, attendees, category, price
     }
 
     init(from decoder: Decoder) throws {
