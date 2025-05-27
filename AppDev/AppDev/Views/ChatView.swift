@@ -9,7 +9,7 @@ import SwiftUI
 import FirebaseFirestore
 
 struct ChatView: View {
-    @EnvironmentObject private var authViewModel: AuthViewModel
+    @EnvironmentObject var authViewModel: AuthViewModel
     @StateObject private var chatService: ChatService
     @State private var searchText: String = ""
     @State private var isLoading = true
