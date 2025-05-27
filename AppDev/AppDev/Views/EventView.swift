@@ -159,7 +159,8 @@ struct EventView: View {
                             .cornerRadius(12)
 
                             // Get Ticket Button
-                            NavigationLink(destination: GetTicketView(eventName: event.title, date: "\(event.formattedDate) · \(event.formattedTime)", location: event.location, price: "€\(String(format: "%.2f", event.price))"), isActive: $showGetTicket) {
+                            let getTicketDestination = getTicketDestination
+                            NavigationLink(destination: getTicketDestination, isActive: $showGetTicket) {
                                 EmptyView()
                             }
                             Button(action: {
@@ -224,6 +225,14 @@ struct EventView: View {
                 return
             }
             self.event = EventDetails(title: title, date: date, startTime: startTime, location: location, imageUrl: imageUrl, attendees: attendees, maxCapacity: maxCapacity, price: price, description: description)
+        }
+    }
+
+    var getTicketDestination: some View {
+        if let event = event {
+            return AnyView(GetTicketView(eventId: eventId, eventName: event.title, date: "\(event.formattedDate) · \(event.formattedTime)", location: event.location, price: "€\(String(format: "%.2f", event.price))"))
+        } else {
+            return AnyView(EmptyView())
         }
     }
 }
