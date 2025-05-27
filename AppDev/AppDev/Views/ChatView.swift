@@ -9,10 +9,16 @@ import SwiftUI
 import FirebaseFirestore
 
 struct ChatView: View {
-    @StateObject private var chatService = ChatService()
+    @EnvironmentObject private var authViewModel: AuthViewModel
+    @StateObject private var chatService: ChatService
     @State private var searchText: String = ""
     @State private var isLoading = true
     @State private var errorMessage: String?
+    
+    init() {
+        // chatService will be initialized in .onAppear with the environment object
+        _chatService = StateObject(wrappedValue: ChatService(authViewModel: AuthViewModel()))
+    }
     
     var body: some View {
         NavigationStack {
@@ -47,8 +53,14 @@ struct ChatView: View {
                 }
             }
             .padding()
-            .task {
-                await loadChats()
+            .onAppear {
+                // Re-initialize chatService with the correct environment object
+                if chatService.authViewModel !== authViewModel {
+                    _chatService.wrappedValue = ChatService(authViewModel: authViewModel)
+                }
+                Task {
+                    await loadChats()
+                }
             }
         }
     }
