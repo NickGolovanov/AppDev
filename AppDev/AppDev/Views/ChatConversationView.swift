@@ -12,7 +12,7 @@ struct Message: Identifiable {
 struct ChatConversationView: View {
     let chatId: String
     let chatTitle: String
-    @EnvironmentObject private var authViewModel: AuthViewModel
+    @EnvironmentObject var authViewModel: AuthViewModel
     @StateObject private var chatService: ChatService
     @State private var messageText: String = ""
     @FocusState private var isInputFocused: Bool
@@ -79,7 +79,6 @@ struct ChatConversationView: View {
         }
         .background(Color(hex: 0xF9F9F9).ignoresSafeArea())
         .onAppear {
-            // Re-initialize chatService with the correct environment object
             if chatService.authViewModel !== authViewModel {
                 _chatService.wrappedValue = ChatService(authViewModel: authViewModel)
             }
