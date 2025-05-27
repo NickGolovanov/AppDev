@@ -1,7 +1,9 @@
 import SwiftUI
 import FirebaseFirestore
+import FirebaseAuth
 
 struct GetTicketView: View {
+    let eventId: String
     let eventName: String
     let date: String
     let location: String
@@ -74,14 +76,21 @@ struct GetTicketView: View {
         }
         // Save to Firestore
         let db = Firestore.firestore()
+        let ticketId = UUID().uuidString
+        let qrcodeUrl = "https://api.qrserver.com/v1/create-qr-code/?data=Ticket-\(ticketId)"
         let ticketData: [String: Any] = [
             "name": name,
             "email": email,
+            "eventId": eventId,
             "eventName": eventName,
             "date": date,
             "location": location,
             "price": price,
-            "timestamp": FieldValue.serverTimestamp()
+            "qrcodeUrl": qrcodeUrl,
+            "ticketId": ticketId,
+            "timestamp": FieldValue.serverTimestamp(),
+            "used": false,
+            "userId": Auth.auth().currentUser?.uid ?? "guest"
         ]
         db.collection("tickets").addDocument(data: ticketData) { error in
             if let error = error {
@@ -92,6 +101,13 @@ struct GetTicketView: View {
                 alertMessage = "Thank you, \(name)! Your ticket has been reserved."
                 name = ""
                 email = ""
+                // Create chat document if it doesn't exist
+                let chatData: [String: Any] = [
+                    "eventName": eventName,
+                    "lastMessage": "Welcome to the \(eventName) chat!",
+                    "lastMessageTime": FieldValue.serverTimestamp()
+                ]
+                db.collection("chats").document(eventId).setData(chatData, merge: true)
             }
             showAlert = true
         }
@@ -105,5 +121,5 @@ struct GetTicketView: View {
 }
 
 #Preview {
-    GetTicketView(eventName: "Sample Event", date: "21 May 2025, 10:00", location: "Sample Location", price: "€10.00")
+    GetTicketView(eventId: "sampleEventId", eventName: "Sample Event", date: "21 May 2025, 10:00", location: "Sample Location", price: "€10.00")
 } 
