@@ -6,16 +6,22 @@
 //
 
 import SwiftUI
+import FirebaseFirestore
 
 struct ProfileView: View {
+    @AppStorage("userId") var userId: String = ""
     @State private var showEditProfile = false
     @State private var showQRCodeScanner = false
+    @State private var showAllEvents = false
+
+    @State private var joinedEvents: [Event] = []
+    @State private var organizedEvents: [Event] = []
 
     var body: some View {
         NavigationStack {
             ScrollView {
                 VStack(spacing: 16) {
-                    HeaderView() // From develop branch
+                    HeaderView()
                     profileInfoSection
                     editAndScanButtons
                     statsSection
@@ -28,8 +34,12 @@ struct ProfileView: View {
                 .navigationDestination(isPresented: $showQRCodeScanner) {
                     QRCodeScannerView()
                 }
+                .navigationDestination(isPresented: $showAllEvents) {
+                    AllEventsView()
+                }
             }
         }
+        .onAppear(perform: fetchRecentEvents)
     }
 
     var profileInfoSection: some View {
@@ -101,8 +111,8 @@ struct ProfileView: View {
 
     var statsSection: some View {
         HStack(spacing: 16) {
-            statBox(title: "24", subtitle: "Events Joined")
-            statBox(title: "8", subtitle: "Organized")
+            statBox(title: "\(joinedEvents.count)", subtitle: "Events Joined")
+            statBox(title: "\(organizedEvents.count)", subtitle: "Organized")
             statBox(title: "156", subtitle: "Connections")
         }
     }
@@ -129,7 +139,7 @@ struct ProfileView: View {
                 Text("Recent Events")
                     .font(.headline)
                 Spacer()
-                Button(action: {}) {
+                Button(action: { showAllEvents = true }) {
                     Text("See All")
                         .font(.subheadline)
                         .foregroundColor(Color(hex: "#7131C5"))
@@ -137,29 +147,59 @@ struct ProfileView: View {
             }
 
             VStack(spacing: 12) {
-                eventCard(title: "Summer Beach Party", date: "Jun 15, 2025", icon: "music.note", badge: "Joined", badgeColor: Color.green.opacity(0.2))
-                eventCard(title: "Club Night Special", date: "Jun 10, 2025", icon: "martini", badge: "Organized", badgeColor: Color.blue.opacity(0.2))
+                ForEach(joinedEvents) { event in
+                    NavigationLink(destination: EventView(eventId: event.id)) {
+                        eventCard(event: event, badge: "Joined", badgeColor: Color.green.opacity(0.2))
+                    }
+                }
+
+                ForEach(organizedEvents) { event in
+                    NavigationLink(destination: EventView(eventId: event.id)) {
+                        eventCard(event: event, badge: "Organized", badgeColor: Color.blue.opacity(0.2))
+                    }
+                }
+
+                if joinedEvents.isEmpty && organizedEvents.isEmpty {
+                    Text("No recent events.")
+                        .foregroundColor(.gray)
+                }
             }
         }
     }
 
-    func eventCard(title: String, date: String, icon: String, badge: String, badgeColor: Color) -> some View {
+    func eventCard(event: Event, badge: String, badgeColor: Color) -> some View {
         HStack(spacing: 12) {
             ZStack {
                 RoundedRectangle(cornerRadius: 8)
                     .fill(Color(hex: "#E9DDFD"))
                     .frame(width: 40, height: 40)
-                Image(systemName: icon)
-                    .foregroundColor(Color(hex: "#7131C5"))
+
+                if let imageUrl = URL(string: event.imageUrl), !event.imageUrl.isEmpty {
+                    AsyncImage(url: imageUrl) { image in
+                        image.resizable()
+                            .aspectRatio(contentMode: .fill)
+                            .frame(width: 40, height: 40)
+                            .cornerRadius(8)
+                    } placeholder: {
+                        Image(systemName: "calendar")
+                            .foregroundColor(Color(hex: "#7131C5"))
+                    }
+                } else {
+                    Image(systemName: "calendar")
+                        .foregroundColor(Color(hex: "#7131C5"))
+                }
             }
 
             VStack(alignment: .leading, spacing: 4) {
-                Text(title)
+                Text(event.title)
                     .fontWeight(.semibold)
-                Text(date)
+                    .foregroundColor(.primary)
+
+                Text("\(event.formattedDate), \(event.formattedTime)")
                     .font(.subheadline)
                     .foregroundColor(.gray)
             }
+
             Spacer()
 
             Text(badge)
@@ -173,6 +213,68 @@ struct ProfileView: View {
         .background(Color.white)
         .cornerRadius(12)
         .shadow(color: Color.black.opacity(0.05), radius: 4, x: 0, y: 2)
+    }
+
+    func fetchRecentEvents() {
+        guard !userId.isEmpty else { return }
+
+        let db = Firestore.firestore()
+        let userRef = db.collection("users").document(userId)
+
+        userRef.getDocument { document, error in
+            guard let document = document, document.exists, let data = document.data() else {
+                print("User document not found: \(error?.localizedDescription ?? "Unknown error")")
+                return
+            }
+
+            let joinedEventIds = data["joinedEventIds"] as? [String] ?? []
+            let organizedEventIds = data["organizedEventIds"] as? [String] ?? []
+
+            if !joinedEventIds.isEmpty {
+                db.collection("events").whereField(FieldPath.documentID(), in: joinedEventIds).getDocuments { snapshot, error in
+                    if let snapshot = snapshot {
+                        self.joinedEvents = snapshot.documents.compactMap { doc in
+                            try? doc.data(as: Event.self)
+                        }
+                    } else {
+                        print("Error fetching joined events: \(error?.localizedDescription ?? "")")
+                    }
+                }
+            }
+
+            if !organizedEventIds.isEmpty {
+                db.collection("events").whereField(FieldPath.documentID(), in: organizedEventIds).getDocuments { snapshot, error in
+                    if let snapshot = snapshot {
+                        self.organizedEvents = snapshot.documents.compactMap { doc in
+                            try? doc.data(as: Event.self)
+                        }
+                    } else {
+                        print("Error fetching organized events: \(error?.localizedDescription ?? "")")
+                    }
+                }
+            }
+        }
+    }
+}
+
+// MARK: - Event Decoding for Firebase
+extension Event: Decodable {
+    enum CodingKeys: String, CodingKey {
+        case id, title, date, location, imageUrl, attendees, category, price
+    }
+
+    init(from decoder: Decoder) throws {
+        let container = try decoder.container(keyedBy: CodingKeys.self)
+        self.id = try container.decode(String.self, forKey: .id)
+        self.title = try container.decode(String.self, forKey: .title)
+        self.date = try container.decode(String.self, forKey: .date)
+        self.location = try container.decode(String.self, forKey: .location)
+        self.imageUrl = try container.decode(String.self, forKey: .imageUrl)
+        self.attendees = try container.decode(Int.self, forKey: .attendees)
+        self.category = try container.decode(String.self, forKey: .category)
+        self.price = try container.decode(Double.self, forKey: .price)
+        self.coordinate = nil
+        self.distance = nil
     }
 }
 
