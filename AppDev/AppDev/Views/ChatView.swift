@@ -101,7 +101,7 @@ extension ChatView {
         ScrollView {
             VStack(spacing: 12) {
                 ForEach(chatService.chats.filter { searchText.isEmpty ? true : $0.eventName.localizedCaseInsensitiveContains(searchText) }) { chat in
-                    ChatRow(chat: chat, authViewModel: authViewModel)
+                    ChatRow(chat: chat)
                 }
             }
         }
@@ -165,4 +165,5 @@ struct ChatRow: View {
 
 #Preview {
     ChatView(authViewModel: AuthViewModel())
+        .environmentObject(AuthViewModel())
 }
