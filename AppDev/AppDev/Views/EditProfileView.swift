@@ -74,6 +74,26 @@ struct EditProfileView: View {
         .alert(isPresented: $showAlert) {
             Alert(title: Text("Profile Update"), message: Text(alertMessage), dismissButton: .default(Text("OK")))
         }
+        .onAppear(perform: fetchUserData)
+    }
+
+    func fetchUserData() {
+        guard !userId.isEmpty else { return }
+
+        Firestore.firestore().collection("users").document(userId).getDocument { document, error in
+            if let document = document, document.exists {
+                let data = document.data()
+                fullName = data?["fullName"] as? String ?? ""
+                username = data?["username"] as? String ?? ""
+                bio = data?["description"] as? String ?? ""
+                email = data?["email"] as? String ?? ""
+                profileImageUrl = data?["profileImageUrl"] as? String ?? ""
+                // You might want to load the profile image if profileImageUrl is not empty
+                // This would require additional logic
+            } else {
+                print("Document does not exist or error: \(error?.localizedDescription ?? "Unknown error")")
+            }
+        }
     }
 
     func saveProfile() {
