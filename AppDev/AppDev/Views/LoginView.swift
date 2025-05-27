@@ -7,8 +7,8 @@ struct LoginView: View {
     @State private var showAlert = false
     @State private var alertMessage = ""
     @State private var isLoading = false
-    @State private var navigateToMainTab = false
     @State private var showRegistration = false
+    @EnvironmentObject private var authViewModel: AuthViewModel
     
     var body: some View {
         VStack(spacing: 0) {
@@ -118,11 +118,9 @@ struct LoginView: View {
         .alert(isPresented: $showAlert) {
             Alert(title: Text("Login"), message: Text(alertMessage), dismissButton: .default(Text("OK")))
         }
-        .fullScreenCover(isPresented: $navigateToMainTab) {
-            MainTabView()
-        }
         .sheet(isPresented: $showRegistration) {
             RegistrationView()
+                .environmentObject(authViewModel)
         }
     }
     
@@ -143,13 +141,11 @@ struct LoginView: View {
                 showAlert = true
                 return
             }
-            
-            // Successful login
-            navigateToMainTab = true
         }
     }
 }
 
 #Preview {
     LoginView()
+        .environmentObject(AuthViewModel())
 }
