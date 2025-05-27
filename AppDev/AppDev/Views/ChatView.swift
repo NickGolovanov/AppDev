@@ -101,7 +101,7 @@ extension ChatView {
         ScrollView {
             VStack(spacing: 12) {
                 ForEach(chatService.chats.filter { searchText.isEmpty ? true : $0.eventName.localizedCaseInsensitiveContains(searchText) }) { chat in
-                    ChatRow(chat: chat)
+                    ChatRow(chat: chat, authViewModel: authViewModel)
                 }
             }
         }
@@ -110,9 +110,10 @@ extension ChatView {
 
 struct ChatRow: View {
     let chat: ChatItem
+    @EnvironmentObject var authViewModel: AuthViewModel
     
     var body: some View {
-        NavigationLink(destination: ChatConversationView(chatId: chat.id, chatTitle: chat.eventName)) {
+        NavigationLink(destination: ChatConversationView(chatId: chat.id, chatTitle: chat.eventName, authViewModel: authViewModel)) {
             HStack(alignment: .center, spacing: 12) {
                 Image(systemName: chat.iconName)
                     .resizable()
