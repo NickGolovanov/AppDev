@@ -25,29 +25,29 @@ struct CreateEventView: View {
     @State private var showAlert: Bool = false
     @State private var alertMessage: String = ""
     @State private var isLoading: Bool = false
-    
+
     let categories = ["House Party", "Concert", "Meetup", "Workshop"]
-    
+
     var body: some View {
         ScrollView {
-            VStack(alignment: .leading, spacing: 20){
+            VStack(alignment: .leading, spacing: 20) {
                 headerSection
-                
                 imagePickerSection
                 eventFormSection
                 createButtonSection
-                
                 footerSection
-            }.padding()
+            }
+            .padding()
         }
     }
 }
 
+// MARK: - View Sections
 extension CreateEventView {
     var headerSection: some View {
         HeaderView()
     }
-    
+
     var imagePickerSection: some View {
         Button(action: {
             showImagePicker = true
@@ -57,8 +57,9 @@ extension CreateEventView {
                     .fill(Color(hex: 0xE5E7EB))
                     .frame(height: 192)
                     .cornerRadius(8)
-                if let coverImage = coverImage {
-                    coverImage
+
+                if let image = coverUIImage {
+                    Image(uiImage: image)
                         .resizable()
                         .scaledToFill()
                         .frame(height: 192)
@@ -67,74 +68,59 @@ extension CreateEventView {
                     VStack {
                         Image(systemName: "photo")
                             .font(.system(size: 30))
-                            .foregroundColor(Color(hex: 0x9CA3AF)).padding(.bottom, 2)
+                            .foregroundColor(Color(hex: 0x9CA3AF))
+                            .padding(.bottom, 2)
                         Text("Upload Cover Photo")
-                            .foregroundColor(Color(hex: 0x6B7280)).font(.custom("Poppins-Regular", size: 14))
-                            .fontWeight(.regular)
+                            .foregroundColor(Color(hex: 0x6B7280))
+                            .font(.custom("Poppins-Regular", size: 14))
                     }
                 }
             }
         }
-        // .sheet(isPresented: $showImagePicker) {
-        //     ImagePicker(image: Binding(
-        //         get: { coverImage },
-        //         set: { newImage in
-        //             coverImage = newImage
-        //             if let newImage = newImage {
-        //                 // Convert SwiftUI Image to UIImage
-        //                 if let uiImage = newImage.asUIImage() {
-        //                     coverUIImage = uiImage
-        //                 }
-        //             }
-        //         }
-        //     ))
-        // }
     }
-    
+
     var eventFormSection: some View {
-        Group{
+        Group {
             VStack(alignment: .leading, spacing: 8) {
                 FormLabel(text: "Event Title")
                 StyledTextField(text: $eventTitle, placeholder: "Enter event title")
             }
-            
-            HStack(spacing: 16){
+
+            HStack(spacing: 16) {
                 VStack(alignment: .leading) {
                     FormLabel(text: "Date")
                     StyledDatePicker(selection: $date, displayedComponents: .date)
-                    
                 }
-                
+
                 VStack(alignment: .leading, spacing: 8) {
                     FormLabel(text: "Category")
                     StyledPicker(selection: $category, options: categories, optionLabel: { $0 })
                 }
             }
-            
+
             HStack(spacing: 16) {
                 VStack(alignment: .leading) {
                     FormLabel(text: "Start Time")
                     StyledDatePicker(selection: $startTime, displayedComponents: .hourAndMinute)
-                    
                 }
-                
+
                 VStack(alignment: .leading, spacing: 8) {
                     FormLabel(text: "End Time")
                     StyledDatePicker(selection: $endTime, displayedComponents: .hourAndMinute)
                 }
             }
-            
-            
+
             VStack(alignment: .leading, spacing: 8) {
                 FormLabel(text: "Location")
                 StyledTextField(text: $location, placeholder: "Enter venue address")
             }
-            
+
             VStack(alignment: .leading, spacing: 8) {
                 FormLabel(text: "Description")
-                StyledTextEditor(text: $description, placeholder: "Describe your event").frame(height: 128)
+                StyledTextEditor(text: $description, placeholder: "Describe your event")
+                    .frame(height: 128)
             }
-            
+
             HStack(spacing: 16) {
                 VStack(alignment: .leading) {
                     FormLabel(text: "Max Capacity")
@@ -145,10 +131,9 @@ extension CreateEventView {
                     StyledTextField(text: $price, placeholder: "0.00").keyboardType(.decimalPad)
                 }
             }
-            
         }
     }
-    
+
     var createButtonSection: some View {
         Button(action: {
             createEvent()
@@ -173,7 +158,7 @@ extension CreateEventView {
             Alert(title: Text("Event Creation"), message: Text(alertMessage), dismissButton: .default(Text("OK")))
         }
     }
-    
+
     var footerSection: some View {
         Rectangle()
             .fill(Color.gray.opacity(0.1))
@@ -188,29 +173,9 @@ extension CreateEventView {
     }
 }
 
-#Preview {
-    CreateEventView()
-}
-
-// MARK: - Helper for SwiftUI Image to UIImage
-extension Image {
-    func asUIImage() -> UIImage? {
-        let controller = UIHostingController(rootView: self.resizable())
-        let view = controller.view
-        let targetSize = CGSize(width: 300, height: 192)
-        view?.bounds = CGRect(origin: .zero, size: targetSize)
-        view?.backgroundColor = .clear
-        let renderer = UIGraphicsImageRenderer(size: targetSize)
-        return renderer.image { _ in
-            view?.drawHierarchy(in: view?.bounds ?? CGRect.zero, afterScreenUpdates: true)
-        }
-    }
-}
-
 // MARK: - Event Creation Logic
 extension CreateEventView {
     func createEvent() {
-        // Validation
         guard !eventTitle.trimmingCharacters(in: .whitespaces).isEmpty else {
             showError("Event title is required."); return
         }
@@ -238,50 +203,48 @@ extension CreateEventView {
         guard let priceValue = Double(price), priceValue >= 0 else {
             showError("Price must be a non-negative number."); return
         }
-        
+
         isLoading = true
-        
-        // If there's an image, upload it first
+
         if let uiImage = coverUIImage {
             uploadImageAndCreateEvent(uiImage: uiImage)
         } else {
-            // Use a default image URL if no image is provided
             let defaultImageUrl = "https://firebasestorage.googleapis.com/v0/b/your-app.appspot.com/o/default_event_image.jpg"
             createEventInFirestore(imageUrl: defaultImageUrl)
         }
     }
-    
+
     private func uploadImageAndCreateEvent(uiImage: UIImage) {
         let storageRef = Storage.storage().reference().child("event_covers/")
         let imageName = UUID().uuidString + ".jpg"
         let imageRef = storageRef.child(imageName)
-        
+
         guard let imageData = uiImage.jpegData(compressionQuality: 0.8) else {
-            showError("Failed to process image data. Please try a different image.")
+            showError("Failed to process image data.")
             isLoading = false
             return
         }
-        
-        imageRef.putData(imageData, metadata: nil) { metadata, error in
+
+        imageRef.putData(imageData, metadata: nil) { _, error in
             if let error = error {
                 showError("Image upload failed: \(error.localizedDescription)")
                 isLoading = false
                 return
             }
-            
+
             imageRef.downloadURL { url, error in
                 if let error = error {
                     showError("Failed to get image URL: \(error.localizedDescription)")
                     isLoading = false
                     return
                 }
-                
-                let imageUrl = url?.absoluteString ?? "https://firebasestorage.googleapis.com/v0/b/your-app.appspot.com/o/default_event_image.jpg"
-                self.createEventInFirestore(imageUrl: imageUrl)
+
+                let imageUrl = url?.absoluteString ?? ""
+                createEventInFirestore(imageUrl: imageUrl)
             }
         }
     }
-    
+
     private func createEventInFirestore(imageUrl: String) {
         let db = Firestore.firestore()
         let eventData: [String: Any] = [
@@ -298,7 +261,7 @@ extension CreateEventView {
             "attendees": 0,
             "createdAt": FieldValue.serverTimestamp()
         ]
-        
+
         db.collection("events").addDocument(data: eventData) { error in
             isLoading = false
             if let error = error {
@@ -306,11 +269,11 @@ extension CreateEventView {
             } else {
                 alertMessage = "Event created successfully!"
                 showAlert = true
-                // Reset fields here if needed
+                // Optional: Reset form fields here
             }
         }
     }
-    
+
     func showError(_ message: String) {
         alertMessage = message
         showAlert = true

@@ -106,4 +106,4 @@ struct GetTicketView: View {
 
 #Preview {
     GetTicketView(eventName: "Sample Event", date: "21 May 2025, 10:00", location: "Sample Location", price: "€10.00")
-} 
+}
