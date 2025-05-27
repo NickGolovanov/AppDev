@@ -1,5 +1,7 @@
 import Foundation
 import FirebaseFirestore
+import FirebaseAuth
+import SwiftUI
 
 struct ChatItem: Identifiable, Codable {
     let id: String
@@ -46,24 +48,25 @@ class ChatService: ObservableObject {
     private let db = Firestore.firestore()
     @Published var chats: [ChatItem] = []
     @Published var messages: [String: [ChatMessage]] = [:] // eventId: messages
-    private let userId: String = "guest"
-    private let userName: String = "Guest"
+    private var authViewModel: AuthViewModel
+    
+    init(authViewModel: AuthViewModel) {
+        self.authViewModel = authViewModel
+    }
     
     func fetchUserChats() async throws {
-        // Get all tickets
-        let ticketsSnapshot = try await db.collection("tickets").getDocuments()
+        guard let user = authViewModel.currentUser else { return }
+        let ticketsSnapshot = try await db.collection("tickets").whereField("email", isEqualTo: user.email).getDocuments()
         let eventIdToEventName: [String: String] = Dictionary(uniqueKeysWithValues: ticketsSnapshot.documents.compactMap { doc in
             guard let eventId = doc.data()["eventId"] as? String,
                   let eventName = doc.data()["eventName"] as? String else { return nil }
             return (eventId, eventName)
         })
-        // Get chats for those eventIds
         for (eventId, ticketEventName) in eventIdToEventName {
             let chatDoc = try await db.collection("chats").document(eventId).getDocument()
             if let chatData = chatDoc.data() {
                 let firestoreEventName = chatData["eventName"] as? String ?? ""
                 let eventName = firestoreEventName.isEmpty ? ticketEventName : firestoreEventName
-                // If eventName in chat is missing or incorrect, update it
                 if firestoreEventName != ticketEventName && !ticketEventName.isEmpty {
                     try? await db.collection("chats").document(eventId).updateData(["eventName": ticketEventName])
                 }
@@ -86,16 +89,16 @@ class ChatService: ObservableObject {
     }
     
     func sendMessage(eventId: String, content: String) async throws {
+        guard let user = authViewModel.currentUser else { return }
         let message = ChatMessage(
             id: UUID().uuidString,
             eventId: eventId,
             content: content,
-            senderId: userId,
-            senderName: userName,
+            senderId: user.id ?? "",
+            senderName: user.fullName,
             timestamp: Date(),
             isFromCurrentUser: true
         )
-        // Save with Firestore Timestamp
         try await db.collection("chats")
             .document(eventId)
             .collection("messages")
@@ -109,7 +112,6 @@ class ChatService: ObservableObject {
                 "timestamp": Timestamp(date: message.timestamp),
                 "isFromCurrentUser": message.isFromCurrentUser
             ])
-        // Update last message in chat
         try await db.collection("chats")
             .document(eventId)
             .updateData([
@@ -125,11 +127,13 @@ class ChatService: ObservableObject {
             .order(by: "timestamp")
             .addSnapshotListener { [weak self] snapshot, error in
                 guard let documents = snapshot?.documents else { return }
+                let currentUserId = self?.authViewModel.currentUser?.id
                 let messages = documents.compactMap { doc -> ChatMessage? in
                     var data = doc.data()
                     data["id"] = doc.documentID
-                    // All messages are from 'guest' in this mode
-                    data["isFromCurrentUser"] = true
+                    if let senderId = data["senderId"] as? String {
+                        data["isFromCurrentUser"] = (senderId == currentUserId)
+                    }
                     return try? Firestore.Decoder().decode(ChatMessage.self, from: data)
                 }
                 DispatchQueue.main.async {

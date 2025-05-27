@@ -12,9 +12,16 @@ struct Message: Identifiable {
 struct ChatConversationView: View {
     let chatId: String
     let chatTitle: String
-    @StateObject private var chatService = ChatService()
+    @EnvironmentObject private var authViewModel: AuthViewModel
+    @StateObject private var chatService: ChatService
     @State private var messageText: String = ""
     @FocusState private var isInputFocused: Bool
+    
+    init(chatId: String, chatTitle: String) {
+        _chatService = StateObject(wrappedValue: ChatService(authViewModel: AuthViewModel()))
+        self.chatId = chatId
+        self.chatTitle = chatTitle
+    }
     
     var body: some View {
         VStack(spacing: 0) {
@@ -72,6 +79,10 @@ struct ChatConversationView: View {
         }
         .background(Color(hex: 0xF9F9F9).ignoresSafeArea())
         .onAppear {
+            // Re-initialize chatService with the correct environment object
+            if chatService.authViewModel !== authViewModel {
+                _chatService.wrappedValue = ChatService(authViewModel: authViewModel)
+            }
             chatService.observeMessages(eventId: chatId)
         }
     }
@@ -108,7 +119,8 @@ struct MessageBubble: View {
                         .padding(.trailing, 4)
                 }
             } else {
-                Image(systemName: "person.circle.fill")
+                // Static avatar
+                Image(systemName: "person.crop.circle.fill")
                     .resizable()
                     .frame(width: 32, height: 32)
                     .foregroundColor(.orange)
@@ -142,4 +154,5 @@ struct MessageBubble: View {
 
 #Preview {
     ChatConversationView(chatId: "preview", chatTitle: "Summer Beach Party")
+        .environmentObject(AuthViewModel())
 } 
