@@ -19,8 +19,10 @@ struct AppDevApp: App {
         WindowGroup {
             if authViewModel.isAuthenticated {
                 MainTabView()
+                    .environmentObject(authViewModel)
             } else {
                 LoginView()
+                    .environmentObject(authViewModel)
             }
         }
     }
