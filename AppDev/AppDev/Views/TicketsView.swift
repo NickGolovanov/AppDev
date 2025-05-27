@@ -93,8 +93,15 @@ struct TicketsView: View {
     }
     
     private func fetchTickets() {
+        guard let currentUser = Auth.auth().currentUser else {
+            self.tickets = []
+            self.isLoading = false
+            self.errorMessage = "User not logged in."
+            return
+        }
         let db = Firestore.firestore()
         db.collection("tickets")
+            .whereField("userId", isEqualTo: currentUser.uid)
             .addSnapshotListener { snapshot, error in
                 isLoading = false
                 
