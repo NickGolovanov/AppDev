@@ -15,9 +15,8 @@ struct ChatView: View {
     @State private var isLoading = true
     @State private var errorMessage: String?
     
-    init() {
-        // chatService will be initialized in .onAppear with the environment object
-        _chatService = StateObject(wrappedValue: ChatService(authViewModel: AuthViewModel()))
+    init(authViewModel: AuthViewModel) {
+        _chatService = StateObject(wrappedValue: ChatService(authViewModel: authViewModel))
     }
     
     var body: some View {
@@ -53,14 +52,8 @@ struct ChatView: View {
                 }
             }
             .padding()
-            .onAppear {
-                // Re-initialize chatService with the correct environment object
-                if chatService.authViewModel !== authViewModel {
-                    _chatService.wrappedValue = ChatService(authViewModel: authViewModel)
-                }
-                Task {
-                    await loadChats()
-                }
+            .task {
+                await loadChats()
             }
         }
     }
@@ -170,5 +163,5 @@ struct ChatRow: View {
 }
 
 #Preview {
-    ChatView()
+    ChatView(authViewModel: AuthViewModel())
 }

@@ -17,8 +17,8 @@ struct ChatConversationView: View {
     @State private var messageText: String = ""
     @FocusState private var isInputFocused: Bool
     
-    init(chatId: String, chatTitle: String) {
-        _chatService = StateObject(wrappedValue: ChatService(authViewModel: AuthViewModel()))
+    init(chatId: String, chatTitle: String, authViewModel: AuthViewModel) {
+        _chatService = StateObject(wrappedValue: ChatService(authViewModel: authViewModel))
         self.chatId = chatId
         self.chatTitle = chatTitle
     }
@@ -79,9 +79,6 @@ struct ChatConversationView: View {
         }
         .background(Color(hex: 0xF9F9F9).ignoresSafeArea())
         .onAppear {
-            if chatService.authViewModel !== authViewModel {
-                _chatService.wrappedValue = ChatService(authViewModel: authViewModel)
-            }
             chatService.observeMessages(eventId: chatId)
         }
     }
@@ -152,6 +149,6 @@ struct MessageBubble: View {
 }
 
 #Preview {
-    ChatConversationView(chatId: "preview", chatTitle: "Summer Beach Party")
+    ChatConversationView(chatId: "preview", chatTitle: "Summer Beach Party", authViewModel: AuthViewModel())
         .environmentObject(AuthViewModel())
 } 
