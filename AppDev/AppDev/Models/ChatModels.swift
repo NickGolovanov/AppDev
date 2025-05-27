@@ -45,10 +45,10 @@ struct ChatMessage: Identifiable, Codable {
 
 // Firebase Chat Service
 class ChatService: ObservableObject {
-    private let db = Firestore.firestore()
+    let db = Firestore.firestore()
     @Published var chats: [ChatItem] = []
     @Published var messages: [String: [ChatMessage]] = [:] // eventId: messages
-    private var authViewModel: AuthViewModel
+    var authViewModel: AuthViewModel
     
     init(authViewModel: AuthViewModel) {
         self.authViewModel = authViewModel
