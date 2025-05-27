@@ -10,8 +10,8 @@ struct RegistrationView: View {
     @State private var showAlert = false
     @State private var alertMessage = ""
     @State private var isLoading = false
-    @State private var navigateToMainTab = false
     @Environment(\.presentationMode) var presentationMode
+    @EnvironmentObject private var authViewModel: AuthViewModel
     
     var body: some View {
         NavigationView {
@@ -53,9 +53,6 @@ struct RegistrationView: View {
             .navigationTitle("Registration")
             .alert(isPresented: $showAlert) {
                 Alert(title: Text("Registration"), message: Text(alertMessage), dismissButton: .default(Text("OK")))
-            }
-            .fullScreenCover(isPresented: $navigateToMainTab) {
-                MainTabView()
             }
         }
     }
@@ -113,15 +110,19 @@ struct RegistrationView: View {
                     try db.collection("users").document(user.uid).setData(from: userData)
                     alertMessage = "Registration successful!"
                     showAlert = true
-                    isLoading = false
-                    // Navigate to MainTabView after successful registration
-                    navigateToMainTab = true
+                    presentationMode.wrappedValue.dismiss()
                 } catch {
                     alertMessage = "Failed to save user data: \(error.localizedDescription)"
                     showAlert = true
-                    isLoading = false
                 }
+                
+                isLoading = false
             }
         }
     }
+}
+
+#Preview {
+    RegistrationView()
+        .environmentObject(AuthViewModel())
 } 
