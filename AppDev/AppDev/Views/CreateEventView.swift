@@ -39,6 +39,9 @@ struct CreateEventView: View {
             }
             .padding()
         }
+        .sheet(isPresented: $showImagePicker) {
+            ImagePicker(image: $coverUIImage)
+        }
     }
 }
 
@@ -239,7 +242,13 @@ extension CreateEventView {
                     return
                 }
 
-                let imageUrl = url?.absoluteString ?? ""
+                guard let imageUrl = url?.absoluteString else {
+                    print("Wanring, Download URL is nil, using default image URL")
+                    createEventInFirestore(imageUrl: "https://firebasestorage.googleapis.com/v0/b/your-app.appspot.com/o/default_event_image.jpg")
+                    return
+                }
+
+                print("Image uploaded successfully!")
                 createEventInFirestore(imageUrl: imageUrl)
             }
         }
