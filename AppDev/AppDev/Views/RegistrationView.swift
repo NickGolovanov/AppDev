@@ -1,6 +1,8 @@
 import SwiftUI
 import FirebaseAuth
 import FirebaseFirestore
+import GoogleSignIn
+import GoogleSignInSwift
 
 struct RegistrationView: View {
     @State private var email = ""
@@ -48,6 +50,21 @@ struct RegistrationView: View {
                     }
                     .disabled(isLoading || !isFormValid)
                     .listRowBackground(isFormValid ? Color.blue : Color.gray)
+
+                    // Add Google Sign-In Button
+                    Button(action: handleGoogleSignIn) {
+                       HStack {
+                           Image(systemName: "globe") // Or use a Google logo asset if you have one
+                           Text("Sign in with Google")
+                               .frame(maxWidth: .infinity)
+                       }
+                       .foregroundColor(.white)
+                       .padding()
+                       .background(Color.red)
+                       .cornerRadius(8)
+                    }
+                    .disabled(isLoading)
+                    .listRowBackground(Color.red)
                 }
             }
             .navigationTitle("Registration")
@@ -55,7 +72,40 @@ struct RegistrationView: View {
                 Alert(title: Text("Registration"), message: Text(alertMessage), dismissButton: .default(Text("OK")))
             }
         }
+    
+    private func handleGoogleSignIn() {
+        guard let clientID = FirebaseApp.app()?.options.clientID else { return }
+        let config = GIDConfiguration(clientID: clientID)
+        guard let windowScene = UIApplication.shared.connectedScenes.first as? UIWindowScene,
+              let rootViewController = windowScene.windows.first?.rootViewController else {
+            return
+        }
+        GIDSignIn.sharedInstance.signIn(with: config, presenting: rootViewController) { user, error in
+            if let error = error {
+                alertMessage = "Google Sign-In failed: \(error.localizedDescription)"
+                showAlert = true
+                return
+            }
+            guard
+                let authentication = user?.authentication,
+                let idToken = authentication.idToken
+            else {
+                alertMessage = "Google authentication failed."
+                showAlert = true
+                return
+            }
+            let credential = GoogleAuthProvider.credential(withIDToken: idToken, accessToken: authentication.accessToken)
+            Auth.auth().signIn(with: credential) { authResult, error in
+                if let error = error {
+                    alertMessage = "Firebase Sign-In failed: \(error.localizedDescription)"
+                    showAlert = true
+                    return
+                }
+                // User is signed in with Google
+            }
+        }
     }
+
     
     private var isFormValid: Bool {
         !email.isEmpty && !fullName.isEmpty && !password.isEmpty && password == confirmPassword && password.count >= 6
@@ -118,8 +168,9 @@ struct RegistrationView: View {
                 
                 isLoading = false
             }
-        }
-    }
+         }
+      }
+  }
 }
 
 #Preview {
