@@ -9,6 +9,7 @@ import SwiftUI
 
 struct MainTabView: View {
     @State private var selectedTab = "Home"
+    @EnvironmentObject var authViewModel: AuthViewModel
 
     var body: some View {
         ZStack(alignment: .bottom) {
@@ -25,7 +26,7 @@ struct MainTabView: View {
                     .tag("Events")
                     .ignoresSafeArea(.all, edges: .bottom)
 
-                ChatView()
+                ChatView(authViewModel: authViewModel)
                     .tag("Chat")
                     .ignoresSafeArea(.all, edges: .bottom)
 

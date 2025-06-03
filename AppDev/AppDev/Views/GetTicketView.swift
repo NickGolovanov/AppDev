@@ -1,6 +1,6 @@
-
 import SwiftUI
 import FirebaseFirestore
+import FirebaseAuth
 
 struct GetTicketView: View {
     let eventId: String
@@ -90,7 +90,7 @@ struct GetTicketView: View {
             "ticketId": ticketId,
             "timestamp": FieldValue.serverTimestamp(),
             "used": false,
-            "userId": "guest" // or use a real userId if you add auth
+            "userId": Auth.auth().currentUser?.uid ?? "guest"
         ]
         db.collection("tickets").addDocument(data: ticketData) { error in
             if let error = error {
