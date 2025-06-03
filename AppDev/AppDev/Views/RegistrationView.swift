@@ -72,6 +72,7 @@ struct RegistrationView: View {
                 Alert(title: Text("Registration"), message: Text(alertMessage), dismissButton: .default(Text("OK")))
             }
         }
+    }
     
     private func handleGoogleSignIn() {
         guard let clientID = FirebaseApp.app()?.options.clientID else { return }
@@ -168,9 +169,8 @@ struct RegistrationView: View {
                 
                 isLoading = false
             }
-         }
-      }
-  }
+        }
+    }
 }
 
 #Preview {
