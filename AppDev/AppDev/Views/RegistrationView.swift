@@ -3,6 +3,7 @@ import FirebaseAuth
 import FirebaseFirestore
 import GoogleSignIn
 import GoogleSignInSwift
+import FirebaseCore
 
 struct RegistrationView: View {
     @State private var email = ""
@@ -81,21 +82,23 @@ struct RegistrationView: View {
               let rootViewController = windowScene.windows.first?.rootViewController else {
             return
         }
-        GIDSignIn.sharedInstance.signIn(with: config, presenting: rootViewController) { user, error in
+        GIDSignIn.sharedInstance.configuration = config
+        GIDSignIn.sharedInstance.signIn(withPresenting: rootViewController) { result, error in
             if let error = error {
                 alertMessage = "Google Sign-In failed: \(error.localizedDescription)"
                 showAlert = true
                 return
             }
             guard
-                let authentication = user?.authentication,
-                let idToken = authentication.idToken
+                let user = result?.user,
+                let idToken = user.idToken?.tokenString,
+                let accessToken = user.accessToken?.tokenString
             else {
                 alertMessage = "Google authentication failed."
                 showAlert = true
                 return
             }
-            let credential = GoogleAuthProvider.credential(withIDToken: idToken, accessToken: authentication.accessToken)
+            let credential = GoogleAuthProvider.credential(withIDToken: idToken, accessToken: accessToken)
             Auth.auth().signIn(with: credential) { authResult, error in
                 if let error = error {
                     alertMessage = "Firebase Sign-In failed: \(error.localizedDescription)"
