@@ -3,7 +3,7 @@ name: Feature Branch PR Checks
 on:
   pull_request:
     branches:
-      - development
+      - develop
     paths-ignore:
       - "**/README.md"
     types: [opened, synchronize, reopened]
