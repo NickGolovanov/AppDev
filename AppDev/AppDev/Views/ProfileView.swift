@@ -26,6 +26,20 @@ struct ProfileView: View {
                     editAndScanButtons
                     statsSection
                     recentEventsSection
+
+                    // Add the logout button at the end
+                    Button(action: {
+                        authViewModel.signOut()
+                    }) {
+                        Text("Log Out")
+                            .foregroundColor(.red)
+                            .fontWeight(.bold)
+                            .frame(maxWidth: .infinity)
+                            .padding()
+                            .background(Color(.systemGray6))
+                            .cornerRadius(12)
+                    }
+                    .padding(.top, 32)
                 }
                 .padding()
                 .navigationDestination(isPresented: $showEditProfile) {
