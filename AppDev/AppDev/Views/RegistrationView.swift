@@ -89,12 +89,20 @@ struct RegistrationView: View {
                 showAlert = true
                 return
             }
-            guard let user = result?.user else {
+            guard 
+                let user = result?.user 
+            else {
                 alertMessage = "Google authentication failed."
                 showAlert = true
                 return
             }
-            let idToken = user.idToken.tokenString
+            guard
+                let idToken = user.idToken?.tokenString
+            else {
+                alertMessage = "Google authentication failed."
+                showAlert = true
+                return
+            }
             let accessToken = user.accessToken.tokenString
             let credential = GoogleAuthProvider.credential(withIDToken: idToken, accessToken: accessToken)
             Auth.auth().signIn(with: credential) { authResult, error in
