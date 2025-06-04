@@ -5,14 +5,19 @@
 //  Created by Nikita Golovanov on 5/8/25.
 //
 
-import SwiftUI
 import FirebaseFirestore
+import SwiftUI
 
 struct ProfileView: View {
     @AppStorage("userId") var userId: String = ""
     @State private var showEditProfile = false
     @State private var showQRCodeScanner = false
     @State private var showAllEvents = false
+
+    @State private var userName: String = "Loading..."
+    @State private var userHandle: String = "@loading..."
+    @State private var userBio: String = "Loading bio..."
+    @State private var userProfileImageURL: String = ""
 
     @State private var joinedEvents: [Event] = []
     @State private var organizedEvents: [Event] = []
@@ -45,12 +50,30 @@ struct ProfileView: View {
     var profileInfoSection: some View {
         VStack(spacing: 8) {
             ZStack(alignment: .bottomTrailing) {
-                Image("profile_placeholder")
-                    .resizable()
+                if !userProfileImageURL.isEmpty, let url = URL(string: userProfileImageURL) {
+                    AsyncImage(url: url) {
+                        image in
+                        image.resizable()
+                    } placeholder: {
+                        Image("profile_placeholder")  // Keep placeholder for loading/error
+                            .resizable()
+                    }
                     .frame(width: 100, height: 100)
                     .clipShape(Circle())
                     .overlay(Circle().stroke(Color.white, lineWidth: 2))
                     .shadow(radius: 5)
+                } else {
+                    Circle()
+                        .fill(Color(hex: "#7131C5"))
+                        .frame(width: 100, height: 100)
+                        .overlay(
+                            Text(String(userName.prefix(1)).uppercased())
+                                .font(.system(size: 40, weight: .bold))
+                                .foregroundColor(.white)
+                        )
+                        .overlay(Circle().stroke(Color.white, lineWidth: 2))
+                        .shadow(radius: 5)
+                }
 
                 Circle()
                     .fill(Color(hex: "#7131C5"))
@@ -59,14 +82,14 @@ struct ProfileView: View {
                     .offset(x: 5, y: 5)
             }
 
-            Text("Sarah Johnson")
+            Text(userName)
                 .font(.title2)
                 .fontWeight(.bold)
 
-            Text("@sarahj2025")
+            Text(userHandle)
                 .foregroundColor(.gray)
 
-            Text("Psychology student at UvA. Love dancing and meeting new people! 🎓🕺")
+            Text(userBio)
                 .font(.body)
                 .multilineTextAlignment(.center)
                 .foregroundColor(.secondary)
@@ -148,14 +171,16 @@ struct ProfileView: View {
 
             VStack(spacing: 12) {
                 ForEach(joinedEvents) { event in
-                    NavigationLink(destination: EventView(eventId: event.id)) {
-                        eventCard(event: event, badge: "Joined", badgeColor: Color.green.opacity(0.2))
+                    NavigationLink(destination: EventView(eventId: event.id ?? "-1")) {
+                        eventCard(
+                            event: event, badge: "Joined", badgeColor: Color.green.opacity(0.2))
                     }
                 }
 
                 ForEach(organizedEvents) { event in
-                    NavigationLink(destination: EventView(eventId: event.id)) {
-                        eventCard(event: event, badge: "Organized", badgeColor: Color.blue.opacity(0.2))
+                    NavigationLink(destination: EventView(eventId: event.id ?? "-1")) {
+                        eventCard(
+                            event: event, badge: "Organized", badgeColor: Color.blue.opacity(0.2))
                     }
                 }
 
@@ -227,56 +252,61 @@ struct ProfileView: View {
                 return
             }
 
+            self.userName = data["fullName"] as? String ?? "N/A"
+            self.userHandle = data["username"] as? String ?? "@n/a"
+            self.userBio = data["description"] as? String ?? ""
+            self.userProfileImageURL = data["profileImageUrl"] as? String ?? ""
+
             let joinedEventIds = data["joinedEventIds"] as? [String] ?? []
             let organizedEventIds = data["organizedEventIds"] as? [String] ?? []
 
+            print(organizedEventIds)
+
             if !joinedEventIds.isEmpty {
-                db.collection("events").whereField(FieldPath.documentID(), in: joinedEventIds).getDocuments { snapshot, error in
-                    if let snapshot = snapshot {
-                        self.joinedEvents = snapshot.documents.compactMap { doc in
-                            try? doc.data(as: Event.self)
+                db.collection("events").whereField(FieldPath.documentID(), in: joinedEventIds)
+                    .getDocuments { snapshot, error in
+                        if let snapshot = snapshot {
+                            self.joinedEvents = snapshot.documents.compactMap { doc in
+                                try? doc.data(as: Event.self)
+                            }
+                        } else {
+                            print(
+                                "Error fetching joined events: \(error?.localizedDescription ?? "")"
+                            )
                         }
-                    } else {
-                        print("Error fetching joined events: \(error?.localizedDescription ?? "")")
                     }
-                }
             }
 
             if !organizedEventIds.isEmpty {
-                db.collection("events").whereField(FieldPath.documentID(), in: organizedEventIds).getDocuments { snapshot, error in
-                    if let snapshot = snapshot {
-                        self.organizedEvents = snapshot.documents.compactMap { doc in
-                            try? doc.data(as: Event.self)
+                db.collection("events").whereField(FieldPath.documentID(), in: organizedEventIds)
+                    .getDocuments { snapshot, error in
+                        if let snapshot = snapshot {
+                            self.organizedEvents = snapshot.documents.compactMap { doc -> Event? in
+                                do {
+                                    let event = try doc.data(as: Event.self)
+                                    return event
+                                } catch {
+                                    print(
+                                        "Error decoding organized event with ID \(doc.documentID): \(error.localizedDescription)"
+                                    )
+                                    print("Raw data for event \(doc.documentID): \(doc.data())")
+                                    return nil
+                                }
+                            }
+                            print(
+                                "self.organizedEvents after attempting decode: \(self.organizedEvents)"
+                            )
+                        } else {
+                            print(
+                                "Error fetching organized events: \(error?.localizedDescription ?? "")"
+                            )
                         }
-                    } else {
-                        print("Error fetching organized events: \(error?.localizedDescription ?? "")")
                     }
-                }
             }
         }
     }
 }
 
-// MARK: - Event Decoding for Firebase
-extension Event: Decodable {
-    enum CodingKeys: String, CodingKey {
-        case id, title, date, location, imageUrl, attendees, category, price
-    }
-
-    init(from decoder: Decoder) throws {
-        let container = try decoder.container(keyedBy: CodingKeys.self)
-        self.id = try container.decode(String.self, forKey: .id)
-        self.title = try container.decode(String.self, forKey: .title)
-        self.date = try container.decode(String.self, forKey: .date)
-        self.location = try container.decode(String.self, forKey: .location)
-        self.imageUrl = try container.decode(String.self, forKey: .imageUrl)
-        self.attendees = try container.decode(Int.self, forKey: .attendees)
-        self.category = try container.decode(String.self, forKey: .category)
-        self.price = try container.decode(Double.self, forKey: .price)
-        self.coordinate = nil
-        self.distance = nil
-    }
-}
 
 #Preview {
     ProfileView()

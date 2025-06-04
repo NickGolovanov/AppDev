@@ -1,5 +1,5 @@
-import SwiftUI
 import FirebaseAuth
+import SwiftUI
 
 struct LoginView: View {
     @State private var email = ""
@@ -9,7 +9,8 @@ struct LoginView: View {
     @State private var isLoading = false
     @State private var showRegistration = false
     @EnvironmentObject private var authViewModel: AuthViewModel
-    
+    @AppStorage("userId") var userId: String = ""
+
     var body: some View {
         VStack(spacing: 0) {
             Spacer().frame(height: 32)
@@ -45,7 +46,7 @@ struct LoginView: View {
                         .keyboardType(.emailAddress)
                         .autocapitalization(.none)
                         .padding(.horizontal, 24)
-                    
+
                     // Password Field
                     SecureField("Password", text: $password)
                         .textFieldStyle(RoundedBorderTextFieldStyle())
@@ -116,30 +117,36 @@ struct LoginView: View {
         .background(Color(red: 0.97, green: 0.97, blue: 1.0))
         .edgesIgnoringSafeArea(.all)
         .alert(isPresented: $showAlert) {
-            Alert(title: Text("Login"), message: Text(alertMessage), dismissButton: .default(Text("OK")))
+            Alert(
+                title: Text("Login"), message: Text(alertMessage),
+                dismissButton: .default(Text("OK")))
         }
         .sheet(isPresented: $showRegistration) {
             RegistrationView()
                 .environmentObject(authViewModel)
         }
     }
-    
+
     private var isFormValid: Bool {
         !email.isEmpty && !password.isEmpty
     }
-    
+
     private func loginUser() {
         guard isFormValid else { return }
-        
+
         isLoading = true
-        
+
         Auth.auth().signIn(withEmail: email, password: password) { authResult, error in
             isLoading = false
-            
+
             if let error = error {
                 alertMessage = "Login failed: \(error.localizedDescription)"
                 showAlert = true
                 return
+            }
+
+            if let authResult = authResult {
+                self.userId = authResult.user.uid
             }
         }
     }
