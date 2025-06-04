@@ -89,8 +89,7 @@ struct RegistrationView: View {
                 showAlert = true
                 return
             }
-            guard
-                let user = result?.user else {
+            guard let user = result?.user else {
                 alertMessage = "Google authentication failed."
                 showAlert = true
                 return
