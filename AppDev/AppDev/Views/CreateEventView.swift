@@ -5,11 +5,12 @@
 //  Created by Viktor Harhat on 08/05/2025.
 //
 
-import SwiftUI
 import FirebaseFirestore
 import FirebaseStorage
+import SwiftUI
 
 struct CreateEventView: View {
+    @AppStorage("userId") var userId: String = ""
     @State private var eventTitle: String = ""
     @State private var date: Date? = nil
     @State private var category: String = "House Party"
@@ -155,7 +156,9 @@ extension CreateEventView {
             }
         }
         .alert(isPresented: $showAlert) {
-            Alert(title: Text("Event Creation"), message: Text(alertMessage), dismissButton: .default(Text("OK")))
+            Alert(
+                title: Text("Event Creation"), message: Text(alertMessage),
+                dismissButton: .default(Text("OK")))
         }
     }
 
@@ -177,31 +180,40 @@ extension CreateEventView {
 extension CreateEventView {
     func createEvent() {
         guard !eventTitle.trimmingCharacters(in: .whitespaces).isEmpty else {
-            showError("Event title is required."); return
+            showError("Event title is required.")
+            return
         }
         guard let eventDate = date else {
-            showError("Date is required."); return
+            showError("Date is required.")
+            return
         }
         guard !category.isEmpty else {
-            showError("Category is required."); return
+            showError("Category is required.")
+            return
         }
         guard let start = startTime, let end = endTime else {
-            showError("Start and end time are required."); return
+            showError("Start and end time are required.")
+            return
         }
         guard end > start else {
-            showError("End time must be after start time."); return
+            showError("End time must be after start time.")
+            return
         }
         guard !location.trimmingCharacters(in: .whitespaces).isEmpty else {
-            showError("Location is required."); return
+            showError("Location is required.")
+            return
         }
         guard !description.trimmingCharacters(in: .whitespaces).isEmpty else {
-            showError("Description is required."); return
+            showError("Description is required.")
+            return
         }
         guard let maxCap = Int(maxCapacity), maxCap > 0 else {
-            showError("Max capacity must be a positive number."); return
+            showError("Max capacity must be a positive number.")
+            return
         }
         guard let priceValue = Double(price), priceValue >= 0 else {
-            showError("Price must be a non-negative number."); return
+            showError("Price must be a non-negative number.")
+            return
         }
 
         isLoading = true
@@ -209,7 +221,8 @@ extension CreateEventView {
         if let uiImage = coverUIImage {
             uploadImageAndCreateEvent(uiImage: uiImage)
         } else {
-            let defaultImageUrl = "https://firebasestorage.googleapis.com/v0/b/your-app.appspot.com/o/default_event_image.jpg"
+            let defaultImageUrl =
+                "https://firebasestorage.googleapis.com/v0/b/your-app.appspot.com/o/default_event_image.jpg"
             createEventInFirestore(imageUrl: defaultImageUrl)
         }
     }
@@ -259,10 +272,12 @@ extension CreateEventView {
             "price": Double(price)!,
             "imageUrl": imageUrl,
             "attendees": 0,
-            "createdAt": FieldValue.serverTimestamp()
+            "createdAt": FieldValue.serverTimestamp(),
         ]
 
-        db.collection("events").addDocument(data: eventData) { error in
+        var newEventRef: DocumentReference? = nil
+
+        newEventRef = db.collection("events").addDocument(data: eventData) { error in
             isLoading = false
             if let error = error {
                 showError("Failed to create event: \(error.localizedDescription)")
@@ -270,6 +285,23 @@ extension CreateEventView {
                 alertMessage = "Event created successfully!"
                 showAlert = true
                 // Optional: Reset form fields here
+
+                // Add event ID to user's organizedEventIds
+                if let eventID = newEventRef?.documentID, !self.userId.isEmpty {
+                    let userRef = db.collection("users").document(self.userId)
+                    userRef.updateData([
+                        "organizedEventIds": FieldValue.arrayUnion([eventID])
+                    ]) { err in
+                        if let err = err {
+                            print(
+                                "Error updating user organizedEventIds: \(err.localizedDescription)"
+                            )
+                            // Optionally, show an error to the user or handle it silently
+                        } else {
+                            print("User organizedEventIds updated successfully.")
+                        }
+                    }
+                }
             }
         }
     }

@@ -1,12 +1,12 @@
-import Foundation
 import FirebaseFirestore
+import Foundation
 import MapKit
 
 class HomeViewModel: ObservableObject {
     @Published var upcomingEvents: [Event] = []
     @Published var isLoading: Bool = false
     @Published var errorMessage: String? = nil
-    
+
     func fetchEvents() {
         isLoading = true
         errorMessage = nil
@@ -14,43 +14,67 @@ class HomeViewModel: ObservableObject {
         db.collection("events")
             .order(by: "createdAt", descending: true)
             .limit(to: 5)
-            .getDocuments { [weak self] snapshot, error in
+            .getDocuments(completion: { [weak self] snapshot, error in
                 DispatchQueue.main.async {
                     self?.isLoading = false
                     if let error = error {
                         self?.errorMessage = "Failed to load events: \(error.localizedDescription)"
                         return
                     }
+                    
                     guard let documents = snapshot?.documents else {
                         self?.errorMessage = "No events found."
                         return
                     }
+                    
                     self?.upcomingEvents = documents.compactMap { doc in
                         let data = doc.data()
                         let id = doc.documentID
+                        
                         guard let title = data["title"] as? String,
                               let date = data["date"] as? String,
+                              let endTime = data["endTime"] as? String,
+                              let startTime = data["startTime"] as? String,
                               let location = data["location"] as? String,
                               let imageUrl = data["imageUrl"] as? String,
                               let attendees = data["attendees"] as? Int,
                               let category = data["category"] as? String,
-                              let price = data["price"] as? Double else {
-                            return nil
+                              let price = data["price"] as? Double,
+                              let maxCapacity = data["maxCapacity"] as? Int,
+                              let description = data["description"] as? String
+                        else {
+                            return Event(
+                                id: id,
+                                title: "",
+                                date: "",
+                                endTime: "",
+                                startTime: "",
+                                location: "",
+                                imageUrl: "",
+                                attendees: 0,
+                                category: "",
+                                price: 0,
+                                maxCapacity: 0,
+                                description: ""
+                            )
                         }
+                        
                         return Event(
                             id: id,
                             title: title,
                             date: date,
+                            endTime: "",
+                            startTime: "",
                             location: location,
-                            coordinate: nil,
                             imageUrl: imageUrl,
                             attendees: attendees,
-                            distance: nil,
                             category: category,
-                            price: price
+                            price: price,
+                            maxCapacity: 0,
+                            description: description
                         )
                     }
                 }
-            }
+            })
     }
 }

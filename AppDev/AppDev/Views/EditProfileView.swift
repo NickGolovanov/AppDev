@@ -5,11 +5,11 @@
 //  Created by Nikita Golovanov on 5/8/25.
 //
 
-import Foundation
-import SwiftUI
 import Firebase
 import FirebaseFirestore
 import FirebaseStorage
+import Foundation
+import SwiftUI
 
 struct EditProfileView: View {
     @State private var fullName: String = ""
@@ -64,7 +64,9 @@ struct EditProfileView: View {
                 }
                 .padding(.top, 30)
                 .alert(isPresented: $showAlert) {
-                    Alert(title: Text("Profile Update"), message: Text(alertMessage), dismissButton: .default(Text("OK")))
+                    Alert(
+                        title: Text("Profile Update"), message: Text(alertMessage),
+                        dismissButton: .default(Text("OK")))
                 }
             }
             .padding()
@@ -72,7 +74,9 @@ struct EditProfileView: View {
         .navigationTitle("Edit Profile")
         .navigationBarTitleDisplayMode(.inline)
         .alert(isPresented: $showAlert) {
-            Alert(title: Text("Profile Update"), message: Text(alertMessage), dismissButton: .default(Text("OK")))
+            Alert(
+                title: Text("Profile Update"), message: Text(alertMessage),
+                dismissButton: .default(Text("OK")))
         }
         .onAppear(perform: fetchUserData)
     }
@@ -91,73 +95,135 @@ struct EditProfileView: View {
                 // You might want to load the profile image if profileImageUrl is not empty
                 // This would require additional logic
             } else {
-                print("Document does not exist or error: \(error?.localizedDescription ?? "Unknown error")")
+                print(
+                    "Document does not exist or error: \(error?.localizedDescription ?? "Unknown error")"
+                )
             }
         }
     }
 
     func saveProfile() {
+        guard !userId.isEmpty else {
+            alertMessage = "User ID is missing. Cannot save profile."
+            showAlert = true
+            return
+        }
         guard !fullName.isEmpty, !username.isEmpty, !email.isEmpty else {
             alertMessage = "Please fill in all required fields."
             showAlert = true
             return
         }
 
-        if let image = profileImage {
-            uploadProfileImage(image) { result in
+        // This function will be called to update Firestore after image handling.
+        let performFirestoreUpdate = {
+            (imageUrlToSave: String, imageUpdateFailed: Bool, imageUploadErrorMessage: String?) in
+            self.saveProfileDetails(profileImageUrlToSave: imageUrlToSave) { error in
+                if let error = error {
+                    if imageUpdateFailed {
+                        self.alertMessage =
+                            "\(imageUploadErrorMessage ?? "Image upload failed.")"
+                    } else {
+                        self.alertMessage = "Error saving profile: \(error.localizedDescription)"
+                    }
+                } else {
+                    if imageUpdateFailed {
+                        self.alertMessage =
+                            "\(imageUploadErrorMessage ?? "Image upload failed.")"
+                    } else {
+                        self.alertMessage = "Profile updated successfully!"
+                    }
+                    // Successfully saved, so update the local profileImageUrl state if it changed
+                    self.profileImageUrl = imageUrlToSave
+                }
+                self.showAlert = true
+            }
+        }
+
+        if let newImageSelected = profileImage {  // User selected a new UIImage
+            uploadProfileImage(newImageSelected) { result in
                 switch result {
-                case .success(let url):
-                    saveUserData(profileImageUrl: url.absoluteString)
-                case .failure(let error):
-                    alertMessage = "Image upload failed: \(error.localizedDescription)"
-                    showAlert = true
+                case .success(let newUrl):
+                    // Image uploaded successfully, save with new URL
+                    performFirestoreUpdate(newUrl.absoluteString, false, nil)
+                case .failure(let uploadError):
+                    // Image upload failed. Save other details with the *old* image URL.
+                    let uploadFailedMessage =
+                        "Image upload failed: \(uploadError.localizedDescription)"
+                    print(uploadFailedMessage)  // Also log it for debugging
+                    performFirestoreUpdate(self.profileImageUrl, true, uploadFailedMessage)
                 }
             }
         } else {
-            saveUserData(profileImageUrl: "")
+            // No new UIImage selected. Save other details with the existing profileImageUrl.
+            performFirestoreUpdate(self.profileImageUrl, false, nil)
         }
     }
 
-    func saveUserData(profileImageUrl: String) {
-        let userData: [String: Any] = [
+    // Renamed from saveUserData and modified to use updateData
+    func saveProfileDetails(profileImageUrlToSave: String, completion: @escaping (Error?) -> Void) {
+        let userDataToUpdate: [String: Any] = [
             "fullName": fullName,
             "username": username,
             "description": bio,
             "email": email,
-            "profileImageUrl": profileImageUrl,
+            "profileImageUrl": profileImageUrlToSave,
             "joinedEventIds": [],
-            "organizedEventIds": []
+            "organizedEventIds": [],
         ]
 
-        Firestore.firestore().collection("users").document(userId).setData(userData, merge: true) { error in
-            alertMessage = error == nil ? "Profile updated successfully!" : "Error saving profile: \(error!.localizedDescription)"
-            showAlert = true
+        Firestore.firestore().collection("users").document(userId).updateData(userDataToUpdate) {
+            error in
+            completion(error)
         }
     }
 
     func uploadProfileImage(_ image: UIImage, completion: @escaping (Result<URL, Error>) -> Void) {
         guard let imageData = image.jpegData(compressionQuality: 0.8) else {
-            completion(.failure(NSError(domain: "ImageConversion", code: 1)))
+            let error = NSError(
+                domain: "AppDev.ImageConversion", code: 1001,
+                userInfo: [NSLocalizedDescriptionKey: "Failed to convert image to JPEG data."])
+            print("Image conversion failed: \(error.localizedDescription)")
+            completion(.failure(error))
             return
         }
 
-        let storageRef = Storage.storage().reference().child("profileImages/\(UUID().uuidString).jpg")
-        storageRef.putData(imageData, metadata: nil) { _, error in
+        let imageName = "\(UUID().uuidString).jpg"
+        let storagePath = "profileImages/\(imageName)"
+        let storageRef = Storage.storage().reference().child(storagePath)
+
+        storageRef.putData(imageData, metadata: nil) { metadata, error in
             if let error = error {
                 completion(.failure(error))
                 return
             }
+
             storageRef.downloadURL { url, error in
-                if let url = url {
+                if let error = error {
+                    completion(.failure(error))
+                } else if let url = url {
+                    print(
+                        "Firebase Storage: downloadURL successful for \(storagePath). URL: \(url.absoluteString)"
+                    )
                     completion(.success(url))
                 } else {
-                    completion(.failure(error!))
+                    // This case (nil url and nil error) should ideally not happen with Firebase SDKs
+                    let unknownError = NSError(
+                        domain: "AppDev.FirebaseStorage", code: 1002,
+                        userInfo: [
+                            NSLocalizedDescriptionKey:
+                                "Download URL was nil without an error for \(storagePath)."
+                        ])
+
+                    completion(.failure(unknownError))
                 }
             }
         }
     }
 
-    func labeledTextField(_ label: String, text: Binding<String>, prefix: String = "", keyboardType: UIKeyboardType = .default) -> some View {
+    func labeledTextField(
+        _ label: String, text: Binding<String>, prefix: String = "",
+        keyboardType: UIKeyboardType = .default
+    ) -> some View {
         VStack(alignment: .leading) {
             Text(label)
                 .font(.caption)
