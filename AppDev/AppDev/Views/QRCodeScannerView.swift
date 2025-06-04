@@ -5,10 +5,10 @@
 //  Created by Nikita Golovanov on 5/8/25.
 //
 
-import SwiftUI
 import AVFoundation
-import Vision
 import FirebaseFirestore
+import SwiftUI
+import Vision
 
 struct QRCodeScannerView: View {
     @State private var scannedCode: String? = nil
@@ -101,16 +101,17 @@ struct QRCodeScannerView: View {
                             self.scanResult = "Ticket scanned successfully!"
                         }
                         // Allow scanning again after a short delay
-                        DispatchQueue.main.asyncAfter(deadline: .now() + 2) { self.isScanning = true }
+                        DispatchQueue.main.asyncAfter(deadline: .now() + 2) {
+                            self.isScanning = true
+                        }
                     }
                 } else if let used = document.data()?["used"] as? Bool, used {
                     self.scanResult = "Ticket already used."
                     // Allow scanning again after a short delay
                     DispatchQueue.main.asyncAfter(deadline: .now() + 2) { self.isScanning = true }
-                }
-                else {
-                     self.scanResult = "Ticket data incomplete."
-                     // Allow scanning again after a short delay
+                } else {
+                    self.scanResult = "Ticket data incomplete."
+                    // Allow scanning again after a short delay
                     DispatchQueue.main.asyncAfter(deadline: .now() + 2) { self.isScanning = true }
                 }
             } else {
@@ -156,22 +157,29 @@ struct QRCodeScannerCameraView: UIViewRepresentable {
         func setupCamera(in view: UIView) {
             captureSession = AVCaptureSession()
 
-            guard let videoCaptureDevice = AVCaptureDevice.default(.builtInWideAngleCamera, for: .video, position: .back) else { return }
+            guard
+                let videoCaptureDevice = AVCaptureDevice.default(
+                    .builtInWideAngleCamera, for: .video, position: .back)
+            else { return }
             let videoInput: AVCaptureDeviceInput
 
             do {
                 videoInput = try AVCaptureDeviceInput(device: videoCaptureDevice)
             } catch { return }
 
-            if (captureSession?.canAddInput(videoInput) ?? false) {
+            if captureSession?.canAddInput(videoInput) ?? false {
                 captureSession?.addInput(videoInput)
-            } else { return }
+            } else {
+                return
+            }
 
             // Add video data output for processing frames
             videoDataOutput.setSampleBufferDelegate(self, queue: videoQueue)
-            if (captureSession?.canAddOutput(videoDataOutput) ?? false) {
+            if captureSession?.canAddOutput(videoDataOutput) ?? false {
                 captureSession?.addOutput(videoDataOutput)
-            } else { return }
+            } else {
+                return
+            }
 
             // Set up preview layer
             previewLayer = AVCaptureVideoPreviewLayer(session: captureSession ?? AVCaptureSession())
@@ -183,7 +191,10 @@ struct QRCodeScannerCameraView: UIViewRepresentable {
             captureSession?.startRunning()
         }
 
-        func captureOutput(_ output: AVCaptureOutput, didOutput sampleBuffer: CMSampleBuffer, from connection: AVCaptureConnection) {
+        func captureOutput(
+            _ output: AVCaptureOutput, didOutput sampleBuffer: CMSampleBuffer,
+            from connection: AVCaptureConnection
+        ) {
             guard let pixelBuffer = CMSampleBufferGetImageBuffer(sampleBuffer) else { return }
 
             // Use Vision to detect QR codes
@@ -192,14 +203,16 @@ struct QRCodeScannerCameraView: UIViewRepresentable {
 
             if let observations = qrCodeRequest.results as? [VNBarcodeObservation] {
                 for observation in observations {
-                    if observation.symbology == .QR, let scannedString = observation.payloadStringValue {
+                    if observation.symbology == .QR,
+                        let scannedString = observation.payloadStringValue
+                    {
                         // Found a QR code, pass it back to SwiftUI
                         DispatchQueue.main.async {
                             self.parent.scannedCode = scannedString
                             // Stop scanning temporarily
                             self.captureSession?.stopRunning()
                         }
-                        return // Process only the first detected QR code
+                        return  // Process only the first detected QR code
                     }
                 }
             }
@@ -209,4 +222,4 @@ struct QRCodeScannerCameraView: UIViewRepresentable {
 
 #Preview {
     QRCodeScannerView()
-} 
+}

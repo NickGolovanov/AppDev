@@ -47,7 +47,8 @@ struct AllEventsView: View {
                     .foregroundColor(.gray)
             } else {
                 List(filteredEvents) { event in
-                    NavigationLink(destination: EventView(eventId: event.id)) {
+                    // event.id Should be resolved with guard
+                    NavigationLink(destination: EventView(eventId: event.id ?? "-1")) {
                         EventRow(event: event) // Use a helper view for event row
                     }
                 }

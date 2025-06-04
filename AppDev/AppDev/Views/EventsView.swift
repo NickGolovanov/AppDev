@@ -54,78 +54,7 @@ struct EventsView: View {
 
                     // Featured Event
                     if let firstEvent = events.first {
-                        VStack(alignment: .leading, spacing: 8) {
-                            Text("Featured Event")
-                                .font(.headline)
-                                .fontWeight(.semibold)
-                                .padding(.horizontal)
-                            ZStack(alignment: .bottomLeading) {
-                                if let imageUrl = URL(string: firstEvent.imageUrl) {
-                                    AsyncImage(url: imageUrl) { image in
-                                    image
-                                        .resizable()
-                                        .aspectRatio(contentMode: .fill)
-                                            .frame(height: 200)
-                                        .cornerRadius(16)
-                                } placeholder: {
-                                        Rectangle()
-                                            .fill(
-                                                LinearGradient(
-                                                    gradient: Gradient(colors: [Color.purple.opacity(0.7), Color.blue.opacity(0.5)]),
-                                                    startPoint: .topLeading,
-                                                    endPoint: .bottomTrailing
-                                                )
-                                            )
-                                            .frame(height: 200)
-                                            .cornerRadius(16)
-                                    }
-                                } else {
-                                    Rectangle()
-                                        .fill(
-                                            LinearGradient(
-                                                gradient: Gradient(colors: [Color.purple.opacity(0.7), Color.blue.opacity(0.5)]),
-                                                startPoint: .topLeading,
-                                                endPoint: .bottomTrailing
-                                            )
-                                        )
-                                        .frame(height: 200)
-                                        .cornerRadius(16)
-                                }
-                                LinearGradient(
-                                    gradient: Gradient(colors: [Color.black.opacity(0.7), .clear]),
-                                    startPoint: .bottom,
-                                    endPoint: .top
-                                )
-                                .cornerRadius(16)
-                                .frame(height: 200)
-                                
-                                VStack(alignment: .leading, spacing: 4) {
-                                    Text(firstEvent.title)
-                                        .font(.title3)
-                                        .fontWeight(.bold)
-                                        .foregroundColor(.white)
-                                        .lineLimit(2)
-                                    HStack {
-                                        Text("\(firstEvent.formattedDate)")
-                                            .foregroundColor(.white.opacity(0.9))
-                                            .font(.subheadline)
-                                        Text("\(firstEvent.formattedTime)")
-                                            .foregroundColor(.white.opacity(0.9))
-                                            .font(.subheadline)
-                                        Text("•")
-                                            .foregroundColor(.white.opacity(0.9))
-                                        Text(firstEvent.location)
-                                            .foregroundColor(.white.opacity(0.9))
-                                            .font(.subheadline)
-                                            .lineLimit(1)
-                                    }
-                                }
-                                .padding(16)
-                            }
-                            .padding(.horizontal)
-                            .shadow(color: Color.black.opacity(0.1), radius: 8, x: 0, y: 4)
-                        }
-                        .padding(.top, 8)
+                        FeaturedEventView(event: firstEvent)
                     }
 
                     // Upcoming Events
@@ -140,94 +69,7 @@ struct EventsView: View {
                             Text(errorMessage).foregroundColor(.red).padding()
                         } else {
                             ForEach(events) { event in
-                                HStack(spacing: 16) {
-                                    if let imageUrl = URL(string: event.imageUrl) {
-                                        AsyncImage(url: imageUrl) { image in
-                                        image
-                                            .resizable()
-                                            .aspectRatio(contentMode: .fill)
-                                                .frame(width: 80, height: 80)
-                                            .cornerRadius(12)
-                                    } placeholder: {
-                                            Rectangle()
-                                                .fill(
-                                                    LinearGradient(
-                                                        gradient: Gradient(colors: [Color.purple.opacity(0.7), Color.blue.opacity(0.5)]),
-                                                        startPoint: .topLeading,
-                                                        endPoint: .bottomTrailing
-                                                    )
-                                                )
-                                                .frame(width: 80, height: 80)
-                                                .cornerRadius(12)
-                                        }
-                                    } else {
-                                        Rectangle()
-                                            .fill(
-                                                LinearGradient(
-                                                    gradient: Gradient(colors: [Color.purple.opacity(0.7), Color.blue.opacity(0.5)]),
-                                                    startPoint: .topLeading,
-                                                    endPoint: .bottomTrailing
-                                                )
-                                            )
-                                            .frame(width: 80, height: 80)
-                                            .cornerRadius(12)
-                                    }
-                                    
-                                    VStack(alignment: .leading, spacing: 6) {
-                                        Text(event.title)
-                                            .font(.headline)
-                                            .fontWeight(.bold)
-                                            .foregroundColor(.black)
-                                            .lineLimit(2)
-                                        
-                                        HStack(spacing: 4) {
-                                            Image(systemName: "calendar")
-                                                .foregroundColor(.purple)
-                                                .font(.caption)
-                                            Text("\(event.formattedDate)")
-                                                .font(.subheadline)
-                                                .foregroundColor(.gray)
-                                            Text("\(event.formattedTime)")
-                                                .font(.subheadline)
-                                                .foregroundColor(.gray)
-                                        }
-                                        
-                                        HStack(spacing: 4) {
-                                            Image(systemName: "mappin.circle.fill")
-                                                .foregroundColor(.purple)
-                                                .font(.caption)
-                                            Text(event.location)
-                                                .font(.subheadline)
-                                                .foregroundColor(.gray)
-                                                .lineLimit(1)
-                                        }
-                                        
-                                        HStack(spacing: 4) {
-                                            Image(systemName: "person.2.fill")
-                                                .foregroundColor(.purple)
-                                                .font(.caption)
-                                            Text("\(event.attendees) going")
-                                                .font(.caption)
-                                                .foregroundColor(.purple)
-                                        }
-                                    }
-                                    
-                                    Spacer()
-                                    
-                                    NavigationLink(destination: EventView(eventId: event.id)) {
-                                        Image(systemName: "chevron.right")
-                                            .foregroundColor(.purple)
-                                            .font(.system(size: 14, weight: .semibold))
-                                            .padding(8)
-                                            .background(Color.purple.opacity(0.1))
-                                            .clipShape(Circle())
-                                    }
-                                }
-                                .padding(16)
-                                .background(Color.white)
-                                .cornerRadius(16)
-                                .shadow(color: Color.black.opacity(0.05), radius: 8, x: 0, y: 2)
-                                .padding(.horizontal)
+                                UpcomingEventView(event: event)
                             }
                         }
                     }
@@ -283,22 +125,198 @@ struct EventsView: View {
                 // Map Firestore data to Event model
                 guard let title = data["title"] as? String,
                       let date = data["date"] as? String,
+                      let endTime = data["endTime"] as? String,
+                      let startTime = data["startTime"] as? String,
                       let location = data["location"] as? String,
                       let imageUrl = data["imageUrl"] as? String,
-                      let attendees = data["attendees"] as? Int else {
+                      let attendees = data["attendees"] as? Int,
+                      let maxCapacity = data["maxCapacity"] as? Int,
+                      let description = data["description"] as? String
+                else {
                     // Instead of returning nil, return a default Event with fallback values
                     let coordinate: CLLocationCoordinate2D? = CLLocationCoordinate2D(latitude: 52.3676, longitude: 4.9041)
                     let distance: String? = "-"
-                    return Event(id: id, title: "Untitled", date: "", location: "", coordinate: coordinate, imageUrl: "", attendees: 0, distance: distance, category: "Other", price: 0.0)
+                    return Event(
+                        id: id,
+                        title: "Untitled",
+                        date: "",
+                        endTime: "",
+                        startTime: "",
+                        location: "",
+                        imageUrl: "",
+                        attendees: 0,
+                        category: "Other",
+                        price: 0.0,
+                        maxCapacity: 0,
+                        description: "",
+                        coordinate: coordinate,
+                        distance: distance
+                    )
                 }
                 // Dummy values for coordinate and distance
                 let coordinate: CLLocationCoordinate2D? = CLLocationCoordinate2D(latitude: 52.3676, longitude: 4.9041)
                 let distance: String? = "-"
                 let category = data["category"] as? String ?? "Other"
                 let price = data["price"] as? Double ?? 0.0
-                return Event(id: id, title: title, date: date, location: location, coordinate: coordinate, imageUrl: imageUrl, attendees: attendees, distance: distance, category: category, price: price)
+                return Event(id: id, title: title, date: date, endTime: endTime, startTime: startTime, location: location, imageUrl: imageUrl, attendees: attendees, category: category, price: price, maxCapacity: maxCapacity, description: description, coordinate: coordinate, distance: distance)
             }
         }
+    }
+}
+
+struct FeaturedEventView: View {
+    let event: Event
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 8) {
+            Text("Featured Event")
+                .font(.headline)
+                .fontWeight(.semibold)
+                .padding(.horizontal)
+
+            ZStack(alignment: .bottomLeading) {
+                if let imageUrl = URL(string: event.imageUrl) {
+                    AsyncImage(url: imageUrl) { image in
+                        image.resizable().aspectRatio(contentMode: .fill)
+                    } placeholder: {
+                        Rectangle().fill(
+                            LinearGradient(
+                                gradient: Gradient(colors: [Color.purple.opacity(0.7), Color.blue.opacity(0.5)]),
+                                startPoint: .topLeading,
+                                endPoint: .bottomTrailing
+                            )
+                        )
+                    }
+                    .frame(height: 200)
+                    .cornerRadius(16)
+                }
+
+                LinearGradient(
+                    gradient: Gradient(colors: [Color.black.opacity(0.7), .clear]),
+                    startPoint: .bottom,
+                    endPoint: .top
+                )
+                .frame(height: 200)
+                .cornerRadius(16)
+
+                VStack(alignment: .leading, spacing: 4) {
+                    Text(event.title)
+                        .font(.title3)
+                        .fontWeight(.bold)
+                        .foregroundColor(.white)
+                        .lineLimit(2)
+
+                    HStack {
+                        Text(event.formattedDate)
+                        Text(event.formattedTime)
+                        Text("•")
+                        Text(event.location)
+                    }
+                    .foregroundColor(.white.opacity(0.9))
+                    .font(.subheadline)
+                }
+                .padding(16)
+            }
+            .padding(.horizontal)
+            .shadow(color: Color.black.opacity(0.1), radius: 8, x: 0, y: 4)
+        }
+        .padding(.top, 8)
+    }
+}
+
+struct UpcomingEventView: View {
+    let event: Event
+    
+    var body: some View {
+        HStack(spacing: 16) {
+            if let imageUrl = URL(string: event.imageUrl) {
+                AsyncImage(url: imageUrl) { image in
+                image
+                    .resizable()
+                    .aspectRatio(contentMode: .fill)
+                        .frame(width: 80, height: 80)
+                    .cornerRadius(12)
+            } placeholder: {
+                    Rectangle()
+                        .fill(
+                            LinearGradient(
+                                gradient: Gradient(colors: [Color.purple.opacity(0.7), Color.blue.opacity(0.5)]),
+                                startPoint: .topLeading,
+                                endPoint: .bottomTrailing
+                            )
+                        )
+                        .frame(width: 80, height: 80)
+                        .cornerRadius(12)
+                }
+            } else {
+                Rectangle()
+                    .fill(
+                        LinearGradient(
+                            gradient: Gradient(colors: [Color.purple.opacity(0.7), Color.blue.opacity(0.5)]),
+                            startPoint: .topLeading,
+                            endPoint: .bottomTrailing
+                        )
+                    )
+                    .frame(width: 80, height: 80)
+                    .cornerRadius(12)
+            }
+            
+            VStack(alignment: .leading, spacing: 6) {
+                Text(event.title)
+                    .font(.headline)
+                    .fontWeight(.bold)
+                    .foregroundColor(.black)
+                    .lineLimit(2)
+                
+                HStack(spacing: 4) {
+                    Image(systemName: "calendar")
+                        .foregroundColor(.purple)
+                        .font(.caption)
+                    Text("\(event.formattedDate)")
+                        .font(.subheadline)
+                        .foregroundColor(.gray)
+                    Text("\(event.formattedTime)")
+                        .font(.subheadline)
+                        .foregroundColor(.gray)
+                }
+                
+                HStack(spacing: 4) {
+                    Image(systemName: "mappin.circle.fill")
+                        .foregroundColor(.purple)
+                        .font(.caption)
+                    Text(event.location)
+                        .font(.subheadline)
+                        .foregroundColor(.gray)
+                        .lineLimit(1)
+                }
+                
+                HStack(spacing: 4) {
+                    Image(systemName: "person.2.fill")
+                        .foregroundColor(.purple)
+                        .font(.caption)
+                    Text("\(event.attendees) going")
+                        .font(.caption)
+                        .foregroundColor(.purple)
+                }
+            }
+            
+            Spacer()
+            
+            NavigationLink(destination: EventView(eventId: event.id ?? "-1")) {
+                Image(systemName: "chevron.right")
+                    .foregroundColor(.purple)
+                    .font(.system(size: 14, weight: .semibold))
+                    .padding(8)
+                    .background(Color.purple.opacity(0.1))
+                    .clipShape(Circle())
+            }
+        }
+        .padding(16)
+        .background(Color.white)
+        .cornerRadius(16)
+        .shadow(color: Color.black.opacity(0.05), radius: 8, x: 0, y: 2)
+        .padding(.horizontal)
+    
     }
 }
 
