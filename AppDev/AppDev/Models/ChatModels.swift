@@ -56,7 +56,7 @@ class ChatService: ObservableObject {
     
     func fetchUserChats() async throws {
         guard let user = authViewModel.currentUser else { return }
-        let ticketsSnapshot = try await db.collection("tickets").whereField("email", isEqualTo: user.email).getDocuments()
+        let ticketsSnapshot = try await db.collection("tickets").whereField("userId", isEqualTo: user.id ?? "").getDocuments()
         let eventIdToEventName: [String: String] = Dictionary(uniqueKeysWithValues: ticketsSnapshot.documents.compactMap { doc in
             guard let eventId = doc.data()["eventId"] as? String,
                   let eventName = doc.data()["eventName"] as? String else { return nil }
