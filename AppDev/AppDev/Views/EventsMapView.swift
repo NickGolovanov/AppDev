@@ -12,25 +12,33 @@ struct EventsMapView: View {
             id: "1",
             title: "Summer Night Party",
             date: "Tonight, 10:00 PM",
+            endTime: "11:30 PM",
+            startTime: "02:00 AM",
             location: "Club Matrix, 2.3km away",
-            coordinate: CLLocationCoordinate2D(latitude: 52.3676, longitude: 4.9041),
             imageUrl: "party1",
             attendees: 124,
-            distance: "2.3km away",
             category: "House Party",
-            price: 10.0
+            price: 10.0,
+            maxCapacity: 100,
+            description: "",
+            coordinate: CLLocationCoordinate2D(latitude: 52.3676, longitude: 4.9041),
+            distance: "2.3km away"
         ),
         Event(
             id: "2",
             title: "Live Jazz Night",
             date: "Tomorrow, 8:30 PM",
+            endTime: "11:30 PM",
+            startTime: "02:00 AM",
             location: "Blue Note, 3.1km away",
-            coordinate: CLLocationCoordinate2D(latitude: 52.3667, longitude: 4.8945),
             imageUrl: "party2",
             attendees: 124,
-            distance: "3.1km away",
             category: "Concert",
-            price: 15.0
+            price: 15.0,
+            maxCapacity: 100,
+            description: "",
+            coordinate: CLLocationCoordinate2D(latitude: 52.3667, longitude: 4.8945),
+            distance: "3.1km away"
         ),
     ]
 
@@ -87,7 +95,7 @@ struct EventsMapView: View {
 struct EventCard: View {
     let event: Event
     var body: some View {
-        NavigationLink(destination: EventView(eventId: event.id)) {
+        NavigationLink(destination: EventView(eventId: event.id ?? "-1")) {
             HStack(alignment: .top, spacing: 12) {
                 // Event image (placeholder)
                 Rectangle()

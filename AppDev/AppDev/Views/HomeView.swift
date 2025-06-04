@@ -99,7 +99,7 @@ struct HomeView: View {
 
     func trendingCard(event: Event) -> some View {
         let cardWidth = UIScreen.main.bounds.width * 0.7
-        return NavigationLink(destination: EventView(eventId: event.id)) {
+        return NavigationLink(destination: EventView(eventId: event.id ?? "-1")) {
             VStack(alignment: .leading, spacing: 0) {
                 if let imageUrl = URL(string: event.imageUrl) {
                     AsyncImage(url: imageUrl) { image in
@@ -188,7 +188,7 @@ struct HomeView: View {
                 }
             }
             Spacer()
-            NavigationLink(destination: EventView(eventId: event.id)) {
+            NavigationLink(destination: EventView(eventId: event.id ?? "-1")) {
                 Text("Join")
                     .padding(.horizontal, 12)
                     .padding(.vertical, 5)
