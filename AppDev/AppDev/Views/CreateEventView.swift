@@ -12,10 +12,10 @@ import SwiftUI
 struct CreateEventView: View {
     @AppStorage("userId") var userId: String = ""
     @State private var eventTitle: String = ""
-    @State private var startDate: Date = Date()
-    @State private var endDate: Date = Date()
-    @State private var startTime: Date = Date()
-    @State private var endTime: Date = Date()
+    @State private var startDate: Date? = nil
+    @State private var endDate: Date? = nil
+    @State private var startTime: Date? = nil
+    @State private var endTime: Date? = nil
     @State private var category: String = "House Party"
     @State private var location: String = ""
     @State private var description: String = ""
@@ -198,23 +198,23 @@ extension CreateEventView {
             showError("Event title is required.")
             return
         }
-        
+        guard let startDate = startDate, let endDate = endDate, let startTime = startTime, let endTime = endTime else {
+            showError("Start/end date and time are required.")
+            return
+        }
         let calendar = Calendar.current
         let startDateTime = calendar.date(bySettingHour: calendar.component(.hour, from: startTime),
                                         minute: calendar.component(.minute, from: startTime),
                                         second: 0,
                                         of: startDate)!
-        
         let endDateTime = calendar.date(bySettingHour: calendar.component(.hour, from: endTime),
                                       minute: calendar.component(.minute, from: endTime),
                                       second: 0,
                                       of: endDate)!
-        
         guard endDateTime > startDateTime else {
             showError("End date/time must be after start date/time.")
             return
         }
-        
         guard !category.isEmpty else {
             showError("Category is required.")
             return
@@ -235,57 +235,51 @@ extension CreateEventView {
             showError("Price must be a non-negative number.")
             return
         }
-
         isLoading = true
-
         if let uiImage = coverUIImage {
-            uploadImageAndCreateEvent(uiImage: uiImage)
+            uploadImageAndCreateEvent(uiImage: uiImage, startDateTime: startDateTime, endDateTime: endDateTime)
         } else {
             let defaultImageUrl =
                 "https://firebasestorage.googleapis.com/v0/b/your-app.appspot.com/o/default_event_image.jpg"
-            createEventInFirestore(imageUrl: defaultImageUrl)
+            createEventInFirestore(imageUrl: defaultImageUrl, startDateTime: startDateTime, endDateTime: endDateTime)
         }
     }
 
-    private func uploadImageAndCreateEvent(uiImage: UIImage) {
+    private func uploadImageAndCreateEvent(uiImage: UIImage, startDateTime: Date, endDateTime: Date) {
         let storageRef = Storage.storage().reference().child("event_covers/")
         let imageName = UUID().uuidString + ".jpg"
         let imageRef = storageRef.child(imageName)
-
         guard let imageData = uiImage.jpegData(compressionQuality: 0.8) else {
             showError("Failed to process image data.")
             isLoading = false
             return
         }
-
         imageRef.putData(imageData, metadata: nil) { _, error in
             if let error = error {
                 showError("Image upload failed: \(error.localizedDescription)")
                 isLoading = false
                 return
             }
-
             imageRef.downloadURL { url, error in
                 if let error = error {
                     showError("Failed to get image URL: \(error.localizedDescription)")
                     isLoading = false
                     return
                 }
-
                 let imageUrl = url?.absoluteString ?? ""
-                createEventInFirestore(imageUrl: imageUrl)
+                createEventInFirestore(imageUrl: imageUrl, startDateTime: startDateTime, endDateTime: endDateTime)
             }
         }
     }
 
-    private func createEventInFirestore(imageUrl: String) {
+    private func createEventInFirestore(imageUrl: String, startDateTime: Date, endDateTime: Date) {
         let db = Firestore.firestore()
         let eventData: [String: Any] = [
             "title": eventTitle,
             "date": ISO8601DateFormatter().string(from: startDateTime),
             "category": category,
-            "startTime": ISO8601DateFormatter().string(from: startTime),
-            "endTime": ISO8601DateFormatter().string(from: endTime),
+            "startTime": ISO8601DateFormatter().string(from: startDateTime),
+            "endTime": ISO8601DateFormatter().string(from: endDateTime),
             "location": location,
             "description": description,
             "maxCapacity": Int(maxCapacity)!,
@@ -294,9 +288,7 @@ extension CreateEventView {
             "attendees": 0,
             "createdAt": FieldValue.serverTimestamp(),
         ]
-
         var newEventRef: DocumentReference? = nil
-
         newEventRef = db.collection("events").addDocument(data: eventData) { error in
             isLoading = false
             if let error = error {
@@ -305,7 +297,6 @@ extension CreateEventView {
                 alertMessage = "Event created successfully!"
                 showAlert = true
                 // Optional: Reset form fields here
-
                 // Add event ID to user's organizedEventIds
                 if let eventID = newEventRef?.documentID, !self.userId.isEmpty {
                     let userRef = db.collection("users").document(self.userId)
