@@ -92,12 +92,22 @@ struct GetTicketView: View {
                 return
             }
             
-            guard let document = document,
-                  let data = document.data(),
-                  let attendees = data["attendees"] as? Int,
+            guard let document = document, document.exists else {
+                self.alertTitle = "Event Not Found"
+                self.alertMessage = "This event does not exist or was deleted."
+                self.showAlert = true
+                return
+            }
+            guard let data = document.data() else {
+                self.alertTitle = "Event Data Error"
+                self.alertMessage = "Event data is missing. Please contact support."
+                self.showAlert = true
+                return
+            }
+            guard let attendees = data["attendees"] as? Int,
                   let maxCapacity = data["maxCapacity"] as? Int else {
-                self.alertTitle = "Error"
-                self.alertMessage = "Failed to get event information."
+                self.alertTitle = "Event Data Error"
+                self.alertMessage = "Event is missing capacity information. Please contact support."
                 self.showAlert = true
                 return
             }
