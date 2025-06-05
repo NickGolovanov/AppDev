@@ -5,8 +5,32 @@ import FirebaseFirestore
 struct EventsView: View {
     @State private var selectedFilter = "All Events"
     @State private var showCreateEvent = false
-    let filters = ["All Events", "Music", "Art", "Food"]
+    @State private var searchText = ""
+    let filters = [
+        "All Events",
+        "House Party",
+        "Concert",
+        "Meetup",
+        "Workshop",
+        "Conference",
+        "Exhibition",
+        "Festival",
+        "Food & Drink",
+        "Sports",
+        "Theater",
+        "Comedy",
+        "Networking",
+        "Art Gallery",
+        "Music Festival",
+        "Charity Event",
+        "Business Event",
+        "Cultural Event",
+        "Educational",
+        "Fashion Show",
+        "Gaming Event"
+    ]
     @State private var events: [Event] = []
+    @State private var filteredEvents: [Event] = []
     @State private var isLoading: Bool = false
     @State private var errorMessage: String? = nil
 
@@ -22,7 +46,10 @@ struct EventsView: View {
                     HStack {
                         Image(systemName: "magnifyingglass")
                             .foregroundColor(.gray)
-                        TextField("Search events...", text: .constant(""))
+                        TextField("Search events...", text: $searchText)
+                            .onChange(of: searchText) { _ in
+                                filterEvents()
+                            }
                     }
                     .padding(12)
                     .background(Color(.systemGray6))
@@ -45,7 +72,10 @@ struct EventsView: View {
                                     .font(.subheadline)
                                     .fontWeight(selectedFilter == filter ? .semibold : .regular)
                                     .cornerRadius(20)
-                                    .onTapGesture { selectedFilter = filter }
+                                    .onTapGesture { 
+                                        selectedFilter = filter
+                                        filterEvents()
+                                    }
                             }
                         }
                         .padding(.horizontal)
@@ -53,7 +83,7 @@ struct EventsView: View {
                     .padding(.top, 8)
 
                     // Featured Event
-                    if let firstEvent = events.first {
+                    if let firstEvent = filteredEvents.first {
                         FeaturedEventView(event: firstEvent)
                     }
 
@@ -68,7 +98,7 @@ struct EventsView: View {
                         } else if let errorMessage = errorMessage {
                             Text(errorMessage).foregroundColor(.red).padding()
                         } else {
-                            ForEach(events) { event in
+                            ForEach(filteredEvents) { event in
                                 UpcomingEventView(event: event)
                             }
                         }
@@ -133,34 +163,37 @@ struct EventsView: View {
                       let maxCapacity = data["maxCapacity"] as? Int,
                       let description = data["description"] as? String
                 else {
-                    // Instead of returning nil, return a default Event with fallback values
-                    let coordinate: CLLocationCoordinate2D? = CLLocationCoordinate2D(latitude: 52.3676, longitude: 4.9041)
-                    let distance: String? = "-"
-                    return Event(
-                        id: id,
-                        title: "Untitled",
-                        date: "",
-                        endTime: "",
-                        startTime: "",
-                        location: "",
-                        imageUrl: "",
-                        attendees: 0,
-                        category: "Other",
-                        price: 0.0,
-                        maxCapacity: 0,
-                        description: "",
-                        coordinate: coordinate,
-                        distance: distance
-                    )
+                    return nil
                 }
-                // Dummy values for coordinate and distance
                 let coordinate: CLLocationCoordinate2D? = CLLocationCoordinate2D(latitude: 52.3676, longitude: 4.9041)
                 let distance: String? = "-"
                 let category = data["category"] as? String ?? "Other"
                 let price = data["price"] as? Double ?? 0.0
                 return Event(id: id, title: title, date: date, endTime: endTime, startTime: startTime, location: location, imageUrl: imageUrl, attendees: attendees, category: category, price: price, maxCapacity: maxCapacity, description: description, coordinate: coordinate, distance: distance)
             }
+            filterEvents()
         }
+    }
+
+    private func filterEvents() {
+        var filtered = events
+        
+        // Apply category filter
+        if selectedFilter != "All Events" {
+            filtered = filtered.filter { $0.category == selectedFilter }
+        }
+        
+        // Apply search filter if search text is not empty
+        if !searchText.isEmpty {
+            filtered = filtered.filter { event in
+                event.title.localizedCaseInsensitiveContains(searchText) ||
+                event.description.localizedCaseInsensitiveContains(searchText) ||
+                event.location.localizedCaseInsensitiveContains(searchText) ||
+                event.category.localizedCaseInsensitiveContains(searchText)
+            }
+        }
+        
+        filteredEvents = filtered
     }
 }
 
