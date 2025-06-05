@@ -241,15 +241,15 @@ extension CreateEventView {
         isLoading = true
 
         if let uiImage = coverUIImage {
-            uploadImageAndCreateEvent(uiImage: uiImage, startDateTime: startDateTime, endDateTime: endDateTime)
+            uploadImageAndCreateEvent(uiImage: uiImage, startDateTime: startDateTime, endDateTime: endDateTime, startTime: startTime, endTime: endTime)
         } else {
             let defaultImageUrl =
                 "https://firebasestorage.googleapis.com/v0/b/your-app.appspot.com/o/default_event_image.jpg"
-            createEventInFirestore(imageUrl: defaultImageUrl, startDateTime: startDateTime, endDateTime: endDateTime)
+            createEventInFirestore(imageUrl: defaultImageUrl, startDateTime: startDateTime, endDateTime: endDateTime, startTime: startTime, endTime: endTime)
         }
     }
 
-    private func uploadImageAndCreateEvent(uiImage: UIImage, startDateTime: Date, endDateTime: Date) {
+    private func uploadImageAndCreateEvent(uiImage: UIImage, startDateTime: Date, endDateTime: Date, startTime: Date, endTime: Date) {
         let storageRef = Storage.storage().reference().child("event_covers/")
         let imageName = UUID().uuidString + ".jpg"
         let imageRef = storageRef.child(imageName)
@@ -275,12 +275,12 @@ extension CreateEventView {
                 }
 
                 let imageUrl = url?.absoluteString ?? ""
-                createEventInFirestore(imageUrl: imageUrl, startDateTime: startDateTime, endDateTime: endDateTime)
+                createEventInFirestore(imageUrl: imageUrl, startDateTime: startDateTime, endDateTime: endDateTime, startTime: startTime, endTime: endTime)
             }
         }
     }
 
-    private func createEventInFirestore(imageUrl: String, startDateTime: Date, endDateTime: Date) {
+    private func createEventInFirestore(imageUrl: String, startDateTime: Date, endDateTime: Date, startTime: Date, endTime: Date) {
         let db = Firestore.firestore()
         let eventData: [String: Any] = [
             "title": eventTitle,
