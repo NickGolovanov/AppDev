@@ -207,7 +207,6 @@ extension CreateEventView {
                                         minute: calendar.component(.minute, from: startTime),
                                         second: 0,
                                         of: startDate)!
-        
         let endDateTime = calendar.date(bySettingHour: calendar.component(.hour, from: endTime),
                                       minute: calendar.component(.minute, from: endTime),
                                       second: 0,
