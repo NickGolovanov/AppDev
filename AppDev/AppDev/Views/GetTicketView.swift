@@ -79,81 +79,121 @@ struct GetTicketView: View {
             showAlert = true
             return
         }
+        
         // Save to Firestore
         let db = Firestore.firestore()
-
-        // Initial ticket data without qrcodeUrl or a predefined ticketId
-        let initialTicketData: [String: Any] = [
-            "name": name,
-            "email": email,
-            "eventId": eventId,
-            "eventName": eventName,
-            "date": date,
-            "location": location,
-            "price": price,
-            "timestamp": FieldValue.serverTimestamp(),
-            "used": false,
-            "userId": userId,
-        ]
-
-        // 1. Create the document with initial data, letting Firestore generate the ID
-        var newTicketRef: DocumentReference? = nil
-        newTicketRef = db.collection("tickets").addDocument(data: initialTicketData) { error in
+        
+        // First, check if there are available tickets
+        db.collection("events").document(eventId).getDocument { (document, error) in
             if let error = error {
                 self.alertTitle = "Error"
-                self.alertMessage = "Failed to create ticket: \(error.localizedDescription)"
+                self.alertMessage = "Failed to check ticket availability: \(error.localizedDescription)"
                 self.showAlert = true
                 return
             }
-
-            guard let newTicketID = newTicketRef?.documentID else {
+            
+            guard let document = document,
+                  let data = document.data(),
+                  let attendees = data["attendees"] as? Int,
+                  let maxCapacity = data["maxCapacity"] as? Int else {
                 self.alertTitle = "Error"
-                self.alertMessage = "Failed to get new ticket ID."
+                self.alertMessage = "Failed to get event information."
                 self.showAlert = true
                 return
             }
+            
+            // Check if event is full
+            if attendees >= maxCapacity {
+                self.alertTitle = "Sold Out"
+                self.alertMessage = "Sorry, this event is sold out."
+                self.showAlert = true
+                return
+            }
+            
+            // Initial ticket data without qrcodeUrl or a predefined ticketId
+            let initialTicketData: [String: Any] = [
+                "name": name,
+                "email": email,
+                "eventId": eventId,
+                "eventName": eventName,
+                "date": date,
+                "location": location,
+                "price": price,
+                "timestamp": FieldValue.serverTimestamp(),
+                "used": false,
+                "userId": userId,
+            ]
 
-            let qrcodeUrl = "https://api.qrserver.com/v1/create-qr-code/?data=\(newTicketID)"
-
-            db.collection("tickets").document(newTicketID).updateData([
-                "qrcodeUrl": qrcodeUrl,
-                "ticketId": newTicketID,
-            ]) { updateError in
-                if let updateError = updateError {
+            // Create the document with initial data, letting Firestore generate the ID
+            var newTicketRef: DocumentReference? = nil
+            newTicketRef = db.collection("tickets").addDocument(data: initialTicketData) { error in
+                if let error = error {
                     self.alertTitle = "Error"
-                    self.alertMessage =
-                        "Failed to update ticket with QR code: \(updateError.localizedDescription)"
-                } else {
-                    self.alertTitle = "Ticket Purchased"
-                    self.alertMessage = "Thank you, \(self.name)! Your ticket has been reserved."
-                    self.name = ""
-                    self.email = ""
+                    self.alertMessage = "Failed to create ticket: \(error.localizedDescription)"
+                    self.showAlert = true
+                    return
+                }
 
-                    // Add event ID to user's joinedEventIds
-                    if !self.userId.isEmpty {
-                        let userRef = db.collection("users").document(self.userId)
-                        userRef.updateData([
-                            "joinedEventIds": FieldValue.arrayUnion([self.eventId])
-                        ]) { userUpdateError in
-                            if let userUpdateError = userUpdateError {
-                                print(
-                                    "Error updating user joinedEventIds: \(userUpdateError.localizedDescription)"
-                                )
-                            } else {
-                                print("User joinedEventIds updated successfully.")
+                guard let newTicketID = newTicketRef?.documentID else {
+                    self.alertTitle = "Error"
+                    self.alertMessage = "Failed to get new ticket ID."
+                    self.showAlert = true
+                    return
+                }
+
+                let qrcodeUrl = "https://api.qrserver.com/v1/create-qr-code/?data=\(newTicketID)"
+
+                // Update ticket with QR code and increment event attendees in a batch
+                let batch = db.batch()
+                
+                // Update ticket with QR code
+                let ticketRef = db.collection("tickets").document(newTicketID)
+                batch.updateData([
+                    "qrcodeUrl": qrcodeUrl,
+                    "ticketId": newTicketID,
+                ], forDocument: ticketRef)
+                
+                // Increment event attendees
+                let eventRef = db.collection("events").document(self.eventId)
+                batch.updateData([
+                    "attendees": FieldValue.increment(Int64(1))
+                ], forDocument: eventRef)
+                
+                // Commit the batch
+                batch.commit { error in
+                    if let error = error {
+                        self.alertTitle = "Error"
+                        self.alertMessage = "Failed to complete ticket purchase: \(error.localizedDescription)"
+                    } else {
+                        self.alertTitle = "Ticket Purchased"
+                        self.alertMessage = "Thank you, \(self.name)! Your ticket has been reserved."
+                        self.name = ""
+                        self.email = ""
+
+                        // Add event ID to user's joinedEventIds
+                        if !self.userId.isEmpty {
+                            let userRef = db.collection("users").document(self.userId)
+                            userRef.updateData([
+                                "joinedEventIds": FieldValue.arrayUnion([self.eventId])
+                            ]) { userUpdateError in
+                                if let userUpdateError = userUpdateError {
+                                    print("Error updating user joinedEventIds: \(userUpdateError.localizedDescription)")
+                                } else {
+                                    print("User joinedEventIds updated successfully.")
+                                }
                             }
                         }
-                    }
 
-                    // Create chat document if it doesn't exist
-                    let chatData: [String: Any] = [
-                        "eventName": self.eventName,
-                        "lastMessage": "Welcome to the \(self.eventName) chat!",
-                        "lastMessageTime": FieldValue.serverTimestamp(),
-                    ]
-                    db.collection("chats").document(self.eventId).setData(chatData, merge: true)
+                        // Create chat document if it doesn't exist
+                        let chatData: [String: Any] = [
+                            "eventName": self.eventName,
+                            "lastMessage": "Welcome to the \(self.eventName) chat!",
+                            "lastMessageTime": FieldValue.serverTimestamp(),
+                        ]
+                        db.collection("chats").document(self.eventId).setData(chatData, merge: true)
+                    }
+                    self.showAlert = true
                 }
-                self.showAlert = true
             }
         }
     }
