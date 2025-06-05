@@ -12,10 +12,11 @@ import SwiftUI
 struct CreateEventView: View {
     @AppStorage("userId") var userId: String = ""
     @State private var eventTitle: String = ""
-    @State private var date: Date? = nil
-    @State private var category: String = "House Party"
+    @State private var startDate: Date? = nil
+    @State private var endDate: Date? = nil
     @State private var startTime: Date? = nil
     @State private var endTime: Date? = nil
+    @State private var category: String = "House Party"
     @State private var location: String = ""
     @State private var description: String = ""
     @State private var maxCapacity: String = ""
@@ -27,7 +28,28 @@ struct CreateEventView: View {
     @State private var alertMessage: String = ""
     @State private var isLoading: Bool = false
 
-    let categories = ["House Party", "Concert", "Meetup", "Workshop"]
+    let categories = [
+        "House Party",
+        "Concert",
+        "Meetup",
+        "Workshop",
+        "Conference",
+        "Exhibition",
+        "Festival",
+        "Food & Drink",
+        "Sports",
+        "Theater",
+        "Comedy",
+        "Networking",
+        "Art Gallery",
+        "Music Festival",
+        "Charity Event",
+        "Business Event",
+        "Cultural Event",
+        "Educational",
+        "Fashion Show",
+        "Gaming Event"
+    ]
 
     var body: some View {
         ScrollView {
@@ -36,7 +58,6 @@ struct CreateEventView: View {
                 imagePickerSection
                 eventFormSection
                 createButtonSection
-                footerSection
             }
             .padding()
         }
@@ -89,13 +110,13 @@ extension CreateEventView {
 
             HStack(spacing: 16) {
                 VStack(alignment: .leading) {
-                    FormLabel(text: "Date")
-                    StyledDatePicker(selection: $date, displayedComponents: .date)
+                    FormLabel(text: "Start Date")
+                    StyledDatePicker(selection: $startDate, displayedComponents: .date)
                 }
 
-                VStack(alignment: .leading, spacing: 8) {
-                    FormLabel(text: "Category")
-                    StyledPicker(selection: $category, options: categories, optionLabel: { $0 })
+                VStack(alignment: .leading) {
+                    FormLabel(text: "End Date")
+                    StyledDatePicker(selection: $endDate, displayedComponents: .date)
                 }
             }
 
@@ -105,9 +126,16 @@ extension CreateEventView {
                     StyledDatePicker(selection: $startTime, displayedComponents: .hourAndMinute)
                 }
 
-                VStack(alignment: .leading, spacing: 8) {
+                VStack(alignment: .leading) {
                     FormLabel(text: "End Time")
                     StyledDatePicker(selection: $endTime, displayedComponents: .hourAndMinute)
+                }
+            }
+
+            HStack(spacing: 16) {
+                VStack(alignment: .leading, spacing: 8) {
+                    FormLabel(text: "Category")
+                    StyledPicker(selection: $category, options: categories, optionLabel: { $0 })
                 }
             }
 
@@ -161,19 +189,6 @@ extension CreateEventView {
                 dismissButton: .default(Text("OK")))
         }
     }
-
-    var footerSection: some View {
-        Rectangle()
-            .fill(Color.gray.opacity(0.1))
-            .frame(height: 60)
-            .overlay(
-                Text("Footer Placeholder")
-                    .font(.footnote)
-                    .foregroundColor(.gray)
-            )
-            .cornerRadius(12)
-            .padding(.top, 10)
-    }
 }
 
 // MARK: - Event Creation Logic
@@ -183,20 +198,27 @@ extension CreateEventView {
             showError("Event title is required.")
             return
         }
-        guard let eventDate = date else {
-            showError("Date is required.")
+        guard let startDate = startDate, let endDate = endDate, let startTime = startTime, let endTime = endTime else {
+            showError("Start/end date and time are required.")
             return
         }
+        let calendar = Calendar.current
+        let startDateTime = calendar.date(bySettingHour: calendar.component(.hour, from: startTime),
+                                        minute: calendar.component(.minute, from: startTime),
+                                        second: 0,
+                                        of: startDate)!
+        let endDateTime = calendar.date(bySettingHour: calendar.component(.hour, from: endTime),
+                                      minute: calendar.component(.minute, from: endTime),
+                                      second: 0,
+                                      of: endDate)!
+        
+        guard endDateTime > startDateTime else {
+            showError("End date/time must be after start date/time.")
+            return
+        }
+        
         guard !category.isEmpty else {
             showError("Category is required.")
-            return
-        }
-        guard let start = startTime, let end = endTime else {
-            showError("Start and end time are required.")
-            return
-        }
-        guard end > start else {
-            showError("End time must be after start time.")
             return
         }
         guard !location.trimmingCharacters(in: .whitespaces).isEmpty else {
@@ -219,15 +241,15 @@ extension CreateEventView {
         isLoading = true
 
         if let uiImage = coverUIImage {
-            uploadImageAndCreateEvent(uiImage: uiImage)
+            uploadImageAndCreateEvent(uiImage: uiImage, startDateTime: startDateTime, endDateTime: endDateTime, startTime: startTime, endTime: endTime)
         } else {
             let defaultImageUrl =
                 "https://firebasestorage.googleapis.com/v0/b/your-app.appspot.com/o/default_event_image.jpg"
-            createEventInFirestore(imageUrl: defaultImageUrl)
+            createEventInFirestore(imageUrl: defaultImageUrl, startDateTime: startDateTime, endDateTime: endDateTime, startTime: startTime, endTime: endTime)
         }
     }
 
-    private func uploadImageAndCreateEvent(uiImage: UIImage) {
+    private func uploadImageAndCreateEvent(uiImage: UIImage, startDateTime: Date, endDateTime: Date, startTime: Date, endTime: Date) {
         let storageRef = Storage.storage().reference().child("event_covers/")
         let imageName = UUID().uuidString + ".jpg"
         let imageRef = storageRef.child(imageName)
@@ -253,19 +275,19 @@ extension CreateEventView {
                 }
 
                 let imageUrl = url?.absoluteString ?? ""
-                createEventInFirestore(imageUrl: imageUrl)
+                createEventInFirestore(imageUrl: imageUrl, startDateTime: startDateTime, endDateTime: endDateTime, startTime: startTime, endTime: endTime)
             }
         }
     }
 
-    private func createEventInFirestore(imageUrl: String) {
+    private func createEventInFirestore(imageUrl: String, startDateTime: Date, endDateTime: Date, startTime: Date, endTime: Date) {
         let db = Firestore.firestore()
         let eventData: [String: Any] = [
             "title": eventTitle,
-            "date": ISO8601DateFormatter().string(from: date!),
+            "date": ISO8601DateFormatter().string(from: startDateTime),
             "category": category,
-            "startTime": ISO8601DateFormatter().string(from: startTime!),
-            "endTime": ISO8601DateFormatter().string(from: endTime!),
+            "startTime": ISO8601DateFormatter().string(from: startTime),
+            "endTime": ISO8601DateFormatter().string(from: endTime),
             "location": location,
             "description": description,
             "maxCapacity": Int(maxCapacity)!,
