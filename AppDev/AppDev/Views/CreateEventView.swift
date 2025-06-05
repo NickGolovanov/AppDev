@@ -12,10 +12,10 @@ import SwiftUI
 struct CreateEventView: View {
     @AppStorage("userId") var userId: String = ""
     @State private var eventTitle: String = ""
-    @State private var startDate: Date = Date()
-    @State private var endDate: Date = Date()
-    @State private var startTime: Date = Date()
-    @State private var endTime: Date = Date()
+    @State private var startDate: Date? = nil
+    @State private var endDate: Date? = nil
+    @State private var startTime: Date? = nil
+    @State private var endTime: Date? = nil
     @State private var category: String = "House Party"
     @State private var location: String = ""
     @State private var description: String = ""
@@ -198,7 +198,10 @@ extension CreateEventView {
             showError("Event title is required.")
             return
         }
-        
+        guard let startDate = startDate, let endDate = endDate, let startTime = startTime, let endTime = endTime else {
+            showError("Start/end date and time are required.")
+            return
+        }
         let calendar = Calendar.current
         let startDateTime = calendar.date(bySettingHour: calendar.component(.hour, from: startTime),
                                         minute: calendar.component(.minute, from: startTime),
