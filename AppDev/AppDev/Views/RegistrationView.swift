@@ -51,20 +51,6 @@ struct RegistrationView: View {
                     }
                     .disabled(isLoading || !isFormValid)
                     .listRowBackground(isFormValid ? Color.blue : Color.gray)
-
-                    // Add Google Sign-In Button
-                    Button(action: handleGoogleSignIn) {
-                       HStack {
-                           Image(systemName: "globe") // Or use a Google logo asset if you have one
-                           Text("Sign in with Google")
-                               .frame(maxWidth: .infinity)
-                       }
-                       .foregroundColor(.white)
-                       .padding()
-                       .background(Color.red)
-                       .cornerRadius(8)
-                    }
-                    .listRowBackground(Color.red)
                 }
             }
             .navigationTitle("Registration")
