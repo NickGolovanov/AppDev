@@ -64,7 +64,6 @@ struct RegistrationView: View {
                        .background(Color.red)
                        .cornerRadius(8)
                     }
-                    .disabled(isLoading)
                     .listRowBackground(Color.red)
                 }
             }
