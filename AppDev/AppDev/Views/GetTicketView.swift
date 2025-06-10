@@ -25,19 +25,19 @@ struct GetTicketView: View {
 
                 ScrollView {
                     VStack(spacing: 24) {
-                        // Event Image
-                        if let imageUrl = event.imageUrl {
-                            AsyncImage(url: URL(string: imageUrl)) { image in
-                                image
-                                    .resizable()
-                                    .aspectRatio(contentMode: .fill)
-                            } placeholder: {
-                                Rectangle()
-                                    .fill(Color.gray.opacity(0.2))
-                            }
-                            .frame(height: 200)
-                            .clipped()
-                        }
+                        // Event Image (REMOVED)
+                        // if let imageUrl = event.imageUrl {
+                        //     AsyncImage(url: URL(string: imageUrl)) { image in
+                        //         image
+                        //             .resizable()
+                        //             .aspectRatio(contentMode: .fill)
+                        //     } placeholder: {
+                        //         Rectangle()
+                        //             .fill(Color.gray.opacity(0.2))
+                        //     }
+                        //     .frame(height: 200)
+                        //     .clipped()
+                        // }
 
                         // Event Details
                         VStack(alignment: .leading, spacing: 16) {
