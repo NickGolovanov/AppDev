@@ -12,6 +12,7 @@ struct EventsMapView: View {
     @State private var errorMessage: String? = nil
     @State private var selectedEvent: Event? = nil
     @State private var showingEventDetails = false
+    private let geocoder = CLGeocoder()
 
     var body: some View {
         NavigationView {
@@ -117,9 +118,16 @@ struct EventsMapView: View {
                 errorMessage = "No events found."
                 return
             }
-            events = documents.compactMap { doc in
+            
+            // Create a dispatch group to handle multiple geocoding requests
+            let group = DispatchGroup()
+            var tempEvents: [Event] = []
+            
+            for doc in documents {
+                group.enter()
                 let data = doc.data()
                 let id = doc.documentID
+                
                 guard let title = data["title"] as? String,
                       let date = data["date"] as? String,
                       let endTime = data["endTime"] as? String,
@@ -130,13 +138,56 @@ struct EventsMapView: View {
                       let maxCapacity = data["maxCapacity"] as? Int,
                       let description = data["description"] as? String
                 else {
-                    return nil
+                    group.leave()
+                    continue
                 }
-                let coordinate: CLLocationCoordinate2D? = CLLocationCoordinate2D(latitude: 52.3676, longitude: 4.9041)
-                let distance: String? = "-"
+                
                 let category = data["category"] as? String ?? "Other"
                 let price = data["price"] as? Double ?? 0.0
-                return Event(id: id, title: title, date: date, endTime: endTime, startTime: startTime, location: location, imageUrl: imageUrl, attendees: attendees, category: category, price: price, maxCapacity: maxCapacity, description: description, coordinate: coordinate, distance: distance)
+                
+                // Geocode the location
+                geocoder.geocodeAddressString(location) { placemarks, error in
+                    defer { group.leave() }
+                    
+                    if let error = error {
+                        print("Geocoding error for \(location): \(error.localizedDescription)")
+                    }
+                    
+                    let coordinate = placemarks?.first?.location?.coordinate ?? CLLocationCoordinate2D(latitude: 52.3702, longitude: 4.8952)
+                    let distance: String? = "-"
+                    
+                    let event = Event(
+                        id: id,
+                        title: title,
+                        date: date,
+                        endTime: endTime,
+                        startTime: startTime,
+                        location: location,
+                        imageUrl: imageUrl,
+                        attendees: attendees,
+                        category: category,
+                        price: price,
+                        maxCapacity: maxCapacity,
+                        description: description,
+                        coordinate: coordinate,
+                        distance: distance
+                    )
+                    
+                    tempEvents.append(event)
+                }
+            }
+            
+            // Wait for all geocoding requests to complete
+            group.notify(queue: .main) {
+                self.events = tempEvents
+                
+                // Update map region to show all events if there are any
+                if let firstEvent = tempEvents.first {
+                    self.region = MKCoordinateRegion(
+                        center: firstEvent.coordinate ?? self.region.center,
+                        span: MKCoordinateSpan(latitudeDelta: 0.1, longitudeDelta: 0.1)
+                    )
+                }
             }
         }
     }
