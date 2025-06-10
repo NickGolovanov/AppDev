@@ -75,9 +75,7 @@ struct CreateEventView: View {
                     title: Text("Event Creation"),
                     message: Text(alertMessage),
                     dismissButton: .default(Text("OK")) {
-                        if !createdEventId.isEmpty {
-                            navigateToEvent = true
-                        }
+                        dismiss()
                     }
                 )
             }
@@ -323,9 +321,8 @@ extension CreateEventView {
                 alertMessage = "Event created successfully!"
                 showAlert = true
                 
-                // Add event ID to user's organizedEventIds and navigate
+                // Add event ID to user's organizedEventIds
                 if let eventID = newEventRef?.documentID, !self.userId.isEmpty {
-                    self.createdEventId = eventID
                     let userRef = db.collection("users").document(self.userId)
                     userRef.updateData([
                         "organizedEventIds": FieldValue.arrayUnion([eventID])
@@ -334,9 +331,9 @@ extension CreateEventView {
                             print("Error updating user organizedEventIds: \(err.localizedDescription)")
                         } else {
                             print("User organizedEventIds updated successfully.")
-                            // Navigate to the event view after successful creation
+                            // Dismiss the view after successful creation
                             DispatchQueue.main.async {
-                                self.navigateToEvent = true
+                                self.dismiss()
                             }
                         }
                     }

@@ -72,7 +72,7 @@ struct GetTicketView: View {
                     message: Text(alertMessage),
                     dismissButton: .default(Text("OK")) {
                         if alertTitle == "Ticket Purchased" {
-                            navigateToEvent = true
+                            dismiss()
                         }
                     }
                 )
@@ -138,9 +138,9 @@ struct GetTicketView: View {
                                 print("Error updating user joinedEventIds: \(userUpdateError.localizedDescription)")
                             } else {
                                 print("User joinedEventIds updated successfully.")
-                                // Navigate to the event view after successful ticket purchase
+                                // Dismiss the view after successful ticket purchase
                                 DispatchQueue.main.async {
-                                    self.navigateToEvent = true
+                                    self.dismiss()
                                 }
                             }
                         }
