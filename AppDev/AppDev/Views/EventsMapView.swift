@@ -180,16 +180,40 @@ struct EventsMapView: View {
             // Wait for all geocoding requests to complete
             group.notify(queue: .main) {
                 self.events = tempEvents
-                
-                // Update map region to show all events if there are any
-                if let firstEvent = tempEvents.first {
-                    self.region = MKCoordinateRegion(
-                        center: firstEvent.coordinate ?? self.region.center,
-                        span: MKCoordinateSpan(latitudeDelta: 0.1, longitudeDelta: 0.1)
-                    )
+                // Update map region to fit all events
+                if let fitRegion = regionForEvents(tempEvents) {
+                    self.region = fitRegion
                 }
             }
         }
+    }
+
+    // Helper to fit all event pins
+    func regionForEvents(_ events: [Event]) -> MKCoordinateRegion? {
+        let coordinates = events.compactMap { $0.coordinate }
+        guard !coordinates.isEmpty else { return nil }
+        if coordinates.count == 1 {
+            return MKCoordinateRegion(center: coordinates[0], span: MKCoordinateSpan(latitudeDelta: 0.08, longitudeDelta: 0.08))
+        }
+        var minLat = coordinates[0].latitude
+        var maxLat = coordinates[0].latitude
+        var minLon = coordinates[0].longitude
+        var maxLon = coordinates[0].longitude
+        for coord in coordinates {
+            minLat = min(minLat, coord.latitude)
+            maxLat = max(maxLat, coord.latitude)
+            minLon = min(minLon, coord.longitude)
+            maxLon = max(maxLon, coord.longitude)
+        }
+        let center = CLLocationCoordinate2D(
+            latitude: (minLat + maxLat) / 2,
+            longitude: (minLon + maxLon) / 2
+        )
+        let span = MKCoordinateSpan(
+            latitudeDelta: (maxLat - minLat) * 1.5,
+            longitudeDelta: (maxLon - minLon) * 1.5
+        )
+        return MKCoordinateRegion(center: center, span: span)
     }
 }
 
