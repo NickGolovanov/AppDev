@@ -61,18 +61,6 @@ struct FooterView: View {
 				}
 			}
 			Spacer()
-			VStack {
-				Image(systemName: "person.crop.circle.fill")
-					.foregroundColor(selectedTab == "Profile" ? .purple : .gray)
-				Text("Profile").font(.caption)
-					.foregroundColor(selectedTab == "Profile" ? .purple : .gray)
-			}
-			.onTapGesture {
-				withAnimation {
-					selectedTab = "Profile"
-				}
-			}
-			Spacer()
 		}
 		.padding(.vertical, 8)
 		.background(Color.white)
