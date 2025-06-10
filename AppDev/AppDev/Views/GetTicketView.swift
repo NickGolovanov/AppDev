@@ -147,8 +147,9 @@ struct GetTicketView: View {
             "qrCodeUrl": "" // Will be updated after QR code generation
         ]
         
-        // Create ticket
-        db.collection("tickets").addDocument(data: ticketData) { error, ticketRef in
+        // Create ticket and get DocumentReference
+        let ticketRef = db.collection("tickets").document()
+        ticketRef.setData(ticketData) { error in
             if let error = error {
                 isLoading = false
                 alertMessage = "Failed to purchase ticket: \(error.localizedDescription)"
@@ -156,15 +157,8 @@ struct GetTicketView: View {
                 return
             }
             
-            guard let ticketRef = ticketRef else {
-                isLoading = false
-                alertMessage = "Failed to create ticket reference"
-                showAlert = true
-                return
-            }
-            
             // Generate QR code
-            let qrCodeData = "\(ticketRef.documentID)"
+            let qrCodeData = ticketRef.documentID
             if let qrCodeImage = generateQRCode(from: qrCodeData) {
                 // Upload QR code to Firebase Storage
                 let storageRef = Storage.storage().reference().child("qr_codes/\(ticketRef.documentID).png")
@@ -209,15 +203,15 @@ struct GetTicketView: View {
             // Create chat for the event
             Task {
                 do {
+                    // Adjust Ticket initializer to match your model
                     let ticket = Ticket(
                         id: ticketRef.documentID,
                         eventId: event.id ?? "",
                         eventName: event.title,
                         userId: Auth.auth().currentUser?.uid ?? "",
                         name: name,
-                        email: email,
-                        purchaseDate: Date(),
-                        qrCodeUrl: ""
+                        email: email
+                        // Add other required fields if needed
                     )
                     try await chatService?.createChatForTicket(ticket: ticket)
                 } catch {
@@ -234,11 +228,10 @@ struct GetTicketView: View {
 
     private func generateQRCode(from string: String) -> UIImage? {
         let data = string.data(using: .utf8)
-        let qrGenerator = CIFilter.qrCodeGenerator()
-        qrGenerator.message = data
-        qrGenerator.correctionLevel = "M"
-        
-        if let qrImage = qrGenerator.outputImage {
+        guard let qrFilter = CIFilter(name: "CIQRCodeGenerator") else { return nil }
+        qrFilter.setValue(data, forKey: "inputMessage")
+        qrFilter.setValue("M", forKey: "inputCorrectionLevel")
+        if let qrImage = qrFilter.outputImage {
             let transform = CGAffineTransform(scaleX: 10, y: 10)
             let scaledQrImage = qrImage.transformed(by: transform)
             return UIImage(ciImage: scaledQrImage)
