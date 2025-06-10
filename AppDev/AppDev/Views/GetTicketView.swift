@@ -137,19 +137,19 @@ struct GetTicketView: View {
         isLoading = true
         
         let db = Firestore.firestore()
+        let eventId = event.id ?? ""
+        let ticketRef = db.collection("tickets").document()
         let ticketData: [String: Any] = [
-            "eventId": event.id ?? "",
+            "eventId": eventId,
             "eventName": event.title,
+            "date": event.date,
+            "location": event.location,
             "userId": Auth.auth().currentUser?.uid ?? "",
             "name": name,
             "email": email,
-            "purchaseDate": Timestamp(date: Date()),
-            "qrCodeUrl": "" // Will be updated after QR code generation
+            "price": String(format: "%.2f", event.price),
+            "qrcodeUrl": "",
         ]
-        
-        // Create ticket and get DocumentReference
-        let eventId = event.id ?? ""
-        let ticketRef = db.collection("tickets").document()
         ticketRef.setData(ticketData) { error in
             if let error = error {
                 isLoading = false
@@ -157,28 +157,24 @@ struct GetTicketView: View {
                 showAlert = true
                 return
             }
-            
             // Generate QR code
             let qrCodeData = ticketRef.documentID
             if let qrCodeImage = generateQRCode(from: qrCodeData) {
-                // Upload QR code to Firebase Storage
                 let storageRef = Storage.storage().reference().child("qr_codes/\(ticketRef.documentID).png")
                 if let imageData = qrCodeImage.pngData() {
                     storageRef.putData(imageData, metadata: nil) { metadata, error in
                         if let error = error {
                             print("Error uploading QR code: \(error.localizedDescription)")
                         } else {
-                            // Get download URL and update ticket
                             storageRef.downloadURL { url, error in
                                 if let downloadURL = url {
-                                    ticketRef.updateData(["qrCodeUrl": downloadURL.absoluteString])
+                                    ticketRef.updateData(["qrcodeUrl": downloadURL.absoluteString])
                                 }
                             }
                         }
                     }
                 }
             }
-            
             // Update event attendees count
             let eventRef = db.collection("events").document(eventId)
             eventRef.updateData([
@@ -188,7 +184,6 @@ struct GetTicketView: View {
                     print("Error updating attendees count: \(error.localizedDescription)")
                 }
             }
-            
             // Update user's joined events
             if let userId = Auth.auth().currentUser?.uid {
                 let userRef = db.collection("users").document(userId)
@@ -200,26 +195,26 @@ struct GetTicketView: View {
                     }
                 }
             }
-            
             // Create chat for the event
             Task {
                 do {
-                    // Adjust Ticket initializer to match your model
                     let ticket = Ticket(
                         id: ticketRef.documentID,
                         eventId: eventId,
                         eventName: event.title,
-                        userId: Auth.auth().currentUser?.uid ?? "",
+                        date: event.date,
+                        location: event.location,
                         name: name,
-                        email: email
-                        // Add other required fields if needed
+                        email: email,
+                        price: String(format: "%.2f", event.price),
+                        qrcodeUrl: "",
+                        userId: Auth.auth().currentUser?.uid ?? ""
                     )
                     try await chatService?.createChatForTicket(ticket: ticket)
                 } catch {
                     print("Error creating chat: \(error.localizedDescription)")
                 }
             }
-            
             isLoading = false
             alertMessage = "Ticket purchased successfully!"
             showAlert = true
