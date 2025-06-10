@@ -10,6 +10,8 @@ struct EventsMapView: View {
     @State private var events: [Event] = []
     @State private var isLoading = false
     @State private var errorMessage: String? = nil
+    @State private var selectedEvent: Event? = nil
+    @State private var showingEventDetails = false
 
     var body: some View {
         NavigationView {
@@ -19,12 +21,46 @@ struct EventsMapView: View {
                     .padding(4)
 
                 // Map
-                Map(coordinateRegion: $region, annotationItems: events) { event in
-                    MapMarker(coordinate: event.coordinate ?? region.center, tint: .purple)
+                ZStack {
+                    Map(coordinateRegion: $region, annotationItems: events) { event in
+                        MapAnnotation(coordinate: event.coordinate ?? region.center) {
+                            VStack(spacing: 0) {
+                                Image(systemName: "mappin.circle.fill")
+                                    .font(.title)
+                                    .foregroundColor(.purple)
+                                    .shadow(radius: 2)
+                                    .onTapGesture {
+                                        selectedEvent = event
+                                        showingEventDetails = true
+                                    }
+                                
+                                // Event title bubble
+                                if selectedEvent?.id == event.id && showingEventDetails {
+                                    Text(event.title)
+                                        .font(.caption)
+                                        .padding(6)
+                                        .background(Color.white)
+                                        .cornerRadius(8)
+                                        .shadow(radius: 2)
+                                        .padding(.top, 4)
+                                }
+                            }
+                        }
+                    }
+                    .frame(height: 420)
+                    .cornerRadius(0)
+                    .padding(.bottom, 0)
+                    .overlay(
+                        Group {
+                            if isLoading {
+                                ProgressView()
+                                    .scaleEffect(1.5)
+                                    .frame(maxWidth: .infinity, maxHeight: .infinity)
+                                    .background(Color.black.opacity(0.1))
+                            }
+                        }
+                    )
                 }
-                .frame(height: 420)
-                .cornerRadius(0)
-                .padding(.bottom, 0)
 
                 // Spacing between map and cards
                 Spacer().frame(height: 16)
@@ -56,6 +92,11 @@ struct EventsMapView: View {
                 Spacer()
             }
             .background(Color(.systemGray6).ignoresSafeArea())
+            .sheet(isPresented: $showingEventDetails) {
+                if let event = selectedEvent {
+                    EventPreviewSheet(event: event)
+                }
+            }
         }
         .onAppear {
             fetchEvents()
@@ -96,6 +137,92 @@ struct EventsMapView: View {
                 let category = data["category"] as? String ?? "Other"
                 let price = data["price"] as? Double ?? 0.0
                 return Event(id: id, title: title, date: date, endTime: endTime, startTime: startTime, location: location, imageUrl: imageUrl, attendees: attendees, category: category, price: price, maxCapacity: maxCapacity, description: description, coordinate: coordinate, distance: distance)
+            }
+        }
+    }
+}
+
+struct EventPreviewSheet: View {
+    let event: Event
+    @Environment(\.dismiss) private var dismiss
+    @State private var navigateToEvent = false
+    
+    var body: some View {
+        NavigationStack {
+            ScrollView {
+                VStack(alignment: .leading, spacing: 16) {
+                    if let imageUrl = URL(string: event.imageUrl) {
+                        AsyncImage(url: imageUrl) { image in
+                            image
+                                .resizable()
+                                .aspectRatio(contentMode: .fill)
+                                .frame(height: 200)
+                                .clipped()
+                        } placeholder: {
+                            Rectangle()
+                                .fill(Color.gray.opacity(0.3))
+                                .frame(height: 200)
+                        }
+                    }
+                    
+                    VStack(alignment: .leading, spacing: 12) {
+                        Text(event.title)
+                            .font(.title2)
+                            .fontWeight(.bold)
+                        
+                        HStack {
+                            Image(systemName: "calendar")
+                            Text("\(event.formattedDate), \(event.formattedTime)")
+                        }
+                        .foregroundColor(.gray)
+                        
+                        HStack {
+                            Image(systemName: "mappin.circle.fill")
+                            Text(event.location)
+                        }
+                        .foregroundColor(.gray)
+                        
+                        HStack {
+                            Image(systemName: "person.2.fill")
+                            Text("\(event.attendees) going")
+                        }
+                        .foregroundColor(.purple)
+                        
+                        if let price = event.price {
+                            HStack {
+                                Image(systemName: "ticket.fill")
+                                Text("€\(String(format: "%.2f", price))")
+                            }
+                            .foregroundColor(.purple)
+                        }
+                    }
+                    .padding()
+                    
+                    Button(action: {
+                        navigateToEvent = true
+                    }) {
+                        Text("View Event Details")
+                            .font(.headline)
+                            .foregroundColor(.white)
+                            .frame(maxWidth: .infinity)
+                            .padding()
+                            .background(Color.purple)
+                            .cornerRadius(12)
+                    }
+                    .padding(.horizontal)
+                }
+            }
+            .navigationTitle("Event Preview")
+            .navigationBarTitleDisplayMode(.inline)
+            .toolbar {
+                ToolbarItem(placement: .navigationBarTrailing) {
+                    Button("Close") {
+                        dismiss()
+                    }
+                }
+            }
+            .navigationDestination(isPresented: $navigateToEvent) {
+                EventView(eventId: event.id ?? "-1")
             }
         }
     }
