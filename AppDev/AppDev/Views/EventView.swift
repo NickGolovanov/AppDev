@@ -209,17 +209,6 @@ struct EventView: View {
                         .frame(maxWidth: .infinity)
                     }
                     
-                    NavigationLink(destination: ExploreView()) {
-                        VStack(spacing: 4) {
-                            Image(systemName: "magnifyingglass")
-                                .font(.system(size: 24))
-                            Text("Explore")
-                                .font(.system(size: 12))
-                        }
-                        .foregroundColor(.black)
-                        .frame(maxWidth: .infinity)
-                    }
-                    
                     NavigationLink(destination: CreateEventView()) {
                         VStack(spacing: 4) {
                             Image(systemName: "plus.circle.fill")
