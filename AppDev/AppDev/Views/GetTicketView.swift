@@ -1,194 +1,266 @@
 import FirebaseAuth
-
 import FirebaseFirestore
-
+import FirebaseStorage
 import SwiftUI
 
 struct GetTicketView: View {
+    let event: Event
     @Environment(\.dismiss) private var dismiss
-    @EnvironmentObject private var authViewModel: AuthViewModel
-    let eventId: String
-    let eventName: String
-    let date: String
-    let location: String
-    let price: String
-    
+    @EnvironmentObject var authViewModel: AuthViewModel
+    @State private var name: String = ""
+    @State private var email: String = ""
     @State private var showAlert = false
-    @State private var alertTitle = ""
     @State private var alertMessage = ""
     @State private var isLoading = false
-    @AppStorage("userId") var userId: String = ""
+    @State private var navigateToEvent = false
+    @State private var chatService: ChatService?
 
     var body: some View {
         NavigationStack {
-            ScrollView {
-                VStack(spacing: 24) {
-                    Text("Get Your Ticket")
-                        .font(.title)
-                        .fontWeight(.bold)
-                        .padding(.top, 32)
+            VStack(spacing: 0) {
+                // Header
+                HeaderView(title: "Get Ticket", showBackButton: true)
+                    .padding()
+                    .background(Color.white)
 
-                    VStack(alignment: .leading, spacing: 16) {
-                        Text("Name")
-                            .font(.headline)
-                        Text(authViewModel.currentUser?.fullName ?? "Loading...")
-                            .padding()
-                            .frame(maxWidth: .infinity, alignment: .leading)
-                            .background(Color(.systemGray6))
-                            .cornerRadius(8)
+                ScrollView {
+                    VStack(spacing: 24) {
+                        // Event Image
+                        if let imageUrl = event.imageUrl {
+                            AsyncImage(url: URL(string: imageUrl)) { image in
+                                image
+                                    .resizable()
+                                    .aspectRatio(contentMode: .fill)
+                            } placeholder: {
+                                Rectangle()
+                                    .fill(Color.gray.opacity(0.2))
+                            }
+                            .frame(height: 200)
+                            .clipped()
+                        }
 
-                        Text("Email")
-                            .font(.headline)
-                        Text(authViewModel.currentUser?.email ?? "Loading...")
-                            .padding()
-                            .frame(maxWidth: .infinity, alignment: .leading)
-                            .background(Color(.systemGray6))
-                            .cornerRadius(8)
-                    }
-                    .padding(.horizontal, 24)
-
-                    // Event Details
-                    VStack(alignment: .leading, spacing: 16) {
-                        Text("Event Details")
-                            .font(.headline)
-                            .padding(.horizontal, 24)
-
-                        VStack(alignment: .leading, spacing: 8) {
-                            Text(eventName)
-                                .font(.title3)
-                                .fontWeight(.semibold)
-                            Text(date)
-                                .foregroundColor(.gray)
-                            Text(location)
-                                .foregroundColor(.gray)
-                            Text(price)
-                                .font(.title3)
+                        // Event Details
+                        VStack(alignment: .leading, spacing: 16) {
+                            Text(event.title)
+                                .font(.title2)
                                 .fontWeight(.bold)
-                                .foregroundColor(.purple)
+
+                            HStack {
+                                Image(systemName: "calendar")
+                                Text(event.date)
+                            }
+                            .foregroundColor(.gray)
+
+                            HStack {
+                                Image(systemName: "clock")
+                                Text("\(event.startTime) - \(event.endTime)")
+                            }
+                            .foregroundColor(.gray)
+
+                            HStack {
+                                Image(systemName: "mappin.and.ellipse")
+                                Text(event.location)
+                            }
+                            .foregroundColor(.gray)
+
+                            HStack {
+                                Image(systemName: "person.2")
+                                Text("\(event.attendees)/\(event.maxCapacity) attendees")
+                            }
+                            .foregroundColor(.gray)
+
+                            if event.price > 0 {
+                                HStack {
+                                    Image(systemName: "eurosign.circle")
+                                    Text("€\(String(format: "%.2f", event.price))")
+                                }
+                                .foregroundColor(.gray)
+                            }
                         }
                         .padding()
-                        .frame(maxWidth: .infinity, alignment: .leading)
-                        .background(Color(.systemGray6))
+                        .background(Color.white)
                         .cornerRadius(12)
-                        .padding(.horizontal, 24)
-                    }
+                        .shadow(color: Color.black.opacity(0.1), radius: 5, x: 0, y: 2)
 
-                    // Buy Now Button
-                    Button(action: {
-                        purchaseTicket()
-                    }) {
-                        if isLoading {
-                            ProgressView()
-                                .progressViewStyle(CircularProgressViewStyle(tint: .white))
-                                .frame(maxWidth: .infinity)
-                                .padding()
-                                .background(Color.purple)
-                                .cornerRadius(12)
-                        } else {
-                            Text("Buy Now")
-                                .font(.headline)
-                                .foregroundColor(.white)
-                                .frame(maxWidth: .infinity)
-                                .padding()
-                                .background(Color.purple)
-                                .cornerRadius(12)
+                        // Purchase Button
+                        Button(action: purchaseTicket) {
+                            if isLoading {
+                                ProgressView()
+                                    .progressViewStyle(CircularProgressViewStyle(tint: .white))
+                            } else {
+                                Text("Get Ticket")
+                                    .fontWeight(.semibold)
+                            }
                         }
+                        .frame(maxWidth: .infinity)
+                        .padding()
+                        .background(Color.purple)
+                        .foregroundColor(.white)
+                        .cornerRadius(12)
+                        .padding(.horizontal)
+                        .disabled(isLoading)
                     }
-                    .disabled(isLoading)
-                    .padding(.horizontal, 24)
-                    .padding(.top, 16)
+                    .padding(.bottom)
                 }
             }
-            .navigationTitle("Get Ticket")
-            .navigationBarTitleDisplayMode(.inline)
-            .alert(isPresented: $showAlert) {
-                Alert(
-                    title: Text(alertTitle),
-                    message: Text(alertMessage),
-                    dismissButton: .default(Text("OK")) {
-                        if alertTitle == "Ticket Purchased" {
-                            dismiss()
-                        }
+            .background(Color(.systemGray6))
+            .alert(alertMessage, isPresented: $showAlert) {
+                Button("OK") {
+                    if navigateToEvent {
+                        dismiss()
                     }
-                )
+                }
             }
+        }
+        .onAppear {
+            if let user = authViewModel.currentUser {
+                name = user.fullName
+                email = user.email
+            }
+            chatService = ChatService(authViewModel: authViewModel)
         }
     }
 
-    func purchaseTicket() {
-        guard let user = authViewModel.currentUser else {
-            alertTitle = "Error"
-            alertMessage = "User information not available. Please try again."
+    private func purchaseTicket() {
+        guard !name.isEmpty else {
+            alertMessage = "Please enter your name"
             showAlert = true
             return
         }
-
+        
+        guard !email.isEmpty else {
+            alertMessage = "Please enter your email"
+            showAlert = true
+            return
+        }
+        
         isLoading = true
+        
         let db = Firestore.firestore()
-        let newTicketID = UUID().uuidString
-
         let ticketData: [String: Any] = [
-            "eventId": eventId,
-            "eventName": eventName,
-            "date": date,
-            "location": location,
-            "price": price,
-            "name": user.fullName,
-            "email": user.email,
-            "userId": userId,
-            "createdAt": FieldValue.serverTimestamp(),
+            "eventId": event.id ?? "",
+            "eventName": event.title,
+            "userId": Auth.auth().currentUser?.uid ?? "",
+            "name": name,
+            "email": email,
+            "purchaseDate": Timestamp(date: Date()),
+            "qrCodeUrl": "" // Will be updated after QR code generation
         ]
-
-        db.collection("tickets").document(newTicketID).setData(ticketData) { error in
+        
+        // Create ticket
+        db.collection("tickets").addDocument(data: ticketData) { error, ticketRef in
             if let error = error {
-                self.alertTitle = "Error"
-                self.alertMessage = "Failed to create ticket: \(error.localizedDescription)"
-                self.showAlert = true
-                self.isLoading = false
+                isLoading = false
+                alertMessage = "Failed to purchase ticket: \(error.localizedDescription)"
+                showAlert = true
                 return
             }
-
-            let qrcodeUrl = "https://api.qrserver.com/v1/create-qr-code/?data=\(newTicketID)"
-
-            db.collection("tickets").document(newTicketID).updateData([
-                "qrcodeUrl": qrcodeUrl,
-                "ticketId": newTicketID,
-            ]) { updateError in
-                if let updateError = updateError {
-                    self.alertTitle = "Error"
-                    self.alertMessage = "Failed to update ticket with QR code: \(updateError.localizedDescription)"
-                } else {
-                    self.alertTitle = "Ticket Purchased"
-                    self.alertMessage = "Thank you, \(user.fullName)! Your ticket has been reserved."
-
-                    // Add event ID to user's joinedEventIds
-                    if !self.userId.isEmpty {
-                        let userRef = db.collection("users").document(self.userId)
-                        userRef.updateData([
-                            "joinedEventIds": FieldValue.arrayUnion([self.eventId])
-                        ]) { userUpdateError in
-                            if let userUpdateError = userUpdateError {
-                                print("Error updating user joinedEventIds: \(userUpdateError.localizedDescription)")
-                            } else {
-                                print("User joinedEventIds updated successfully.")
-                                // Dismiss the view after successful ticket purchase
-                                DispatchQueue.main.async {
-                                    self.dismiss()
+            
+            guard let ticketRef = ticketRef else {
+                isLoading = false
+                alertMessage = "Failed to create ticket reference"
+                showAlert = true
+                return
+            }
+            
+            // Generate QR code
+            let qrCodeData = "\(ticketRef.documentID)"
+            if let qrCodeImage = generateQRCode(from: qrCodeData) {
+                // Upload QR code to Firebase Storage
+                let storageRef = Storage.storage().reference().child("qr_codes/\(ticketRef.documentID).png")
+                if let imageData = qrCodeImage.pngData() {
+                    storageRef.putData(imageData, metadata: nil) { metadata, error in
+                        if let error = error {
+                            print("Error uploading QR code: \(error.localizedDescription)")
+                        } else {
+                            // Get download URL and update ticket
+                            storageRef.downloadURL { url, error in
+                                if let downloadURL = url {
+                                    ticketRef.updateData(["qrCodeUrl": downloadURL.absoluteString])
                                 }
                             }
                         }
                     }
                 }
-                self.isLoading = false
-                self.showAlert = true
             }
+            
+            // Update event attendees count
+            let eventRef = db.collection("events").document(event.id ?? "")
+            eventRef.updateData([
+                "attendees": FieldValue.increment(Int64(1))
+            ]) { error in
+                if let error = error {
+                    print("Error updating attendees count: \(error.localizedDescription)")
+                }
+            }
+            
+            // Update user's joined events
+            if let userId = Auth.auth().currentUser?.uid {
+                let userRef = db.collection("users").document(userId)
+                userRef.updateData([
+                    "joinedEventIds": FieldValue.arrayUnion([event.id ?? ""])
+                ]) { error in
+                    if let error = error {
+                        print("Error updating user's joined events: \(error.localizedDescription)")
+                    }
+                }
+            }
+            
+            // Create chat for the event
+            Task {
+                do {
+                    let ticket = Ticket(
+                        id: ticketRef.documentID,
+                        eventId: event.id ?? "",
+                        eventName: event.title,
+                        userId: Auth.auth().currentUser?.uid ?? "",
+                        name: name,
+                        email: email,
+                        purchaseDate: Date(),
+                        qrCodeUrl: ""
+                    )
+                    try await chatService?.createChatForTicket(ticket: ticket)
+                } catch {
+                    print("Error creating chat: \(error.localizedDescription)")
+                }
+            }
+            
+            isLoading = false
+            alertMessage = "Ticket purchased successfully!"
+            showAlert = true
+            navigateToEvent = true
         }
+    }
+
+    private func generateQRCode(from string: String) -> UIImage? {
+        let data = string.data(using: .utf8)
+        let qrGenerator = CIFilter.qrCodeGenerator()
+        qrGenerator.message = data
+        qrGenerator.correctionLevel = "M"
+        
+        if let qrImage = qrGenerator.outputImage {
+            let transform = CGAffineTransform(scaleX: 10, y: 10)
+            let scaledQrImage = qrImage.transformed(by: transform)
+            return UIImage(ciImage: scaledQrImage)
+        }
+        return nil
     }
 }
 
 #Preview {
-    GetTicketView(
-        eventId: "sampleEventId", eventName: "Sample Event", date: "21 May 2025, 10:00",
-        location: "Sample Location", price: "€10.00")
-        .environmentObject(AuthViewModel())
+    GetTicketView(event: Event(
+        id: "preview",
+        title: "Summer Beach Party",
+        date: "2024-07-15",
+        endTime: "23:00",
+        startTime: "18:00",
+        location: "Amsterdam Beach",
+        imageUrl: "https://example.com/beach-party.jpg",
+        attendees: 50,
+        category: "Party",
+        price: 15.0,
+        maxCapacity: 100,
+        description: "Join us for an amazing beach party!"
+    ))
+    .environmentObject(AuthViewModel())
 }
