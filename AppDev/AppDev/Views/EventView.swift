@@ -193,47 +193,6 @@ struct EventView: View {
                 }
                 .background(Color(.systemGray6).ignoresSafeArea())
             }
-
-            // Footer
-            VStack(spacing: 0) {
-                Divider()
-                HStack(spacing: 0) {
-                    NavigationLink(destination: HomeView()) {
-                        VStack(spacing: 4) {
-                            Image(systemName: "house")
-                                .font(.system(size: 24))
-                            Text("Home")
-                                .font(.system(size: 12))
-                        }
-                        .foregroundColor(.black)
-                        .frame(maxWidth: .infinity)
-                    }
-                    
-                    NavigationLink(destination: CreateEventView()) {
-                        VStack(spacing: 4) {
-                            Image(systemName: "plus.circle.fill")
-                                .font(.system(size: 24))
-                            Text("Create")
-                                .font(.system(size: 12))
-                        }
-                        .foregroundColor(.black)
-                        .frame(maxWidth: .infinity)
-                    }
-                    
-                    NavigationLink(destination: TicketsView()) {
-                        VStack(spacing: 4) {
-                            Image(systemName: "ticket")
-                                .font(.system(size: 24))
-                            Text("Tickets")
-                                .font(.system(size: 12))
-                        }
-                        .foregroundColor(.black)
-                        .frame(maxWidth: .infinity)
-                    }
-                }
-                .padding(.vertical, 8)
-                .background(Color.white)
-            }
         }
         .onAppear(perform: fetchEvent)
     }
