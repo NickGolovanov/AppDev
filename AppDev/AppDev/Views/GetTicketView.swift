@@ -5,6 +5,7 @@ import FirebaseFirestore
 import SwiftUI
 
 struct GetTicketView: View {
+    @Environment(\.dismiss) private var dismiss
     let eventId: String
     let eventName: String
     let date: String
@@ -16,100 +17,99 @@ struct GetTicketView: View {
     @State private var showAlert = false
     @State private var alertTitle = ""
     @State private var alertMessage = ""
+    @State private var isLoading = false
     @AppStorage("userId") var userId: String = ""
+    @State private var navigateToEvent = false
 
     var body: some View {
-        VStack(spacing: 24) {
-            Text("Get Your Ticket")
-                .font(.title)
-                .fontWeight(.bold)
-                .padding(.top, 32)
+        NavigationStack {
+            ScrollView {
+                VStack(spacing: 24) {
+                    Text("Get Your Ticket")
+                        .font(.title)
+                        .fontWeight(.bold)
+                        .padding(.top, 32)
 
-            VStack(alignment: .leading, spacing: 16) {
-                Text("Name")
-                    .font(.headline)
-                TextField("Enter your name", text: $name)
-                    .textFieldStyle(RoundedBorderTextFieldStyle())
-                    .autocapitalization(.words)
+                    VStack(alignment: .leading, spacing: 16) {
+                        Text("Name")
+                            .font(.headline)
+                        TextField("Enter your name", text: $name)
+                            .textFieldStyle(RoundedBorderTextFieldStyle())
+                            .autocapitalization(.words)
 
-                Text("Email")
-                    .font(.headline)
-                TextField("Enter your email", text: $email)
-                    .textFieldStyle(RoundedBorderTextFieldStyle())
-                    .keyboardType(.emailAddress)
-                    .autocapitalization(.none)
+                        Text("Email")
+                            .font(.headline)
+                        TextField("Enter your email", text: $email)
+                            .textFieldStyle(RoundedBorderTextFieldStyle())
+                            .keyboardType(.emailAddress)
+                            .autocapitalization(.none)
+                    }
+                    .padding(.horizontal, 24)
+
+                    Button(action: {
+                        purchaseTicket()
+                    }) {
+                        Text("Buy Now")
+                            .font(.headline)
+                            .foregroundColor(.white)
+                            .frame(maxWidth: .infinity)
+                            .padding()
+                            .background(Color.purple)
+                            .cornerRadius(12)
+                    }
+                    .padding(.horizontal, 24)
+                }
+                .padding()
             }
-            .padding(.horizontal, 24)
-
-            Button(action: {
-                buyNow()
-            }) {
-                Text("Buy Now")
-                    .font(.headline)
-                    .foregroundColor(.white)
-                    .frame(maxWidth: .infinity)
-                    .padding()
-                    .background(Color.purple)
-                    .cornerRadius(12)
+            .navigationTitle("Get Ticket")
+            .navigationBarTitleDisplayMode(.inline)
+            .navigationDestination(isPresented: $navigateToEvent) {
+                EventView(eventId: eventId)
             }
-            .padding(.horizontal, 24)
             .alert(isPresented: $showAlert) {
                 Alert(
-                    title: Text(alertTitle), message: Text(alertMessage),
-                    dismissButton: .default(Text("OK")))
+                    title: Text(alertTitle),
+                    message: Text(alertMessage),
+                    dismissButton: .default(Text("OK")) {
+                        if alertTitle == "Ticket Purchased" {
+                            navigateToEvent = true
+                        }
+                    }
+                )
             }
-
-            Spacer()
         }
-        .navigationTitle("Get Ticket")
-        .navigationBarTitleDisplayMode(.inline)
     }
 
-    func buyNow() {
-        // Validation
-        guard !name.trimmingCharacters(in: .whitespaces).isEmpty else {
-            alertTitle = "Invalid Name"
-            alertMessage = "Please enter your name."
+    func purchaseTicket() {
+        guard !name.isEmpty, !email.isEmpty else {
+            alertTitle = "Error"
+            alertMessage = "Please fill in all fields."
             showAlert = true
             return
         }
-        guard isValidEmail(email) else {
-            alertTitle = "Invalid Email"
-            alertMessage = "Please enter a valid email address."
-            showAlert = true
-            return
-        }
-        // Save to Firestore
-        let db = Firestore.firestore()
 
-        // Initial ticket data without qrcodeUrl or a predefined ticketId
-        let initialTicketData: [String: Any] = [
-            "name": name,
-            "email": email,
+        isLoading = true
+        let db = Firestore.firestore()
+        let newTicketID = UUID().uuidString
+
+        let ticketData: [String: Any] = [
             "eventId": eventId,
             "eventName": eventName,
             "date": date,
             "location": location,
             "price": price,
-            "timestamp": FieldValue.serverTimestamp(),
-            "used": false,
+            "name": name,
+            "email": email,
             "userId": userId,
+            "createdAt": FieldValue.serverTimestamp(),
         ]
 
-        // 1. Create the document with initial data, letting Firestore generate the ID
-        var newTicketRef: DocumentReference? = nil
-        newTicketRef = db.collection("tickets").addDocument(data: initialTicketData) { error in
+        db.collection("tickets").document(newTicketID).setData(ticketData) { error in
             if let error = error {
                 self.alertTitle = "Error"
                 self.alertMessage = "Failed to create ticket: \(error.localizedDescription)"
                 self.showAlert = true
-                return
-            }
-
-            guard let newTicketID = newTicketRef?.documentID else {
-                self.alertTitle = "Error"
-                self.alertMessage = "Failed to get new ticket ID."
-                self.showAlert = true
+                self.isLoading = false
                 return
             }
 
@@ -121,8 +121,7 @@ struct GetTicketView: View {
             ]) { updateError in
                 if let updateError = updateError {
                     self.alertTitle = "Error"
-                    self.alertMessage =
-                        "Failed to update ticket with QR code: \(updateError.localizedDescription)"
+                    self.alertMessage = "Failed to update ticket with QR code: \(updateError.localizedDescription)"
                 } else {
                     self.alertTitle = "Ticket Purchased"
                     self.alertMessage = "Thank you, \(self.name)! Your ticket has been reserved."
@@ -136,23 +135,18 @@ struct GetTicketView: View {
                             "joinedEventIds": FieldValue.arrayUnion([self.eventId])
                         ]) { userUpdateError in
                             if let userUpdateError = userUpdateError {
-                                print(
-                                    "Error updating user joinedEventIds: \(userUpdateError.localizedDescription)"
-                                )
+                                print("Error updating user joinedEventIds: \(userUpdateError.localizedDescription)")
                             } else {
                                 print("User joinedEventIds updated successfully.")
+                                // Navigate to the event view after successful ticket purchase
+                                DispatchQueue.main.async {
+                                    self.navigateToEvent = true
+                                }
                             }
                         }
                     }
-
-                    // Create chat document if it doesn't exist
-                    let chatData: [String: Any] = [
-                        "eventName": self.eventName,
-                        "lastMessage": "Welcome to the \(self.eventName) chat!",
-                        "lastMessageTime": FieldValue.serverTimestamp(),
-                    ]
-                    db.collection("chats").document(self.eventId).setData(chatData, merge: true)
                 }
+                self.isLoading = false
                 self.showAlert = true
             }
         }
