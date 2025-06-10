@@ -188,10 +188,10 @@ struct EventPreviewSheet: View {
                         }
                         .foregroundColor(.purple)
                         
-                        if let price = event.price {
+                        if event.price != nil {
                             HStack {
                                 Image(systemName: "ticket.fill")
-                                Text("€\(String(format: "%.2f", price))")
+                                Text("€\(String(format: "%.2f", event.price ?? 0.0))")
                             }
                             .foregroundColor(.purple)
                         }
