@@ -138,6 +138,7 @@ struct EventsMapView: View {
                       let maxCapacity = data["maxCapacity"] as? Int,
                       let description = data["description"] as? String
                 else {
+                    print("[EventsMapView] Skipping event with missing fields: \(doc.documentID)")
                     group.leave()
                     continue
                 }
@@ -148,14 +149,18 @@ struct EventsMapView: View {
                 // Geocode the location
                 geocoder.geocodeAddressString(location) { placemarks, error in
                     defer { group.leave() }
-                    
+                    var coordinate: CLLocationCoordinate2D? = nil
                     if let error = error {
-                        print("Geocoding error for \(location): \(error.localizedDescription)")
+                        print("[EventsMapView] Geocoding error for \(location): \(error.localizedDescription)")
                     }
-                    
-                    let coordinate = placemarks?.first?.location?.coordinate ?? CLLocationCoordinate2D(latitude: 52.3702, longitude: 4.8952)
+                    if let placemark = placemarks?.first, let loc = placemark.location {
+                        coordinate = loc.coordinate
+                        print("[EventsMapView] Geocoded \(location) to \(coordinate!.latitude), \(coordinate!.longitude)")
+                    } else {
+                        print("[EventsMapView] No coordinate found for \(location), using default (Amsterdam)")
+                        coordinate = CLLocationCoordinate2D(latitude: 52.3702, longitude: 4.8952)
+                    }
                     let distance: String? = "-"
-                    
                     let event = Event(
                         id: id,
                         title: title,
@@ -172,14 +177,17 @@ struct EventsMapView: View {
                         coordinate: coordinate,
                         distance: distance
                     )
-                    
                     tempEvents.append(event)
                 }
             }
             
             // Wait for all geocoding requests to complete
             group.notify(queue: .main) {
+                print("[EventsMapView] Final events count: \(tempEvents.count)")
                 self.events = tempEvents
+                if tempEvents.isEmpty {
+                    self.errorMessage = "No events found or geocoding failed for all events."
+                }
                 // Update map region to fit all events
                 if let fitRegion = regionForEvents(tempEvents) {
                     self.region = fitRegion
