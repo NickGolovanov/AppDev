@@ -116,6 +116,8 @@ struct GetTicketView: View {
             if let user = authViewModel.currentUser {
                 name = user.fullName
                 email = user.email
+            } else {
+                print("[GetTicketView] AuthViewModel currentUser is nil onAppear")
             }
             chatService = ChatService(authViewModel: authViewModel)
         }
@@ -123,13 +125,15 @@ struct GetTicketView: View {
 
     private func purchaseTicket() {
         guard !name.isEmpty else {
-            alertMessage = "Please enter your name"
+            alertMessage = "User name is missing. Please log in again."
+            print("[GetTicketView] User name is missing. Aborting ticket creation.")
             showAlert = true
             return
         }
         
         guard !email.isEmpty else {
-            alertMessage = "Please enter your email"
+            alertMessage = "User email is missing. Please log in again."
+            print("[GetTicketView] User email is missing. Aborting ticket creation.")
             showAlert = true
             return
         }
