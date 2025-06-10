@@ -148,6 +148,7 @@ struct GetTicketView: View {
         ]
         
         // Create ticket and get DocumentReference
+        let eventId = event.id ?? ""
         let ticketRef = db.collection("tickets").document()
         ticketRef.setData(ticketData) { error in
             if let error = error {
@@ -179,7 +180,7 @@ struct GetTicketView: View {
             }
             
             // Update event attendees count
-            let eventRef = db.collection("events").document(event.id ?? "")
+            let eventRef = db.collection("events").document(eventId)
             eventRef.updateData([
                 "attendees": FieldValue.increment(Int64(1))
             ]) { error in
@@ -192,7 +193,7 @@ struct GetTicketView: View {
             if let userId = Auth.auth().currentUser?.uid {
                 let userRef = db.collection("users").document(userId)
                 userRef.updateData([
-                    "joinedEventIds": FieldValue.arrayUnion([event.id ?? ""])
+                    "joinedEventIds": FieldValue.arrayUnion([eventId])
                 ]) { error in
                     if let error = error {
                         print("Error updating user's joined events: \(error.localizedDescription)")
@@ -206,7 +207,7 @@ struct GetTicketView: View {
                     // Adjust Ticket initializer to match your model
                     let ticket = Ticket(
                         id: ticketRef.documentID,
-                        eventId: event.id ?? "",
+                        eventId: eventId,
                         eventName: event.title,
                         userId: Auth.auth().currentUser?.uid ?? "",
                         name: name,
