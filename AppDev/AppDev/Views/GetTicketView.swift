@@ -6,20 +6,18 @@ import SwiftUI
 
 struct GetTicketView: View {
     @Environment(\.dismiss) private var dismiss
+    @EnvironmentObject private var authViewModel: AuthViewModel
     let eventId: String
     let eventName: String
     let date: String
     let location: String
     let price: String
-
-    @State private var name: String = ""
-    @State private var email: String = ""
+    
     @State private var showAlert = false
     @State private var alertTitle = ""
     @State private var alertMessage = ""
     @State private var isLoading = false
     @AppStorage("userId") var userId: String = ""
-    @State private var navigateToEvent = false
 
     var body: some View {
         NavigationStack {
@@ -33,39 +31,76 @@ struct GetTicketView: View {
                     VStack(alignment: .leading, spacing: 16) {
                         Text("Name")
                             .font(.headline)
-                        TextField("Enter your name", text: $name)
-                            .textFieldStyle(RoundedBorderTextFieldStyle())
-                            .autocapitalization(.words)
+                        Text(authViewModel.currentUser?.fullName ?? "Loading...")
+                            .padding()
+                            .frame(maxWidth: .infinity, alignment: .leading)
+                            .background(Color(.systemGray6))
+                            .cornerRadius(8)
 
                         Text("Email")
                             .font(.headline)
-                        TextField("Enter your email", text: $email)
-                            .textFieldStyle(RoundedBorderTextFieldStyle())
-                            .keyboardType(.emailAddress)
-                            .autocapitalization(.none)
+                        Text(authViewModel.currentUser?.email ?? "Loading...")
+                            .padding()
+                            .frame(maxWidth: .infinity, alignment: .leading)
+                            .background(Color(.systemGray6))
+                            .cornerRadius(8)
                     }
                     .padding(.horizontal, 24)
 
+                    // Event Details
+                    VStack(alignment: .leading, spacing: 16) {
+                        Text("Event Details")
+                            .font(.headline)
+                            .padding(.horizontal, 24)
+
+                        VStack(alignment: .leading, spacing: 8) {
+                            Text(eventName)
+                                .font(.title3)
+                                .fontWeight(.semibold)
+                            Text(date)
+                                .foregroundColor(.gray)
+                            Text(location)
+                                .foregroundColor(.gray)
+                            Text(price)
+                                .font(.title3)
+                                .fontWeight(.bold)
+                                .foregroundColor(.purple)
+                        }
+                        .padding()
+                        .frame(maxWidth: .infinity, alignment: .leading)
+                        .background(Color(.systemGray6))
+                        .cornerRadius(12)
+                        .padding(.horizontal, 24)
+                    }
+
+                    // Buy Now Button
                     Button(action: {
                         purchaseTicket()
                     }) {
-                        Text("Buy Now")
-                            .font(.headline)
-                            .foregroundColor(.white)
-                            .frame(maxWidth: .infinity)
-                            .padding()
-                            .background(Color.purple)
-                            .cornerRadius(12)
+                        if isLoading {
+                            ProgressView()
+                                .progressViewStyle(CircularProgressViewStyle(tint: .white))
+                                .frame(maxWidth: .infinity)
+                                .padding()
+                                .background(Color.purple)
+                                .cornerRadius(12)
+                        } else {
+                            Text("Buy Now")
+                                .font(.headline)
+                                .foregroundColor(.white)
+                                .frame(maxWidth: .infinity)
+                                .padding()
+                                .background(Color.purple)
+                                .cornerRadius(12)
+                        }
                     }
+                    .disabled(isLoading)
                     .padding(.horizontal, 24)
+                    .padding(.top, 16)
                 }
-                .padding()
             }
             .navigationTitle("Get Ticket")
             .navigationBarTitleDisplayMode(.inline)
-            .navigationDestination(isPresented: $navigateToEvent) {
-                EventView(eventId: eventId)
-            }
             .alert(isPresented: $showAlert) {
                 Alert(
                     title: Text(alertTitle),
@@ -81,9 +116,9 @@ struct GetTicketView: View {
     }
 
     func purchaseTicket() {
-        guard !name.isEmpty, !email.isEmpty else {
+        guard let user = authViewModel.currentUser else {
             alertTitle = "Error"
-            alertMessage = "Please fill in all fields."
+            alertMessage = "User information not available. Please try again."
             showAlert = true
             return
         }
@@ -98,8 +133,8 @@ struct GetTicketView: View {
             "date": date,
             "location": location,
             "price": price,
-            "name": name,
-            "email": email,
+            "name": user.fullName,
+            "email": user.email,
             "userId": userId,
             "createdAt": FieldValue.serverTimestamp(),
         ]
@@ -124,9 +159,7 @@ struct GetTicketView: View {
                     self.alertMessage = "Failed to update ticket with QR code: \(updateError.localizedDescription)"
                 } else {
                     self.alertTitle = "Ticket Purchased"
-                    self.alertMessage = "Thank you, \(self.name)! Your ticket has been reserved."
-                    self.name = ""
-                    self.email = ""
+                    self.alertMessage = "Thank you, \(user.fullName)! Your ticket has been reserved."
 
                     // Add event ID to user's joinedEventIds
                     if !self.userId.isEmpty {
@@ -151,15 +184,11 @@ struct GetTicketView: View {
             }
         }
     }
-
-    func isValidEmail(_ email: String) -> Bool {
-        let emailRegEx = "[A-Z0-9a-z._%+-]+@[A-Za-z0-9.-]+\\.[A-Za-z]{2,}"
-        let emailPred = NSPredicate(format: "SELF MATCHES[cd] %@", emailRegEx)
-        return emailPred.evaluate(with: email)
-    }
 }
+
 #Preview {
     GetTicketView(
         eventId: "sampleEventId", eventName: "Sample Event", date: "21 May 2025, 10:00",
         location: "Sample Location", price: "€10.00")
+        .environmentObject(AuthViewModel())
 }
