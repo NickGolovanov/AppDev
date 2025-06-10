@@ -1,48 +1,16 @@
 import MapKit
 import SwiftUI
+import FirebaseFirestore
 
 struct EventsMapView: View {
     @State private var region = MKCoordinateRegion(
         center: CLLocationCoordinate2D(latitude: 52.3702, longitude: 4.8952),  // Amsterdam
         span: MKCoordinateSpan(latitudeDelta: 0.08, longitudeDelta: 0.08)
     )
+    @State private var events: [Event] = []
+    @State private var isLoading = false
+    @State private var errorMessage: String? = nil
 
-    let events = [
-        Event(
-            id: "1",
-            title: "Summer Night Party",
-            date: "Tonight, 10:00 PM",
-            endTime: "11:30 PM",
-            startTime: "02:00 AM",
-            location: "Club Matrix, 2.3km away",
-            imageUrl: "party1",
-            attendees: 124,
-            category: "House Party",
-            price: 10.0,
-            maxCapacity: 100,
-            description: "",
-            coordinate: CLLocationCoordinate2D(latitude: 52.3676, longitude: 4.9041),
-            distance: "2.3km away"
-        ),
-        Event(
-            id: "2",
-            title: "Live Jazz Night",
-            date: "Tomorrow, 8:30 PM",
-            endTime: "11:30 PM",
-            startTime: "02:00 AM",
-            location: "Blue Note, 3.1km away",
-            imageUrl: "party2",
-            attendees: 124,
-            category: "Concert",
-            price: 15.0,
-            maxCapacity: 100,
-            description: "",
-            coordinate: CLLocationCoordinate2D(latitude: 52.3667, longitude: 4.8945),
-            distance: "3.1km away"
-        ),
-    ]
-
-    @available(iOS, deprecated: 17.0, message: "Will migrate soon")
     var body: some View {
         NavigationView {
             VStack(spacing: 0) {
@@ -50,9 +18,9 @@ struct EventsMapView: View {
                 HeaderView()
                     .padding(4)
 
-                // Map (increased height)
+                // Map
                 Map(coordinateRegion: $region, annotationItems: events) { event in
-                    MapMarker(coordinate: event.coordinate ?? region.center, tint: .red)
+                    MapMarker(coordinate: event.coordinate ?? region.center, tint: .purple)
                 }
                 .frame(height: 420)
                 .cornerRadius(0)
@@ -61,7 +29,7 @@ struct EventsMapView: View {
                 // Spacing between map and cards
                 Spacer().frame(height: 16)
 
-                // Event Cards (below the map, not overlapping)
+                // Event Cards
                 VStack(spacing: 0) {
                     Capsule()
                         .fill(Color(.systemGray4))
@@ -89,6 +57,47 @@ struct EventsMapView: View {
             }
             .background(Color(.systemGray6).ignoresSafeArea())
         }
+        .onAppear {
+            fetchEvents()
+        }
+    }
+
+    func fetchEvents() {
+        isLoading = true
+        errorMessage = nil
+        let db = Firestore.firestore()
+        db.collection("events").order(by: "createdAt", descending: true).getDocuments { snapshot, error in
+            isLoading = false
+            if let error = error {
+                errorMessage = "Failed to load events: \(error.localizedDescription)"
+                return
+            }
+            guard let documents = snapshot?.documents else {
+                errorMessage = "No events found."
+                return
+            }
+            events = documents.compactMap { doc in
+                let data = doc.data()
+                let id = doc.documentID
+                guard let title = data["title"] as? String,
+                      let date = data["date"] as? String,
+                      let endTime = data["endTime"] as? String,
+                      let startTime = data["startTime"] as? String,
+                      let location = data["location"] as? String,
+                      let imageUrl = data["imageUrl"] as? String,
+                      let attendees = data["attendees"] as? Int,
+                      let maxCapacity = data["maxCapacity"] as? Int,
+                      let description = data["description"] as? String
+                else {
+                    return nil
+                }
+                let coordinate: CLLocationCoordinate2D? = CLLocationCoordinate2D(latitude: 52.3676, longitude: 4.9041)
+                let distance: String? = "-"
+                let category = data["category"] as? String ?? "Other"
+                let price = data["price"] as? Double ?? 0.0
+                return Event(id: id, title: title, date: date, endTime: endTime, startTime: startTime, location: location, imageUrl: imageUrl, attendees: attendees, category: category, price: price, maxCapacity: maxCapacity, description: description, coordinate: coordinate, distance: distance)
+            }
+        }
     }
 }
 
@@ -97,18 +106,26 @@ struct EventCard: View {
     var body: some View {
         NavigationLink(destination: EventView(eventId: event.id ?? "-1")) {
             HStack(alignment: .top, spacing: 12) {
-                // Event image (placeholder)
-                Rectangle()
-                    .fill(Color.gray.opacity(0.3))
-                    .frame(width: 54, height: 54)
-                    .overlay(
-                        Image(event.imageUrl)
+                if let imageUrl = URL(string: event.imageUrl) {
+                    AsyncImage(url: imageUrl) { image in
+                        image
                             .resizable()
-                            .scaledToFill()
+                            .aspectRatio(contentMode: .fill)
                             .frame(width: 54, height: 54)
                             .clipped()
-                    )
+                    } placeholder: {
+                        Rectangle()
+                            .fill(Color.gray.opacity(0.3))
+                            .frame(width: 54, height: 54)
+                    }
                     .cornerRadius(8)
+                } else {
+                    Rectangle()
+                        .fill(Color.gray.opacity(0.3))
+                        .frame(width: 54, height: 54)
+                        .cornerRadius(8)
+                }
+                
                 VStack(alignment: .leading, spacing: 4) {
                     Text(event.title)
                         .font(.headline)
@@ -150,8 +167,6 @@ struct EventCard: View {
     }
 }
 
-struct EventsMapView_Previews: PreviewProvider {
-    static var previews: some View {
-        EventsMapView()
-    }
+#Preview {
+    EventsMapView()
 }
