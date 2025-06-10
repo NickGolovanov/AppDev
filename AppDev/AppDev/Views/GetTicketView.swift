@@ -161,94 +161,59 @@ struct GetTicketView: View {
                 showAlert = true
                 return
             }
-            // Generate QR code
-            let qrCodeData = ticketRef.documentID
-            if let qrCodeImage = generateQRCode(from: qrCodeData) {
-                let storageRef = Storage.storage().reference().child("qr_codes/\(ticketRef.documentID).png")
-                if let imageData = qrCodeImage.pngData() {
-                    storageRef.putData(imageData, metadata: nil) { metadata, error in
+            // Use API QR code link instead of generating/uploading image
+            let qrCodeUrl = "https://api.qrserver.com/v1/create-qr-code/?data=\(ticketRef.documentID)"
+            ticketRef.updateData(["qrcodeUrl": qrCodeUrl]) { error in
+                if let error = error {
+                    isLoading = false
+                    alertMessage = "Failed to update ticket with QR code: \(error.localizedDescription)"
+                    showAlert = true
+                    return
+                }
+                // Update event attendees count
+                let eventRef = db.collection("events").document(eventId)
+                eventRef.updateData([
+                    "attendees": FieldValue.increment(Int64(1))
+                ]) { error in
+                    if let error = error {
+                        print("Error updating attendees count: \(error.localizedDescription)")
+                    }
+                }
+                // Update user's joined events
+                if let userId = Auth.auth().currentUser?.uid {
+                    let userRef = db.collection("users").document(userId)
+                    userRef.updateData([
+                        "joinedEventIds": FieldValue.arrayUnion([eventId])
+                    ]) { error in
                         if let error = error {
-                            isLoading = false
-                            alertMessage = "Failed to upload QR code: \(error.localizedDescription)"
-                            showAlert = true
-                            return
-                        }
-                        storageRef.downloadURL { url, error in
-                            if let error = error {
-                                isLoading = false
-                                alertMessage = "Failed to get QR code URL: \(error.localizedDescription)"
-                                showAlert = true
-                                return
-                            }
-                            guard let downloadURL = url else {
-                                isLoading = false
-                                alertMessage = "Failed to get QR code URL."
-                                showAlert = true
-                                return
-                            }
-                            ticketRef.updateData(["qrcodeUrl": downloadURL.absoluteString]) { error in
-                                if let error = error {
-                                    isLoading = false
-                                    alertMessage = "Failed to update ticket with QR code: \(error.localizedDescription)"
-                                    showAlert = true
-                                    return
-                                }
-                                // Update event attendees count
-                                let eventRef = db.collection("events").document(eventId)
-                                eventRef.updateData([
-                                    "attendees": FieldValue.increment(Int64(1))
-                                ]) { error in
-                                    if let error = error {
-                                        print("Error updating attendees count: \(error.localizedDescription)")
-                                    }
-                                }
-                                // Update user's joined events
-                                if let userId = Auth.auth().currentUser?.uid {
-                                    let userRef = db.collection("users").document(userId)
-                                    userRef.updateData([
-                                        "joinedEventIds": FieldValue.arrayUnion([eventId])
-                                    ]) { error in
-                                        if let error = error {
-                                            print("Error updating user's joined events: \(error.localizedDescription)")
-                                        }
-                                    }
-                                }
-                                // Create chat for the event
-                                Task {
-                                    do {
-                                        let ticket = Ticket(
-                                            id: ticketRef.documentID,
-                                            eventId: eventId,
-                                            eventName: event.title,
-                                            date: event.date,
-                                            location: event.location,
-                                            name: name,
-                                            email: email,
-                                            price: String(format: "%.2f", event.price),
-                                            qrcodeUrl: downloadURL.absoluteString,
-                                            userId: Auth.auth().currentUser?.uid ?? ""
-                                        )
-                                        try await chatService?.createChatForTicket(ticket: ticket)
-                                    } catch {
-                                        print("Error creating chat: \(error.localizedDescription)")
-                                    }
-                                }
-                                isLoading = false
-                                alertMessage = "Ticket purchased successfully!"
-                                showAlert = true
-                                navigateToEvent = true
-                            }
+                            print("Error updating user's joined events: \(error.localizedDescription)")
                         }
                     }
-                } else {
-                    isLoading = false
-                    alertMessage = "Failed to generate QR code image."
-                    showAlert = true
                 }
-            } else {
+                // Create chat for the event
+                Task {
+                    do {
+                        let ticket = Ticket(
+                            id: ticketRef.documentID,
+                            eventId: eventId,
+                            eventName: event.title,
+                            date: event.date,
+                            location: event.location,
+                            name: name,
+                            email: email,
+                            price: String(format: "%.2f", event.price),
+                            qrcodeUrl: qrCodeUrl,
+                            userId: Auth.auth().currentUser?.uid ?? ""
+                        )
+                        try await chatService?.createChatForTicket(ticket: ticket)
+                    } catch {
+                        print("Error creating chat: \(error.localizedDescription)")
+                    }
+                }
                 isLoading = false
-                alertMessage = "Failed to generate QR code."
+                alertMessage = "Ticket purchased successfully!"
                 showAlert = true
+                navigateToEvent = true
             }
         }
     }
