@@ -84,6 +84,10 @@ struct LoginView: View {
                     GoogleSignInButton(viewModel: GoogleSignInButtonViewModel(scheme: .light)){
                         vm.signInWithGoogle()
                     }
+                    .frame(maxWidth: .infinity)
+                    .frame(height: 50)
+                    .cornerRadius(50)
+                    .padding(.horizontal, 24)
                     // Sign Up Link
                     Button(action: {
                         showRegistration = true
