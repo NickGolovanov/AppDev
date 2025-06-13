@@ -85,7 +85,7 @@ struct LoginView: View {
                         vm.signInWithGoogle()
                     }
                     .frame(maxWidth: .infinity)
-                    .frame(height: 50)
+                    .frame(height: 80)
                     .cornerRadius(50)
                     .padding(.horizontal, 24)
                     // Sign Up Link
