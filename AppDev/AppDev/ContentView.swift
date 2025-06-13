@@ -9,6 +9,7 @@ import SwiftUI
 
 struct ContentView: View {
     @State private var showRegistration = false
+    @StateObject private var logout = AuthViewModel()
     
     var body: some View {
         NavigationView {
@@ -23,9 +24,9 @@ struct ContentView: View {
                     .fontWeight(.bold)
                 
                 Button(action: {
-                    showRegistration = true
+                    logout.signOut()
                 }) {
-                    Text("Create Account")
+                    Text("Sign out")
                         .font(.headline)
                         .foregroundColor(.white)
                         .frame(maxWidth: .infinity)
