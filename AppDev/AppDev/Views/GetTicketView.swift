@@ -248,7 +248,9 @@ struct GetTicketView: View {
         category: "Party",
         price: 15.0,
         maxCapacity: 100,
-        description: "Join us for an amazing beach party!"
+        description: "Join us for an amazing beach party!",
+        latitude: 52.3702,
+        longitude: 4.8952
     ))
     .environmentObject(AuthViewModel())
 }
