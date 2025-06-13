@@ -7,11 +7,12 @@
 
 import FirebaseFirestore
 import SwiftUI
+import FirebaseAuth
 
 struct ProfileView: View {
-    @AppStorage("userId") var userId: String = ""
+    @EnvironmentObject var authViewModel: AuthViewModel
     @State private var showEditProfile = false
-    @State private var showQRCodeScanner = false
+    @State private var showOrganizedEventsForScan = false
     @State private var showAllEvents = false
 
     @State private var userName: String = "Loading..."
@@ -31,13 +32,27 @@ struct ProfileView: View {
                     editAndScanButtons
                     statsSection
                     recentEventsSection
+
+                    Button(action: logout) {
+                        Text("Logout")
+                            .fontWeight(.medium)
+                            .foregroundColor(.red)
+                            .padding(.vertical, 8)
+                            .padding(.horizontal, 20)
+                            .overlay(
+                                RoundedRectangle(cornerRadius: 10)
+                                    .stroke(Color.red, lineWidth: 1.5)
+                            )
+                    }
+                    .padding(.top, 20)
+
                 }
                 .padding()
                 .navigationDestination(isPresented: $showEditProfile) {
                     EditProfileView()
                 }
-                .navigationDestination(isPresented: $showQRCodeScanner) {
-                    QRCodeScannerView()
+                .navigationDestination(isPresented: $showOrganizedEventsForScan) {
+                    OrganizedEventsForScanView()
                 }
                 .navigationDestination(isPresented: $showAllEvents) {
                     AllEventsView()
@@ -116,7 +131,7 @@ struct ProfileView: View {
             }
 
             Button(action: {
-                showQRCodeScanner = true
+                showOrganizedEventsForScan = true
             }) {
                 Text("Scan QR Code")
                     .fontWeight(.medium)
@@ -241,7 +256,10 @@ struct ProfileView: View {
     }
 
     func fetchRecentEvents() {
-        guard !userId.isEmpty else { return }
+        guard let userId = authViewModel.currentUser?.id else {
+            print("ProfileView: Current user ID is nil from AuthViewModel.")
+            return
+        }
 
         let db = Firestore.firestore()
         let userRef = db.collection("users").document(userId)
@@ -249,6 +267,9 @@ struct ProfileView: View {
         userRef.getDocument { document, error in
             guard let document = document, document.exists, let data = document.data() else {
                 print("User document not found: \(error?.localizedDescription ?? "Unknown error")")
+                self.userName = "Not found"
+                self.userHandle = "@notfound"
+                self.userBio = "User profile not found."
                 return
             }
 
@@ -305,9 +326,13 @@ struct ProfileView: View {
             }
         }
     }
-}
 
+    func logout() {
+        authViewModel.signOut()
+    }
+}
 
 #Preview {
     ProfileView()
+        .environmentObject(AuthViewModel())
 }
