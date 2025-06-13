@@ -255,16 +255,27 @@ extension CreateEventView {
 
         isLoading = true
 
-        if let uiImage = coverUIImage {
-            uploadImageAndCreateEvent(uiImage: uiImage, startDateTime: startDateTime, endDateTime: endDateTime, startTime: startTime, endTime: endTime)
-        } else {
-            let defaultImageUrl =
-                "https://firebasestorage.googleapis.com/v0/b/your-app.appspot.com/o/default_event_image.jpg"
-            createEventInFirestore(imageUrl: defaultImageUrl, startDateTime: startDateTime, endDateTime: endDateTime, startTime: startTime, endTime: endTime)
+        let geocoder = CLGeocoder()
+        geocoder.geocodeAddressString(location) { placemarks, error in
+            guard let placemark = placemarks?.first, let loc = placemark.location else {
+                self.isLoading = false
+                self.showError("The address could not be found. Please enter a valid address, for example: Van Schaikweg 94, 7811 KL Emmen.")
+                return
+            }
+
+            let latitude = loc.coordinate.latitude
+            let longitude = loc.coordinate.longitude
+
+            if let uiImage = self.coverUIImage {
+                self.uploadImageAndCreateEvent(uiImage: uiImage, startDateTime: startDateTime, endDateTime: endDateTime, startTime: startTime, endTime: endTime, latitude: latitude, longitude: longitude)
+            } else {
+                let defaultImageUrl = "https://firebasestorage.googleapis.com/v0/b/partypal-93790.appspot.com/o/event_covers%2Fdefault.jpg?alt=media&token=e9535113-1b93-4704-a86a-8f7033529342"
+                self.createEventInFirestore(imageUrl: defaultImageUrl, startDateTime: startDateTime, endDateTime: endDateTime, startTime: startTime, endTime: endTime, latitude: latitude, longitude: longitude)
+            }
         }
     }
 
-    private func uploadImageAndCreateEvent(uiImage: UIImage, startDateTime: Date, endDateTime: Date, startTime: Date, endTime: Date) {
+    private func uploadImageAndCreateEvent(uiImage: UIImage, startDateTime: Date, endDateTime: Date, startTime: Date, endTime: Date, latitude: Double, longitude: Double) {
         let storageRef = Storage.storage().reference().child("event_covers/")
         let imageName = UUID().uuidString + ".jpg"
         let imageRef = storageRef.child(imageName)
@@ -290,66 +301,53 @@ extension CreateEventView {
                 }
 
                 let imageUrl = url?.absoluteString ?? ""
-                createEventInFirestore(imageUrl: imageUrl, startDateTime: startDateTime, endDateTime: endDateTime, startTime: startTime, endTime: endTime)
+                self.createEventInFirestore(imageUrl: imageUrl, startDateTime: startDateTime, endDateTime: endDateTime, startTime: startTime, endTime: endTime, latitude: latitude, longitude: longitude)
             }
         }
     }
 
-    private func createEventInFirestore(imageUrl: String, startDateTime: Date, endDateTime: Date, startTime: Date, endTime: Date) {
+    private func createEventInFirestore(imageUrl: String, startDateTime: Date, endDateTime: Date, startTime: Date, endTime: Date, latitude: Double, longitude: Double) {
         let db = Firestore.firestore()
-        let geocoder = CLGeocoder()
-        isLoading = true
-        geocoder.geocodeAddressString(location) { placemarks, error in
+        let eventData: [String: Any] = [
+            "title": eventTitle,
+            "date": ISO8601DateFormatter().string(from: startDateTime),
+            "category": category,
+            "startTime": ISO8601DateFormatter().string(from: startTime),
+            "endTime": ISO8601DateFormatter().string(from: endTime),
+            "location": location,
+            "description": description,
+            "maxCapacity": Int(maxCapacity)!,
+            "price": Double(price)!,
+            "imageUrl": imageUrl,
+            "attendees": 0,
+            "createdAt": FieldValue.serverTimestamp(),
+            "latitude": latitude,
+            "longitude": longitude
+        ]
+
+        var newEventRef: DocumentReference? = nil
+
+        newEventRef = db.collection("events").addDocument(data: eventData) { error in
+            self.isLoading = false
             if let error = error {
-                showError("Failed to geocode address: \(error.localizedDescription)")
-                isLoading = false
-                return
-            }
-            guard let loc = placemarks?.first?.location else {
-                showError("Could not find location for the given address.")
-                isLoading = false
-                return
-            }
-            let latitude = loc.coordinate.latitude
-            let longitude = loc.coordinate.longitude
-            let eventData: [String: Any] = [
-                "title": eventTitle,
-                "date": ISO8601DateFormatter().string(from: startDateTime),
-                "category": category,
-                "startTime": ISO8601DateFormatter().string(from: startTime),
-                "endTime": ISO8601DateFormatter().string(from: endTime),
-                "location": location,
-                "description": description,
-                "maxCapacity": Int(maxCapacity)!,
-                "price": Double(price)!,
-                "imageUrl": imageUrl,
-                "attendees": 0,
-                "createdAt": FieldValue.serverTimestamp(),
-                "latitude": latitude,
-                "longitude": longitude
-            ]
-            var newEventRef: DocumentReference? = nil
-            newEventRef = db.collection("events").addDocument(data: eventData) { error in
-                isLoading = false
-                if let error = error {
-                    showError("Failed to create event: \(error.localizedDescription)")
-                } else {
-                    alertMessage = "Event created successfully!"
-                    showAlert = true
-                    // Add event ID to user's organizedEventIds
-                    if let eventID = newEventRef?.documentID, !self.userId.isEmpty {
-                        let userRef = db.collection("users").document(self.userId)
-                        userRef.updateData([
-                            "organizedEventIds": FieldValue.arrayUnion([eventID])
-                        ]) { err in
-                            if let err = err {
-                                print("Error updating user organizedEventIds: \(err.localizedDescription)")
-                            } else {
-                                print("User organizedEventIds updated successfully.")
-                                // Dismiss the view after successful creation
-                                DispatchQueue.main.async {
-                                    self.dismiss()
-                                }
+                showError("Failed to create event: \(error.localizedDescription)")
+            } else {
+                alertMessage = "Event created successfully!"
+                showAlert = true
+                
+                // Add event ID to user's organizedEventIds
+                if let eventID = newEventRef?.documentID, !self.userId.isEmpty {
+                    let userRef = db.collection("users").document(self.userId)
+                    userRef.updateData([
+                        "organizedEventIds": FieldValue.arrayUnion([eventID])
+                    ]) { err in
+                        if let err = err {
+                            print("Error updating user organizedEventIds: \(err.localizedDescription)")
+                        } else {
+                            print("User organizedEventIds updated successfully.")
+                            // Dismiss the view after successful creation
+                            DispatchQueue.main.async {
+                                self.dismiss()
                             }
                         }
                     }
