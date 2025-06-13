@@ -9,7 +9,10 @@ import SwiftUI
 import FirebaseFirestore
 
 struct OrganizedEventsForScanView: View {
-    var organizedEvents: [Event]
+    @AppStorage("userId") var userId: String = ""
+    @State private var organizedEvents: [Event] = []
+    @State private var isLoading = true
+    @State private var errorMessage: String? = nil
 
     var body: some View {
         VStack(alignment: .leading, spacing: 20) {
@@ -18,12 +21,25 @@ struct OrganizedEventsForScanView: View {
                 .fontWeight(.bold)
                 .padding(.horizontal)
 
-            if organizedEvents.isEmpty {
+            if isLoading {
+                ProgressView()
+                    .frame(maxWidth: .infinity, maxHeight: .infinity)
+            } else if let error = errorMessage {
+                VStack {
+                    Text("Error loading organized events")
+                        .font(.headline)
+                    Text(error)
+                        .font(.subheadline)
+                        .foregroundColor(.red)
+                }
+                .frame(maxWidth: .infinity, maxHeight: .infinity)
+            } else if organizedEvents.isEmpty {
                 Spacer()
-                Text("You haven't organized any events yet.")
+                Text("You haven't organized any events yet, or all events have expired/reached capacity.")
                     .foregroundColor(.gray)
                     .font(.headline)
-                    .frame(maxWidth: .infinity, alignment: .center)
+                    .multilineTextAlignment(.center)
+                    .padding(.horizontal)
                 Spacer()
             } else {
                 ScrollView {
@@ -38,6 +54,7 @@ struct OrganizedEventsForScanView: View {
         }
         .navigationTitle("Scan QR Code")
         .navigationBarTitleDisplayMode(.inline)
+        .onAppear(perform: fetchOrganizedEventsForScan)
     }
 
     func eventScanCard(event: Event) -> some View {
@@ -79,7 +96,7 @@ struct OrganizedEventsForScanView: View {
                 Text("Scan")
                     .padding(.horizontal, 12)
                     .padding(.vertical, 5)
-                    .background(Color(hex: "#7131C5")) // Using the purple color from your app
+                    .background(Color(hex: "#7131C5"))
                     .foregroundColor(.white)
                     .cornerRadius(8)
             }
@@ -89,13 +106,89 @@ struct OrganizedEventsForScanView: View {
         .cornerRadius(12)
         .shadow(color: Color.black.opacity(0.05), radius: 4, x: 0, y: 2)
     }
+
+    private func fetchOrganizedEventsForScan() {
+        print("\n--- OrganizedEventsForScanView: Attempting to fetch organized events for scan ---")
+        print("Current userId: \(userId)")
+
+        guard !userId.isEmpty else {
+            self.isLoading = false
+            self.errorMessage = "User not logged in."
+            print("OrganizedEventsForScanView: userId is empty, returning.")
+            return
+        }
+
+        let db = Firestore.firestore()
+        db.collection("users").document(userId).getDocument { userDocument, userError in
+            if let userError = userError {
+                self.errorMessage = "Error fetching user data: \(userError.localizedDescription)"
+                self.isLoading = false
+                print("OrganizedEventsForScanView: Error fetching user document: \(userError.localizedDescription)")
+                return
+            }
+
+            guard let userDocument = userDocument, userDocument.exists, let userData = userDocument.data() else {
+                self.errorMessage = "User document not found."
+                self.isLoading = false
+                print("OrganizedEventsForScanView: User document not found or does not exist.")
+                return
+            }
+
+            let organizedEventIds = userData["organizedEventIds"] as? [String] ?? []
+            print("OrganizedEventsForScanView: Fetched organizedEventIds: \(organizedEventIds)")
+
+            guard !organizedEventIds.isEmpty else {
+                self.organizedEvents = []
+                self.isLoading = false
+                print("OrganizedEventsForScanView: No organized event IDs found.")
+                return
+            }
+
+            db.collection("events").whereField(FieldPath.documentID(), in: organizedEventIds)
+                .getDocuments { eventSnapshot, eventError in
+                    self.isLoading = false
+                    if let eventError = eventError {
+                        self.errorMessage = "Error fetching organized events: \(eventError.localizedDescription)"
+                        print("OrganizedEventsForScanView: Error fetching event documents: \(eventError.localizedDescription)")
+                        return
+                    }
+
+                    guard let eventDocuments = eventSnapshot?.documents else {
+                        self.errorMessage = "No organized events found."
+                        print("OrganizedEventsForScanView: No event documents found in snapshot.")
+                        return
+                    }
+
+                    let fetchedEvents = eventDocuments.compactMap { doc -> Event? in
+                        do {
+                            let event = try doc.data(as: Event.self)
+                            return event
+                        } catch {
+                            print("OrganizedEventsForScanView: Error decoding event \(doc.documentID): \(error.localizedDescription)")
+                            return nil
+                        }
+                    }
+                    print("OrganizedEventsForScanView: Successfully fetched \(fetchedEvents.count) events before filtering.")
+
+                    // Filter out expired and full events
+                    let filtered = fetchedEvents.filter { event in
+                        let dateFormatter = ISO8601DateFormatter()
+                        if let eventDate = dateFormatter.date(from: event.date) {
+                            let isExpired = eventDate < Date()
+                            let isFull = event.attendees >= event.maxCapacity
+                            print("OrganizedEventsForScanView: Event \(event.title) - isExpired: \(isExpired), isFull: \(isFull)")
+                            return !isExpired && !isFull
+                        }
+                        print("OrganizedEventsForScanView: Event \(event.title) - invalid date format.")
+                        return false // Exclude if date format is invalid
+                    }
+                    self.organizedEvents = filtered
+                    print("OrganizedEventsForScanView: Displaying \(self.organizedEvents.count) events after filtering.")
+                }
+        }
+    }
 }
 
-// Removed duplicate Event struct and Color+Extensions as they are defined elsewhere in the project
-
 #Preview {
-    OrganizedEventsForScanView(organizedEvents: [
-        Event(id: "1", title: "My Awesome Party", date: "2025-06-15", endTime: "10:00 PM", startTime: "7:00 PM", location: "Central Park", imageUrl: "https://example.com/image1.jpg", attendees: 50, category: "Music", price: 25.0, maxCapacity: 100, description: "A super fun party!"),
-        Event(id: "2", title: "Tech Meetup", date: "2025-07-01", endTime: "9:00 PM", startTime: "6:00 PM", location: "Tech Hub", imageUrl: "", attendees: 20, category: "Tech", price: 0.0, maxCapacity: 50, description: "Networking for developers.")
-    ])
+    OrganizedEventsForScanView()
 } 
