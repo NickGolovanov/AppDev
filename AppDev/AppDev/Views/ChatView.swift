@@ -6,27 +6,68 @@
 //
 
 import SwiftUI
+import FirebaseFirestore
 
 struct ChatView: View {
+    @EnvironmentObject var authViewModel: AuthViewModel
+    @StateObject private var chatService: ChatService
     @State private var searchText: String = ""
+    @State private var isLoading = true
+    @State private var errorMessage: String?
     
-    let chats: [ChatItem] = [
-        ChatItem(iconName: "bubble.left.and.bubble.right.fill", title: "Summer Beach Party", messagePreview: "Hey everyone! Don't forget to bring...", timeAgo: "10m ago", unreadCount: 3),
-        ChatItem(iconName: "music.note.list", title: "EDM Night", messagePreview: "The lineup has been updated...", timeAgo: "1h ago", unreadCount: 0),
-        ChatItem(iconName: "house.fill", title: "House Party @ Campus", messagePreview: "Who's bringing the snacks?", timeAgo: "2h ago", unreadCount: 1)
-    ]
+    init(authViewModel: AuthViewModel) {
+        _chatService = StateObject(wrappedValue: ChatService(authViewModel: authViewModel))
+    }
     
     var body: some View {
-        VStack(alignment: .leading, spacing: 20){
-            headerSection
-            
-            titleSection
-            searchSection
-            chatListSection
-        }.padding()
+        NavigationStack {
+            VStack(alignment: .leading, spacing: 20) {
+                headerSection
+                titleSection
+                searchSection
+                
+                if isLoading {
+                    ProgressView()
+                        .frame(maxWidth: .infinity, maxHeight: .infinity)
+                } else if let error = errorMessage {
+                    VStack {
+                        Text("Error loading chats")
+                            .font(.headline)
+                        Text(error)
+                            .font(.subheadline)
+                            .foregroundColor(.red)
+                    }
+                    .frame(maxWidth: .infinity, maxHeight: .infinity)
+                } else if chatService.chats.isEmpty {
+                    VStack {
+                        Text("No chats available")
+                            .font(.headline)
+                        Text("Join an event to start chatting")
+                            .font(.subheadline)
+                            .foregroundColor(.gray)
+                    }
+                    .frame(maxWidth: .infinity, maxHeight: .infinity)
+                } else {
+                    chatListSection
+                }
+            }
+            .padding()
+            .task {
+                await loadChats()
+            }
+        }
+    }
+    
+    private func loadChats() async {
+        do {
+            try await chatService.fetchUserChats()
+            isLoading = false
+        } catch {
+            errorMessage = error.localizedDescription
+            isLoading = false
+        }
     }
 }
-
 
 extension ChatView {
     var headerSection: some View {
@@ -59,7 +100,7 @@ extension ChatView {
     var chatListSection: some View {
         ScrollView {
             VStack(spacing: 12) {
-                ForEach(chats.filter { searchText.isEmpty ? true : $0.title.localizedCaseInsensitiveContains(searchText) }) { chat in
+                ForEach(chatService.chats.filter { searchText.isEmpty ? true : $0.eventName.localizedCaseInsensitiveContains(searchText) }) { chat in
                     ChatRow(chat: chat)
                 }
             }
@@ -67,54 +108,62 @@ extension ChatView {
     }
 }
 
-
 struct ChatRow: View {
     let chat: ChatItem
+    @EnvironmentObject var authViewModel: AuthViewModel
     
     var body: some View {
-        HStack(alignment: .center, spacing: 12) {
-            // Icon (placeholder system icon)
-            Image(systemName: chat.iconName)
-                .resizable()
-                .scaledToFill()
-                .frame(width: 48, height: 48)
-                .clipShape(RoundedRectangle(cornerRadius: 8))
-            
-            VStack(alignment: .leading, spacing: 4) {
-                HStack {
-                    Text(chat.title)
-                        .font(.system(size: 16))
-                        .fontWeight(.semibold)
-                        .foregroundColor(.primary)
-                    Spacer()
-                    Text(chat.timeAgo)
-                        .font(.system(size: 12))
-                        .foregroundColor(Color(hex: 0x6B7280))
+        NavigationLink(destination: ChatConversationView(chatId: chat.id, chatTitle: chat.eventName, authViewModel: authViewModel)) {
+            HStack(alignment: .center, spacing: 12) {
+                Image(systemName: chat.iconName)
+                    .resizable()
+                    .scaledToFill()
+                    .frame(width: 48, height: 48)
+                    .clipShape(RoundedRectangle(cornerRadius: 8))
+                
+                VStack(alignment: .leading, spacing: 4) {
+                    HStack {
+                        Text(chat.eventName)
+                            .font(.system(size: 16))
+                            .fontWeight(.semibold)
+                            .foregroundColor(.primary)
+                        Spacer()
+                        Text(formatTimeAgo(chat.lastMessageTime))
+                            .font(.system(size: 12))
+                            .foregroundColor(Color(hex: 0x6B7280))
+                    }
+                    Text(chat.lastMessage)
+                        .font(.system(size: 14))
+                        .foregroundColor(.gray)
+                        .lineLimit(1)
                 }
-                Text(chat.messagePreview)
-                    .font(.system(size: 14))
-                    .foregroundColor(.gray)
-                    .lineLimit(1)
+                
+                if chat.unreadCount > 0 {
+                    Text("\(chat.unreadCount)")
+                        .font(.system(size: 12))
+                        .foregroundColor(.white)
+                        .frame(width: 24, height: 24)
+                        .background(Circle().fill(Color.purple))
+                }
             }
-            
-            // Unread badge
-            if chat.unreadCount > 0 {
-                Text("\(chat.unreadCount)")
-                    .font(.system(size: 12))
-                    .foregroundColor(.white)
-                    .frame(width: 24, height: 24)
-                    .background(Circle().fill(Color.purple))
-            }
+            .padding()
+            .background(
+                RoundedRectangle(cornerRadius: 12)
+                    .fill(Color.white)
+                    .shadow(color: Color.black.opacity(0.05), radius: 2, x: 0, y: 1)
+            )
         }
-        .padding()
-        .background(
-            RoundedRectangle(cornerRadius: 12)
-                .fill(Color.white)
-                .shadow(color: Color.black.opacity(0.05), radius: 2, x: 0, y: 1)
-        )
+        .buttonStyle(PlainButtonStyle())
+    }
+    
+    private func formatTimeAgo(_ date: Date) -> String {
+        let formatter = RelativeDateTimeFormatter()
+        formatter.unitsStyle = .abbreviated
+        return formatter.localizedString(for: date, relativeTo: Date())
     }
 }
 
 #Preview {
-    ChatView()
+    ChatView(authViewModel: AuthViewModel())
+        .environmentObject(AuthViewModel())
 }

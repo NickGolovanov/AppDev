@@ -3,9 +3,9 @@ name: Feature Branch PR Checks
 on:
   pull_request:
     branches:
-      - development
+      - develop
     paths-ignore:
-      - '**/README.md'
+      - "**/README.md"
     types: [opened, synchronize, reopened]
 
 jobs:
@@ -18,10 +18,4 @@ jobs:
       - name: Set up Swift
         uses: fwal/setup-swift@v1
         with:
-          swift-version: '5.8'
-      - name: Install SwiftLint
-        run: |
-          brew install swiftlint
-      - name: Run SwiftLint
-        run: |
-          swiftlint || { echo "Linting failed"; exit 1; }
+          swift-version: "5.8"

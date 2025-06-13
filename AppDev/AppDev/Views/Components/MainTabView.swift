@@ -9,11 +9,12 @@ import SwiftUI
 
 struct MainTabView: View {
     @State private var selectedTab = "Home"
+    @EnvironmentObject var authViewModel: AuthViewModel
 
     var body: some View {
         ZStack(alignment: .bottom) {
             TabView(selection: $selectedTab) {
-                HomeView()
+                EventsView()
                     .tag("Home")
                     .ignoresSafeArea(.all, edges: .bottom)
 
@@ -22,10 +23,10 @@ struct MainTabView: View {
                     .ignoresSafeArea(.all, edges: .bottom)
 
                 EventsMapView()
-                    .tag("Events")
+                    .tag("Map")
                     .ignoresSafeArea(.all, edges: .bottom)
 
-                ChatView()
+                ChatView(authViewModel: authViewModel)
                     .tag("Chat")
                     .ignoresSafeArea(.all, edges: .bottom)
 
@@ -48,4 +49,5 @@ struct MainTabView: View {
 
 #Preview {
     MainTabView()
+        .environmentObject(AuthViewModel())
 }
