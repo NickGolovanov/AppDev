@@ -9,6 +9,8 @@ import FirebaseAuth
 import FirebaseCore
 import FirebaseFirestore
 import SwiftUI
+import GoogleSignIn
+import Firebase
 
 @main
 struct AppDevApp: App {
@@ -20,6 +22,7 @@ struct AppDevApp: App {
     var body: some Scene {
         WindowGroup {
             if authViewModel.isAuthenticated {
+                InitialView()
                 MainTabView()
                     .environmentObject(authViewModel)
             } else {
