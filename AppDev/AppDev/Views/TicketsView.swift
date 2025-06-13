@@ -41,6 +41,16 @@ struct Ticket: Identifiable, Codable {
         case userId
         case status
     }
+    
+    var formattedDate: String {
+        let isoFormatter = ISO8601DateFormatter()
+        if let dateObj = isoFormatter.date(from: self.date) {
+            let formatter = DateFormatter()
+            formatter.dateFormat = "d MMM yyyy"
+            return formatter.string(from: dateObj)
+        }
+        return self.date
+    }
 }
 
 struct TicketsView: View {
@@ -186,15 +196,27 @@ struct TicketCard: View {
                     )
                     .cornerRadius(8)
             }
-            HStack(spacing: 12) {
-                Label(ticket.date, systemImage: "calendar")
-                    .font(.subheadline)
-                Spacer()
-            }
-            HStack(spacing: 12) {
-                Label(ticket.location, systemImage: "mappin.and.ellipse")
-                    .font(.subheadline)
-                Spacer()
+            VStack(alignment: .leading, spacing: 6) {
+                Text(ticket.eventName)
+                    .font(.headline)
+                    .fontWeight(.bold)
+                    .foregroundColor(.primary)
+
+                HStack {
+                    Image(systemName: "calendar")
+                        .font(.subheadline)
+                    Text(ticket.formattedDate)
+                        .font(.subheadline)
+                }
+                .foregroundColor(.secondary)
+
+                HStack {
+                    Image(systemName: "mappin.and.ellipse")
+                        .font(.subheadline)
+                    Text(ticket.location)
+                        .font(.subheadline)
+                }
+                .foregroundColor(.secondary)
             }
             Divider()
             VStack(alignment: .leading, spacing: 4) {

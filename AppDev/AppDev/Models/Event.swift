@@ -84,4 +84,14 @@ extension Event {
         }
         return ""
     }
+    
+    var formattedEndTime: String {
+        let isoFormatter = ISO8601DateFormatter()
+        if let dateObj = isoFormatter.date(from: self.endTime) {
+            let formatter = DateFormatter()
+            formatter.dateFormat = "HH:mm"
+            return formatter.string(from: dateObj)
+        }
+        return ""
+    }
 }

@@ -47,13 +47,13 @@ struct GetTicketView: View {
 
                             HStack {
                                 Image(systemName: "calendar")
-                                Text(event.date)
+                                Text(event.formattedDate)
                             }
                             .foregroundColor(.gray)
 
                             HStack {
                                 Image(systemName: "clock")
-                                Text("\(event.startTime) - \(event.endTime)")
+                                Text("\(event.formattedTime) - \(event.formattedEndTime)")
                             }
                             .foregroundColor(.gray)
 
