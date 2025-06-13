@@ -43,34 +43,21 @@ class HomeViewModel: ObservableObject {
                               let maxCapacity = data["maxCapacity"] as? Int,
                               let description = data["description"] as? String
                         else {
-                            return Event(
-                                id: id,
-                                title: "",
-                                date: "",
-                                endTime: "",
-                                startTime: "",
-                                location: "",
-                                imageUrl: "",
-                                attendees: 0,
-                                category: "",
-                                price: 0,
-                                maxCapacity: 0,
-                                description: ""
-                            )
+                            return nil
                         }
                         
                         return Event(
                             id: id,
                             title: title,
                             date: date,
-                            endTime: "",
-                            startTime: "",
+                            endTime: endTime,
+                            startTime: startTime,
                             location: location,
                             imageUrl: imageUrl,
                             attendees: attendees,
                             category: category,
                             price: price,
-                            maxCapacity: 0,
+                            maxCapacity: maxCapacity,
                             description: description
                         )
                     }
