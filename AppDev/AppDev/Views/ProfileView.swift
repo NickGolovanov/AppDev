@@ -7,6 +7,7 @@
 
 import FirebaseFirestore
 import SwiftUI
+import FirebaseAuth
 
 struct ProfileView: View {
     @AppStorage("userId") var userId: String = ""
@@ -37,7 +38,7 @@ struct ProfileView: View {
                     EditProfileView()
                 }
                 .navigationDestination(isPresented: $showOrganizedEventsForScan) {
-                    OrganizedEventsForScanView(organizedEvents: organizedEvents)
+                    OrganizedEventsForScanView()
                 }
                 .navigationDestination(isPresented: $showAllEvents) {
                     AllEventsView()
@@ -189,6 +190,20 @@ struct ProfileView: View {
                         .foregroundColor(.gray)
                 }
             }
+
+            // Logout Button
+            Button(action: logout) {
+                Text("Logout")
+                    .fontWeight(.medium)
+                    .foregroundColor(.red)
+                    .padding(.vertical, 8)
+                    .padding(.horizontal, 20)
+                    .overlay(
+                        RoundedRectangle(cornerRadius: 10)
+                            .stroke(Color.red, lineWidth: 1.5)
+                    )
+            }
+            .padding(.top, 20)
         }
     }
 
@@ -241,36 +256,17 @@ struct ProfileView: View {
     }
 
     func fetchRecentEvents() {
-        print("\n--- ProfileView: Attempting to fetch recent events ---")
-        print("Current userId: \(userId)")
-
-        guard !userId.isEmpty else { 
-            print("ProfileView: userId is empty, returning.")
-            return 
-        }
+        guard !userId.isEmpty else { return }
 
         let db = Firestore.firestore()
         let userRef = db.collection("users").document(userId)
 
         userRef.getDocument { document, error in
-            if let error = error {
-                print("ProfileView: Error fetching user document: \(error.localizedDescription)")
-                // You might want to update a @State variable here to display this error in the UI
-                self.userName = "Error loading..."
-                self.userHandle = "@error..."
-                self.userBio = "Failed to load profile. Check console for details."
-                return
-            }
-            
             guard let document = document, document.exists, let data = document.data() else {
-                print("ProfileView: User document not found or does not exist.")
-                self.userName = "Not found"
-                self.userHandle = "@notfound"
-                self.userBio = "User profile not found."
+                print("User document not found: \(error?.localizedDescription ?? "Unknown error")")
                 return
             }
 
-            print("ProfileView: User document fetched successfully.")
             self.userName = data["fullName"] as? String ?? "N/A"
             self.userHandle = data["username"] as? String ?? "@n/a"
             self.userBio = data["description"] as? String ?? ""
@@ -278,8 +274,8 @@ struct ProfileView: View {
 
             let joinedEventIds = data["joinedEventIds"] as? [String] ?? []
             let organizedEventIds = data["organizedEventIds"] as? [String] ?? []
-            print("ProfileView: Joined Event IDs: \(joinedEventIds)")
-            print("ProfileView: Organized Event IDs: \(organizedEventIds)")
+
+            print(organizedEventIds)
 
             if !joinedEventIds.isEmpty {
                 db.collection("events").whereField(FieldPath.documentID(), in: joinedEventIds)
@@ -288,9 +284,10 @@ struct ProfileView: View {
                             self.joinedEvents = snapshot.documents.compactMap { doc in
                                 try? doc.data(as: Event.self)
                             }
-                            print("ProfileView: Successfully fetched \(self.joinedEvents.count) joined events.")
                         } else {
-                            print("ProfileView: Error fetching joined events: \(error?.localizedDescription ?? "Unknown error")")
+                            print(
+                                "Error fetching joined events: \(error?.localizedDescription ?? "")"
+                            )
                         }
                     }
             }
@@ -304,17 +301,34 @@ struct ProfileView: View {
                                     let event = try doc.data(as: Event.self)
                                     return event
                                 } catch {
-                                    print("ProfileView: Error decoding organized event with ID \(doc.documentID): \(error.localizedDescription)")
-                                    print("ProfileView: Raw data for event \(doc.documentID): \(doc.data())")
+                                    print(
+                                        "Error decoding organized event with ID \(doc.documentID): \(error.localizedDescription)"
+                                    )
+                                    print("Raw data for event \(doc.documentID): \(doc.data())")
                                     return nil
                                 }
                             }
-                            print("ProfileView: Successfully fetched \(self.organizedEvents.count) organized events.")
+                            print(
+                                "self.organizedEvents after attempting decode: \(self.organizedEvents)"
+                            )
                         } else {
-                            print("ProfileView: Error fetching organized events: \(error?.localizedDescription ?? "Unknown error")")
+                            print(
+                                "Error fetching organized events: \(error?.localizedDescription ?? "")"
+                            )
                         }
                     }
             }
+        }
+    }
+
+    func logout() {
+        do {
+            try Auth.auth().signOut()
+            userId = "" // Clear the userId from AppStorage
+            // Navigate to login or initial view
+            // This typically handled by observing auth state in AppDevApp.swift or similar
+        } catch let signOutError as NSError {
+            print("Error signing out: %@", signOutError)
         }
     }
 }
