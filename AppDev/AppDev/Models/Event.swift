@@ -22,13 +22,20 @@ struct Event: Identifiable, Codable {
     let price: Double
     let maxCapacity: Int
     let description: String 
+    let latitude: Double?
+    let longitude: Double?
 
     
-    var coordinate: CLLocationCoordinate2D? = nil
+    var coordinate: CLLocationCoordinate2D? {
+        if let lat = latitude, let lon = longitude {
+            return CLLocationCoordinate2D(latitude: lat, longitude: lon)
+        }
+        return nil
+    }
     var distance: String? = nil
 
     enum CodingKeys: String, CodingKey {
-            case id, title, date, endTime, startTime, location, imageUrl, attendees, category, price, maxCapacity, description
+            case id, title, date, endTime, startTime, location, imageUrl, attendees, category, price, maxCapacity, description, latitude, longitude
     }
 }
 //
@@ -71,6 +78,16 @@ extension Event {
         // Try to parse ISO8601 date string and format as '10:00'
         let isoFormatter = ISO8601DateFormatter()
         if let dateObj = isoFormatter.date(from: self.date) {
+            let formatter = DateFormatter()
+            formatter.dateFormat = "HH:mm"
+            return formatter.string(from: dateObj)
+        }
+        return ""
+    }
+    
+    var formattedEndTime: String {
+        let isoFormatter = ISO8601DateFormatter()
+        if let dateObj = isoFormatter.date(from: self.endTime) {
             let formatter = DateFormatter()
             formatter.dateFormat = "HH:mm"
             return formatter.string(from: dateObj)

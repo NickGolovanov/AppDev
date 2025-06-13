@@ -46,6 +46,9 @@ class HomeViewModel: ObservableObject {
                             return nil
                         }
                         
+                        let latitude = data["latitude"] as? Double
+                        let longitude = data["longitude"] as? Double
+                        
                         return Event(
                             id: id,
                             title: title,
@@ -58,7 +61,9 @@ class HomeViewModel: ObservableObject {
                             category: category,
                             price: price,
                             maxCapacity: maxCapacity,
-                            description: description
+                            description: description,
+                            latitude: latitude,
+                            longitude: longitude
                         )
                     }
                 }
