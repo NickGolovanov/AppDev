@@ -10,6 +10,7 @@ import SwiftUI
 struct HeaderView: View {
     var title: String?
     var showBackButton: Bool = false
+    var showProfileLink: Bool = true
     
     var body: some View {
         HStack {
@@ -34,16 +35,7 @@ struct HeaderView: View {
 
             Spacer()
             
-            if title == nil {
-                ZStack(alignment: .topTrailing) {
-                    Image(systemName: "bell")
-                        .font(.title2)
-                    
-                    Circle()
-                        .fill(Color.red)
-                        .frame(width: 10, height: 10)
-                        .offset(x: 6, y: -6)
-                }
+            if title == nil && showProfileLink {
                 NavigationLink(destination: ProfileView()) {
                     Image(systemName: "person.crop.circle.fill")
                         .font(.largeTitle)
@@ -59,5 +51,6 @@ struct HeaderView: View {
     VStack {
         HeaderView()
         HeaderView(title: "Chat", showBackButton: true)
+        HeaderView(title: "Get Ticket", showBackButton: true, showProfileLink: false)
     }
 }

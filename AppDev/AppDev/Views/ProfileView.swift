@@ -173,16 +173,8 @@ struct ProfileView: View {
 
     var recentEventsSection: some View {
         VStack(alignment: .leading, spacing: 12) {
-            HStack {
-                Text("Recent Events")
-                    .font(.headline)
-                Spacer()
-                Button(action: { showAllEvents = true }) {
-                    Text("See All")
-                        .font(.subheadline)
-                        .foregroundColor(Color(hex: "#7131C5"))
-                }
-            }
+            Text("Recent Events")
+                .font(.headline)
 
             VStack(spacing: 12) {
                 ForEach(joinedEvents) { event in

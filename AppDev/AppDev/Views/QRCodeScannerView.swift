@@ -112,6 +112,19 @@ struct QRCodeScannerView: View {
                 return
             }
 
+            // Check if ticket belongs to this event
+            guard let ticketEventId = ticketData["eventId"] as? String else {
+                self.scanResult = "Ticket missing event ID."
+                self.resumeScanningAfterDelay()
+                return
+            }
+
+            if ticketEventId != self.eventId {
+                self.scanResult = "This ticket is for a different event."
+                self.resumeScanningAfterDelay()
+                return
+            }
+
             // Check ticket status
             if let status = ticketData["status"] as? String {
                 if status == "used" {
@@ -121,14 +134,8 @@ struct QRCodeScannerView: View {
                 }
             }
 
-            guard let eventId = ticketData["eventId"] as? String else {
-                self.scanResult = "Ticket missing event ID."
-                self.resumeScanningAfterDelay()
-                return
-            }
-
             // Fetch event details to check capacity
-            let eventRef = db.collection("events").document(eventId)
+            let eventRef = db.collection("events").document(self.eventId)
             eventRef.getDocument { eventDocument, eventError in
                 if let eventError = eventError {
                     self.scanResult = "Error fetching event: \(eventError.localizedDescription)"
