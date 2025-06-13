@@ -63,13 +63,6 @@ struct EventView: View {
                                         .clipShape(Circle())
                                 }
                                 Spacer()
-                                Button(action: {}) {
-                                    Image(systemName: "heart")
-                                        .foregroundColor(.white)
-                                        .padding(12)
-                                        .background(Color.black.opacity(0.3))
-                                        .clipShape(Circle())
-                                }
                             }
                             .padding(.horizontal, 16)
                             .padding(.top, 16)
