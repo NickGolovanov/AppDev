@@ -14,7 +14,7 @@ struct MainTabView: View {
     var body: some View {
         ZStack(alignment: .bottom) {
             TabView(selection: $selectedTab) {
-                HomeView()
+                EventsView()
                     .tag("Home")
                     .ignoresSafeArea(.all, edges: .bottom)
 
@@ -22,8 +22,8 @@ struct MainTabView: View {
                     .tag("Tickets")
                     .ignoresSafeArea(.all, edges: .bottom)
 
-                EventsView()
-                    .tag("Events")
+                EventsMapView()
+                    .tag("Map")
                     .ignoresSafeArea(.all, edges: .bottom)
 
                 ChatView(authViewModel: authViewModel)
@@ -49,4 +49,5 @@ struct MainTabView: View {
 
 #Preview {
     MainTabView()
+        .environmentObject(AuthViewModel())
 }

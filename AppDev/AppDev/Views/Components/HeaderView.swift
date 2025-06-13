@@ -44,10 +44,11 @@ struct HeaderView: View {
                         .frame(width: 10, height: 10)
                         .offset(x: 6, y: -6)
                 }
-                
-                Image(systemName: "person.crop.circle.fill")
-                    .font(.largeTitle)
-                    .padding(.leading, 10)
+                NavigationLink(destination: ProfileView()) {
+                    Image(systemName: "person.crop.circle.fill")
+                        .font(.largeTitle)
+                        .padding(.leading, 10)
+                }
             }
         }
         .padding(2)

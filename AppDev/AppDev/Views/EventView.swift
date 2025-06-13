@@ -3,7 +3,7 @@ import FirebaseFirestore
 
 struct EventView: View {
     let eventId: String
-    @State private var event: EventDetails? = nil
+    @State private var event: Event? = nil
     @State private var isLoading = false
     @State private var errorMessage: String? = nil
     @State private var showGetTicket = false
@@ -207,66 +207,23 @@ struct EventView: View {
                 errorMessage = "Failed to load event: \(error.localizedDescription)"
                 return
             }
-            guard let data = snapshot?.data() else {
+            guard let document = snapshot, document.exists else {
                 errorMessage = "Event not found."
                 return
             }
-            // Map Firestore data to EventDetails
-            guard let title = data["title"] as? String,
-                  let date = data["date"] as? String,
-                  let startTime = data["startTime"] as? String,
-                  let location = data["location"] as? String,
-                  let imageUrl = data["imageUrl"] as? String,
-                  let attendees = data["attendees"] as? Int,
-                  let maxCapacity = data["maxCapacity"] as? Int,
-                  let price = data["price"] as? Double,
-                  let description = data["description"] as? String else {
-                errorMessage = "Event data is incomplete."
-                return
+            self.event = try? document.data(as: Event.self)
+            if self.event == nil {
+                errorMessage = "Failed to decode event."
             }
-            self.event = EventDetails(title: title, date: date, startTime: startTime, location: location, imageUrl: imageUrl, attendees: attendees, maxCapacity: maxCapacity, price: price, description: description)
         }
     }
 
     var getTicketDestination: some View {
         if let event = event {
-            return AnyView(GetTicketView(eventId: eventId, eventName: event.title, date: "\(event.formattedDate) · \(event.formattedTime)", location: event.location, price: "€\(String(format: "%.2f", event.price))"))
+            return AnyView(GetTicketView(event: event))
         } else {
             return AnyView(EmptyView())
         }
-    }
-}
-
-struct EventDetails {
-    let title: String
-    let date: String
-    let startTime: String
-    let location: String
-    let imageUrl: String
-    let attendees: Int
-    let maxCapacity: Int
-    let price: Double
-    let description: String
-}
-
-extension EventDetails {
-    var formattedDate: String {
-        let isoFormatter = ISO8601DateFormatter()
-        if let dateObj = isoFormatter.date(from: self.date) {
-            let formatter = DateFormatter()
-            formatter.dateFormat = "d MMM yyyy"
-            return formatter.string(from: dateObj)
-        }
-        return self.date
-    }
-    var formattedTime: String {
-        let isoFormatter = ISO8601DateFormatter()
-        if let dateObj = isoFormatter.date(from: self.date) {
-            let formatter = DateFormatter()
-            formatter.dateFormat = "HH:mm"
-            return formatter.string(from: dateObj)
-        }
-        return ""
     }
 }
 

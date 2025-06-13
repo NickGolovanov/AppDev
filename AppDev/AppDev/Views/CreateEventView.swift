@@ -10,6 +10,7 @@ import FirebaseStorage
 import SwiftUI
 
 struct CreateEventView: View {
+    @Environment(\.dismiss) private var dismiss
     @AppStorage("userId") var userId: String = ""
     @State private var eventTitle: String = ""
     @State private var startDate: Date? = nil
@@ -27,6 +28,8 @@ struct CreateEventView: View {
     @State private var showAlert: Bool = false
     @State private var alertMessage: String = ""
     @State private var isLoading: Bool = false
+    @State private var navigateToEvent = false
+    @State private var createdEventId: String = ""
 
     let categories = [
         "House Party",
@@ -52,14 +55,30 @@ struct CreateEventView: View {
     ]
 
     var body: some View {
-        ScrollView {
-            VStack(alignment: .leading, spacing: 20) {
-                headerSection
-                imagePickerSection
-                eventFormSection
-                createButtonSection
+        NavigationStack {
+            ScrollView {
+                VStack(alignment: .leading, spacing: 20) {
+                    headerSection
+                    imagePickerSection
+                    eventFormSection
+                    createButtonSection
+                }
+                .padding()
             }
-            .padding()
+            .navigationTitle("Create Event")
+            .navigationBarTitleDisplayMode(.inline)
+            .navigationDestination(isPresented: $navigateToEvent) {
+                EventView(eventId: createdEventId)
+            }
+            .alert(isPresented: $showAlert) {
+                Alert(
+                    title: Text("Event Creation"),
+                    message: Text(alertMessage),
+                    dismissButton: .default(Text("OK")) {
+                        dismiss()
+                    }
+                )
+            }
         }
     }
 }
@@ -183,11 +202,6 @@ extension CreateEventView {
                     .cornerRadius(10)
             }
         }
-        .alert(isPresented: $showAlert) {
-            Alert(
-                title: Text("Event Creation"), message: Text(alertMessage),
-                dismissButton: .default(Text("OK")))
-        }
     }
 }
 
@@ -306,8 +320,7 @@ extension CreateEventView {
             } else {
                 alertMessage = "Event created successfully!"
                 showAlert = true
-                // Optional: Reset form fields here
-
+                
                 // Add event ID to user's organizedEventIds
                 if let eventID = newEventRef?.documentID, !self.userId.isEmpty {
                     let userRef = db.collection("users").document(self.userId)
@@ -315,12 +328,13 @@ extension CreateEventView {
                         "organizedEventIds": FieldValue.arrayUnion([eventID])
                     ]) { err in
                         if let err = err {
-                            print(
-                                "Error updating user organizedEventIds: \(err.localizedDescription)"
-                            )
-                            // Optionally, show an error to the user or handle it silently
+                            print("Error updating user organizedEventIds: \(err.localizedDescription)")
                         } else {
                             print("User organizedEventIds updated successfully.")
+                            // Dismiss the view after successful creation
+                            DispatchQueue.main.async {
+                                self.dismiss()
+                            }
                         }
                     }
                 }

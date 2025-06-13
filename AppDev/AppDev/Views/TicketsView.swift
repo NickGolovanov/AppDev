@@ -128,7 +128,8 @@ struct TicketsView: View {
 
 struct TicketCard: View {
     let ticket: Ticket
-    
+    @State private var showQRCodeSheet = false
+
     var body: some View {
         VStack(alignment: .leading, spacing: 12) {
             Text(ticket.eventName)
@@ -164,6 +165,9 @@ struct TicketCard: View {
                 .frame(width: 100, height: 100)
                 .cornerRadius(8)
                 .frame(maxWidth: .infinity, alignment: .center)
+                .onTapGesture {
+                    showQRCodeSheet = true
+                }
             } else {
                 Rectangle()
                     .fill(Color.black)
@@ -176,6 +180,40 @@ struct TicketCard: View {
         .background(Color.white)
         .cornerRadius(16)
         .shadow(color: Color(.systemGray4).opacity(0.2), radius: 6, x: 0, y: 2)
+        .sheet(isPresented: $showQRCodeSheet) {
+            EnlargedQRCodeView(qrCodeUrl: ticket.qrcodeUrl)
+        }
+    }
+}
+
+struct EnlargedQRCodeView: View {
+    let qrCodeUrl: String
+    @Environment(\.dismiss) private var dismiss
+
+    var body: some View {
+        VStack {
+            if let url = URL(string: qrCodeUrl), !qrCodeUrl.isEmpty {
+                AsyncImage(url: url) { image in
+                    image
+                        .resizable()
+                        .aspectRatio(contentMode: .fit)
+                } placeholder: {
+                    Rectangle().fill(Color.black)
+                }
+                .frame(width: 300, height: 300)
+                .cornerRadius(8)
+            } else {
+                Rectangle()
+                    .fill(Color.black)
+                    .frame(width: 300, height: 300)
+                    .cornerRadius(8)
+            }
+            Button("Close") {
+                dismiss()
+            }
+            .padding()
+        }
+        .padding()
     }
 }
 
