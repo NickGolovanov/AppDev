@@ -153,6 +153,8 @@ struct GetTicketView: View {
             "email": email,
             "price": String(format: "%.2f", event.price),
             "qrcodeUrl": "",
+            "status": "active",
+            "createdAt": Timestamp(date: Date())
         ]
         ticketRef.setData(ticketData) { error in
             if let error = error {
@@ -203,7 +205,8 @@ struct GetTicketView: View {
                             email: email,
                             price: String(format: "%.2f", event.price),
                             qrcodeUrl: qrCodeUrl,
-                            userId: Auth.auth().currentUser?.uid ?? ""
+                            userId: Auth.auth().currentUser?.uid ?? "",
+                            status: .active
                         )
                         try await chatService?.createChatForTicket(ticket: ticket)
                     } catch {
