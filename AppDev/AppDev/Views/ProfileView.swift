@@ -11,7 +11,7 @@ import SwiftUI
 struct ProfileView: View {
     @AppStorage("userId") var userId: String = ""
     @State private var showEditProfile = false
-    @State private var showQRCodeScanner = false
+    @State private var showOrganizedEventsForScan = false
     @State private var showAllEvents = false
 
     @State private var userName: String = "Loading..."
@@ -36,8 +36,8 @@ struct ProfileView: View {
                 .navigationDestination(isPresented: $showEditProfile) {
                     EditProfileView()
                 }
-                .navigationDestination(isPresented: $showQRCodeScanner) {
-                    QRCodeScannerView()
+                .navigationDestination(isPresented: $showOrganizedEventsForScan) {
+                    OrganizedEventsForScanView(organizedEvents: organizedEvents)
                 }
                 .navigationDestination(isPresented: $showAllEvents) {
                     AllEventsView()
@@ -116,7 +116,7 @@ struct ProfileView: View {
             }
 
             Button(action: {
-                showQRCodeScanner = true
+                showOrganizedEventsForScan = true
             }) {
                 Text("Scan QR Code")
                     .fontWeight(.medium)
@@ -241,17 +241,36 @@ struct ProfileView: View {
     }
 
     func fetchRecentEvents() {
-        guard !userId.isEmpty else { return }
+        print("\n--- ProfileView: Attempting to fetch recent events ---")
+        print("Current userId: \(userId)")
+
+        guard !userId.isEmpty else { 
+            print("ProfileView: userId is empty, returning.")
+            return 
+        }
 
         let db = Firestore.firestore()
         let userRef = db.collection("users").document(userId)
 
         userRef.getDocument { document, error in
+            if let error = error {
+                print("ProfileView: Error fetching user document: \(error.localizedDescription)")
+                // You might want to update a @State variable here to display this error in the UI
+                self.userName = "Error loading..."
+                self.userHandle = "@error..."
+                self.userBio = "Failed to load profile. Check console for details."
+                return
+            }
+            
             guard let document = document, document.exists, let data = document.data() else {
-                print("User document not found: \(error?.localizedDescription ?? "Unknown error")")
+                print("ProfileView: User document not found or does not exist.")
+                self.userName = "Not found"
+                self.userHandle = "@notfound"
+                self.userBio = "User profile not found."
                 return
             }
 
+            print("ProfileView: User document fetched successfully.")
             self.userName = data["fullName"] as? String ?? "N/A"
             self.userHandle = data["username"] as? String ?? "@n/a"
             self.userBio = data["description"] as? String ?? ""
@@ -259,8 +278,8 @@ struct ProfileView: View {
 
             let joinedEventIds = data["joinedEventIds"] as? [String] ?? []
             let organizedEventIds = data["organizedEventIds"] as? [String] ?? []
-
-            print(organizedEventIds)
+            print("ProfileView: Joined Event IDs: \(joinedEventIds)")
+            print("ProfileView: Organized Event IDs: \(organizedEventIds)")
 
             if !joinedEventIds.isEmpty {
                 db.collection("events").whereField(FieldPath.documentID(), in: joinedEventIds)
@@ -269,10 +288,9 @@ struct ProfileView: View {
                             self.joinedEvents = snapshot.documents.compactMap { doc in
                                 try? doc.data(as: Event.self)
                             }
+                            print("ProfileView: Successfully fetched \(self.joinedEvents.count) joined events.")
                         } else {
-                            print(
-                                "Error fetching joined events: \(error?.localizedDescription ?? "")"
-                            )
+                            print("ProfileView: Error fetching joined events: \(error?.localizedDescription ?? "Unknown error")")
                         }
                     }
             }
@@ -286,20 +304,14 @@ struct ProfileView: View {
                                     let event = try doc.data(as: Event.self)
                                     return event
                                 } catch {
-                                    print(
-                                        "Error decoding organized event with ID \(doc.documentID): \(error.localizedDescription)"
-                                    )
-                                    print("Raw data for event \(doc.documentID): \(doc.data())")
+                                    print("ProfileView: Error decoding organized event with ID \(doc.documentID): \(error.localizedDescription)")
+                                    print("ProfileView: Raw data for event \(doc.documentID): \(doc.data())")
                                     return nil
                                 }
                             }
-                            print(
-                                "self.organizedEvents after attempting decode: \(self.organizedEvents)"
-                            )
+                            print("ProfileView: Successfully fetched \(self.organizedEvents.count) organized events.")
                         } else {
-                            print(
-                                "Error fetching organized events: \(error?.localizedDescription ?? "")"
-                            )
+                            print("ProfileView: Error fetching organized events: \(error?.localizedDescription ?? "Unknown error")")
                         }
                     }
             }

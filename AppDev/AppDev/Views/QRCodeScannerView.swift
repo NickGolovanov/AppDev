@@ -15,10 +15,12 @@ struct QRCodeScannerView: View {
     @State private var scanResult: String = "Scanning..."
     @State private var isScanning = false
     @Environment(\.presentationMode) var presentationMode
+    var eventName: String
+    var eventId: String
 
     var body: some View {
         VStack {
-            Text("Scan QR Code")
+            Text(eventName.isEmpty ? "Scan QR Code" : "Scan QR Code for \(eventName)")
                 .font(.title)
                 .padding()
 
@@ -221,5 +223,5 @@ struct QRCodeScannerCameraView: UIViewRepresentable {
 }
 
 #Preview {
-    QRCodeScannerView()
+    QRCodeScannerView(eventName: "My Event", eventId: "123")
 }
