@@ -8,6 +8,7 @@
 import FirebaseFirestore
 import FirebaseStorage
 import SwiftUI
+import CoreLocation
 
 struct CreateEventView: View {
     @Environment(\.dismiss) private var dismiss
@@ -296,44 +297,59 @@ extension CreateEventView {
 
     private func createEventInFirestore(imageUrl: String, startDateTime: Date, endDateTime: Date, startTime: Date, endTime: Date) {
         let db = Firestore.firestore()
-        let eventData: [String: Any] = [
-            "title": eventTitle,
-            "date": ISO8601DateFormatter().string(from: startDateTime),
-            "category": category,
-            "startTime": ISO8601DateFormatter().string(from: startTime),
-            "endTime": ISO8601DateFormatter().string(from: endTime),
-            "location": location,
-            "description": description,
-            "maxCapacity": Int(maxCapacity)!,
-            "price": Double(price)!,
-            "imageUrl": imageUrl,
-            "attendees": 0,
-            "createdAt": FieldValue.serverTimestamp(),
-        ]
-
-        var newEventRef: DocumentReference? = nil
-
-        newEventRef = db.collection("events").addDocument(data: eventData) { error in
-            isLoading = false
+        let geocoder = CLGeocoder()
+        isLoading = true
+        geocoder.geocodeAddressString(location) { placemarks, error in
             if let error = error {
-                showError("Failed to create event: \(error.localizedDescription)")
-            } else {
-                alertMessage = "Event created successfully!"
-                showAlert = true
-                
-                // Add event ID to user's organizedEventIds
-                if let eventID = newEventRef?.documentID, !self.userId.isEmpty {
-                    let userRef = db.collection("users").document(self.userId)
-                    userRef.updateData([
-                        "organizedEventIds": FieldValue.arrayUnion([eventID])
-                    ]) { err in
-                        if let err = err {
-                            print("Error updating user organizedEventIds: \(err.localizedDescription)")
-                        } else {
-                            print("User organizedEventIds updated successfully.")
-                            // Dismiss the view after successful creation
-                            DispatchQueue.main.async {
-                                self.dismiss()
+                showError("Failed to geocode address: \(error.localizedDescription)")
+                isLoading = false
+                return
+            }
+            guard let loc = placemarks?.first?.location else {
+                showError("Could not find location for the given address.")
+                isLoading = false
+                return
+            }
+            let latitude = loc.coordinate.latitude
+            let longitude = loc.coordinate.longitude
+            let eventData: [String: Any] = [
+                "title": eventTitle,
+                "date": ISO8601DateFormatter().string(from: startDateTime),
+                "category": category,
+                "startTime": ISO8601DateFormatter().string(from: startTime),
+                "endTime": ISO8601DateFormatter().string(from: endTime),
+                "location": location,
+                "description": description,
+                "maxCapacity": Int(maxCapacity)!,
+                "price": Double(price)!,
+                "imageUrl": imageUrl,
+                "attendees": 0,
+                "createdAt": FieldValue.serverTimestamp(),
+                "latitude": latitude,
+                "longitude": longitude
+            ]
+            var newEventRef: DocumentReference? = nil
+            newEventRef = db.collection("events").addDocument(data: eventData) { error in
+                isLoading = false
+                if let error = error {
+                    showError("Failed to create event: \(error.localizedDescription)")
+                } else {
+                    alertMessage = "Event created successfully!"
+                    showAlert = true
+                    // Add event ID to user's organizedEventIds
+                    if let eventID = newEventRef?.documentID, !self.userId.isEmpty {
+                        let userRef = db.collection("users").document(self.userId)
+                        userRef.updateData([
+                            "organizedEventIds": FieldValue.arrayUnion([eventID])
+                        ]) { err in
+                            if let err = err {
+                                print("Error updating user organizedEventIds: \(err.localizedDescription)")
+                            } else {
+                                print("User organizedEventIds updated successfully.")
+                                // Dismiss the view after successful creation
+                                DispatchQueue.main.async {
+                                    self.dismiss()
+                                }
                             }
                         }
                     }
