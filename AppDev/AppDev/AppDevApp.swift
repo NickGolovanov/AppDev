@@ -36,15 +36,18 @@ class AuthViewModel: ObservableObject {
     @AppStorage("userId") var appStorageUserId: String = ""
 
     init() {
+        print("\n--- AuthViewModel: Initializing ---")
         // Listen for authentication state changes
         Auth.auth().addStateDidChangeListener { [weak self] _, user in
             guard let self = self else { return }
             DispatchQueue.main.async {
                 self.isAuthenticated = user != nil
                 if let firebaseUser = user {
+                    print("AuthViewModel: Firebase user detected: \(firebaseUser.uid), email: \(firebaseUser.email ?? "nil")")
                     self.appStorageUserId = firebaseUser.uid
                     self.fetchUserProfile(email: firebaseUser.email)
                 } else {
+                    print("AuthViewModel: No Firebase user detected (signed out or not logged in).")
                     self.appStorageUserId = ""
                     self.currentUser = nil
                 }
@@ -53,14 +56,25 @@ class AuthViewModel: ObservableObject {
     }
 
     private func fetchUserProfile(email: String?) {
-        guard let email = email else { return }
+        guard let email = email else {
+            print("AuthViewModel: fetchUserProfile - email is nil, returning.")
+            return
+        }
+        print("AuthViewModel: Attempting to fetch user profile for email: \(email)")
         let db = Firestore.firestore()
         db.collection("users").whereField("email", isEqualTo: email).getDocuments {
             snapshot, error in
+            if let error = error {
+                print("AuthViewModel: Error fetching user profile from Firestore: \(error.localizedDescription)")
+                return
+            }
             if let doc = snapshot?.documents.first, let user = try? doc.data(as: User.self) {
                 DispatchQueue.main.async {
                     self.currentUser = user
+                    print("AuthViewModel: Successfully set currentUser: \(user.fullName) (ID: \(user.id ?? "nil"))")
                 }
+            } else {
+                print("AuthViewModel: No user document found for email \(email) or decoding failed.")
             }
         }
     }
@@ -70,8 +84,9 @@ class AuthViewModel: ObservableObject {
             try Auth.auth().signOut()
             self.currentUser = nil
             self.appStorageUserId = ""
+            print("AuthViewModel: User signed out successfully.")
         } catch {
-            print("Error signing out: \(error.localizedDescription)")
+            print("AuthViewModel: Error signing out: \(error.localizedDescription)")
         }
     }
 }
