@@ -8,6 +8,8 @@
 import SwiftUI
 import FirebaseCore
 import FirebaseAuth
+import GoogleSignIn
+import Firebase
 
 @main
 struct AppDevApp: App {
@@ -18,6 +20,7 @@ struct AppDevApp: App {
     var body: some Scene {
         WindowGroup {
             if authViewModel.isAuthenticated {
+                InitialView()
                 MainTabView()
                     .environmentObject(authViewModel)
             } else {
@@ -46,5 +49,18 @@ class AuthViewModel: ObservableObject {
         } catch {
             print("Error signing out: \(error.localizedDescription)")
         }
+    }
+}
+
+class Delegate: NSObject, UIApplicationDelegate{
+    func application(_ application: UIApplication, didFinishLaunchingWithOptions launchOptions: [UIApplication.LaunchOptionsKey : Any]? = nil) -> Bool{
+        FirebaseApp.configure()
+        return true
+    }
+    
+    @available(iOS 18.0, *)
+    
+    func application(_ application: UIApplication, open url: URL, options: [UIApplication.OpenURLOptionsKey: Any] = [:]) -> Bool {
+        return GIDSignIn.sharedInstance.handle(url)
     }
 }

@@ -1,5 +1,9 @@
 import SwiftUI
 import FirebaseAuth
+import GoogleSignIn
+import GoogleSignInSwift
+import Firebase
+import FirebaseCore
 
 struct LoginView: View {
     @State private var email = ""
@@ -8,6 +12,9 @@ struct LoginView: View {
     @State private var alertMessage = ""
     @State private var isLoading = false
     @State private var showRegistration = false
+    
+    @State private var isLoggedIn = false
+    @State private var vm = AuthenticationView()
     @EnvironmentObject private var authViewModel: AuthViewModel
     
     var body: some View {
@@ -73,7 +80,10 @@ struct LoginView: View {
                     }
                     .disabled(isLoading || !isFormValid)
                     .padding(.horizontal, 24)
-
+                    
+                    GoogleSignInButton(viewModel: GoogleSignInButtonViewModel(scheme: .light)){
+                        vm.signInWithGoogle()
+                    }
                     // Sign Up Link
                     Button(action: {
                         showRegistration = true
