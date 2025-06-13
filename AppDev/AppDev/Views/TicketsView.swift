@@ -54,88 +54,48 @@ struct Ticket: Identifiable, Codable {
 }
 
 struct TicketsView: View {
+    @AppStorage("userId") var userId: String = ""
     @State private var tickets: [Ticket] = []
-    @State private var isLoading = true
+    @State private var selectedFilter: TicketStatus = .active
+    @State private var isLoading = false
     @State private var errorMessage: String?
-    @State private var selectedFilter: TicketFilter = .active
-    
-    enum TicketFilter {
-        case active
-        case used
-    }
-    
-    var filteredTickets: [Ticket] {
-        switch selectedFilter {
-        case .active:
-            return tickets.filter { $0.status == .active }
-        case .used:
-            return tickets.filter { $0.status == .used }
-        }
-    }
     
     var body: some View {
-        VStack(spacing: 0) {
-            // Header
-            HeaderView()
-                .padding(.horizontal)
-                .padding(.top, 8)
-            
-            // Title and Filter
-            VStack(spacing: 16) {
-                HStack {
-                    Text("My Tickets")
-                        .font(.title).fontWeight(.heavy)
-                    Spacer()
-                }
-                
-                // Filter Picker
+        NavigationStack {
+            VStack {
+                HeaderView()
+                    .padding(.horizontal)
+                    .padding(.bottom, 8)
+
                 Picker("Filter", selection: $selectedFilter) {
-                    Text("Active").tag(TicketFilter.active)
-                    Text("Used").tag(TicketFilter.used)
+                    Text("Active").tag(TicketStatus.active)
+                    Text("Used").tag(TicketStatus.used)
                 }
                 .pickerStyle(SegmentedPickerStyle())
                 .padding(.horizontal)
-            }
-            .padding([.horizontal, .top])
-            
-            if isLoading {
-                ProgressView()
-                    .frame(maxWidth: .infinity, maxHeight: .infinity)
-            } else if let error = errorMessage {
-                VStack {
-                    Text("Error loading tickets")
-                        .font(.headline)
-                    Text(error)
-                        .font(.subheadline)
+                
+                if isLoading {
+                    ProgressView("Loading tickets...")
+                        .padding()
+                } else if let errorMessage = errorMessage {
+                    Text(errorMessage)
                         .foregroundColor(.red)
-                }
-                .frame(maxWidth: .infinity, maxHeight: .infinity)
-            } else if filteredTickets.isEmpty {
-                VStack {
-                    Text("No tickets found")
-                        .font(.headline)
-                    Text(selectedFilter == .active ? "You don't have any active tickets" : "You don't have any used tickets")
-                        .font(.subheadline)
+                        .padding()
+                } else if tickets.filter({ $0.status == selectedFilter }).isEmpty {
+                    Text("No \(selectedFilter.rawValue) tickets found.")
                         .foregroundColor(.gray)
-                }
-                .frame(maxWidth: .infinity, maxHeight: .infinity)
-            } else {
-                // Tickets List
-                ScrollView {
-                    VStack(spacing: 16) {
-                        ForEach(filteredTickets) { ticket in
-                            TicketCard(ticket: ticket)
-                        }
+                        .padding()
+                } else {
+                    List(tickets.filter { $0.status == selectedFilter }) { ticket in
+                        TicketCard(ticket: ticket)
                     }
-                    .padding()
+                    .listStyle(PlainListStyle())
                 }
             }
-        }
-        .onAppear {
-            fetchTickets()
+            .onAppear(perform: fetchTickets)
         }
     }
-    
+
     private func fetchTickets() {
         guard let currentUser = Auth.auth().currentUser else {
             self.tickets = []
