@@ -2,11 +2,14 @@ import FirebaseAuth
 import FirebaseFirestore
 import FirebaseStorage
 import SwiftUI
+import Stripe
+import StripePaymentSheet
 
 struct GetTicketView: View {
     let event: Event
     @Environment(\.dismiss) private var dismiss
     @EnvironmentObject var authViewModel: AuthViewModel
+    @StateObject private var stripeService = StripeService()
     @State private var name: String = ""
     @State private var email: String = ""
     @State private var showAlert = false
@@ -14,7 +17,12 @@ struct GetTicketView: View {
     @State private var isLoading = false
     @State private var navigateToEvent = false
     @State private var chatService: ChatService?
-
+    
+    // Stripe related state variables
+    @State private var paymentSheet: PaymentSheet?
+    @State private var paymentResult: PaymentSheetResult?
+    @State private var isProcessingPayment = false
+    
     var body: some View {
         NavigationStack {
             VStack(spacing: 0) {
@@ -84,7 +92,7 @@ struct GetTicketView: View {
 
                         // Purchase Button
                         Button(action: purchaseTicket) {
-                            if isLoading {
+                            if isLoading || isProcessingPayment {
                                 ProgressView()
                                     .progressViewStyle(CircularProgressViewStyle(tint: .white))
                             } else {
@@ -98,7 +106,7 @@ struct GetTicketView: View {
                         .foregroundColor(.white)
                         .cornerRadius(12)
                         .padding(.horizontal)
-                        .disabled(isLoading)
+                        .disabled(isLoading || isProcessingPayment)
                     }
                     .padding(.bottom)
                 }
@@ -111,6 +119,21 @@ struct GetTicketView: View {
                     }
                 }
             }
+            .sheet(item: $paymentSheet) { sheet in
+                PaymentSheet.PaymentButton(
+                    paymentSheet: sheet,
+                    onCompletion: onPaymentCompletion
+                ) {
+                    Text("Pay €\(String(format: "%.2f", event.price))")
+                        .fontWeight(.semibold)
+                        .frame(maxWidth: .infinity)
+                        .padding()
+                        .background(Color.purple)
+                        .foregroundColor(.white)
+                        .cornerRadius(12)
+                }
+                .padding()
+            }
         }
         .onAppear {
             if let user = authViewModel.currentUser {
@@ -120,6 +143,111 @@ struct GetTicketView: View {
                 print("[GetTicketView] AuthViewModel currentUser is nil onAppear")
             }
             chatService = ChatService(authViewModel: authViewModel)
+        }
+    }
+
+    private func preparePayment() async {
+        isProcessingPayment = true
+        
+        do {
+            let clientSecret = try await stripeService.createPaymentIntent(
+                amount: Int(event.price * 100), // Convert to cents
+                currency: "eur",
+                eventId: event.id ?? "",
+                userId: Auth.auth().currentUser?.uid ?? ""
+            )
+            
+            var configuration = PaymentSheet.Configuration()
+            configuration.merchantDisplayName = "Your App Name"
+            configuration.allowsDelayedPaymentMethods = true
+            
+            paymentSheet = PaymentSheet(paymentIntentClientSecret: clientSecret, configuration: configuration)
+            isProcessingPayment = false
+        } catch {
+            alertMessage = "Failed to prepare payment: \(error.localizedDescription)"
+            showAlert = true
+            isProcessingPayment = false
+        }
+    }
+    
+    private func onPaymentCompletion(result: PaymentSheetResult) {
+        switch result {
+        case .completed:
+            // Payment successful, proceed with ticket creation
+            createTicket()
+        case .failed(let error):
+            alertMessage = "Payment failed: \(error.localizedDescription)"
+            showAlert = true
+        case .canceled:
+            alertMessage = "Payment was canceled"
+            showAlert = true
+        }
+    }
+    
+    private func createTicket() {
+        let db = Firestore.firestore()
+        let eventId = event.id ?? ""
+        let ticketRef = db.collection("tickets").document()
+        let ticketData: [String: Any] = [
+            "eventId": eventId,
+            "eventName": event.title,
+            "date": event.date,
+            "location": event.location,
+            "userId": Auth.auth().currentUser?.uid ?? "",
+            "name": name,
+            "email": email,
+            "price": String(format: "%.2f", event.price),
+            "qrcodeUrl": "",
+        ]
+        
+        ticketRef.setData(ticketData) { error in
+            if let error = error {
+                self.alertMessage = "Failed to create ticket: \(error.localizedDescription)"
+                self.showAlert = true
+                return
+            }
+            
+            // Use API QR code link instead of generating/uploading image
+            let qrCodeUrl = "https://api.qrserver.com/v1/create-qr-code/?data=\(ticketRef.documentID)"
+            ticketRef.updateData(["qrcodeUrl": qrCodeUrl]) { error in
+                if let error = error {
+                    self.alertMessage = "Failed to update ticket with QR code: \(error.localizedDescription)"
+                    self.showAlert = true
+                    return
+                }
+                
+                // Update event attendees count and user's joined events
+                Task {
+                    do {
+                        try await self.stripeService.handleSuccessfulPayment(
+                            eventId: eventId,
+                            userId: Auth.auth().currentUser?.uid ?? ""
+                        )
+                        
+                        // Create chat for the event
+                        let ticket = Ticket(
+                            id: ticketRef.documentID,
+                            eventId: eventId,
+                            eventName: event.title,
+                            date: event.date,
+                            location: event.location,
+                            name: name,
+                            email: email,
+                            price: String(format: "%.2f", event.price),
+                            qrcodeUrl: qrCodeUrl,
+                            userId: Auth.auth().currentUser?.uid ?? ""
+                        )
+                        try await chatService?.createChatForTicket(ticket: ticket)
+                        
+                        self.alertMessage = "Ticket purchased successfully!"
+                        self.showAlert = true
+                        self.navigateToEvent = true
+                    } catch {
+                        self.alertMessage = "Error updating event data: \(error.localizedDescription)"
+                        self.showAlert = true
+                    }
+                }
+            }
         }
     }
 
@@ -138,83 +266,9 @@ struct GetTicketView: View {
             return
         }
         
-        isLoading = true
-        
-        let db = Firestore.firestore()
-        let eventId = event.id ?? ""
-        let ticketRef = db.collection("tickets").document()
-        let ticketData: [String: Any] = [
-            "eventId": eventId,
-            "eventName": event.title,
-            "date": event.date,
-            "location": event.location,
-            "userId": Auth.auth().currentUser?.uid ?? "",
-            "name": name,
-            "email": email,
-            "price": String(format: "%.2f", event.price),
-            "qrcodeUrl": "",
-        ]
-        ticketRef.setData(ticketData) { error in
-            if let error = error {
-                isLoading = false
-                alertMessage = "Failed to purchase ticket: \(error.localizedDescription)"
-                showAlert = true
-                return
-            }
-            // Use API QR code link instead of generating/uploading image
-            let qrCodeUrl = "https://api.qrserver.com/v1/create-qr-code/?data=\(ticketRef.documentID)"
-            ticketRef.updateData(["qrcodeUrl": qrCodeUrl]) { error in
-                if let error = error {
-                    isLoading = false
-                    alertMessage = "Failed to update ticket with QR code: \(error.localizedDescription)"
-                    showAlert = true
-                    return
-                }
-                // Update event attendees count
-                let eventRef = db.collection("events").document(eventId)
-                eventRef.updateData([
-                    "attendees": FieldValue.increment(Int64(1))
-                ]) { error in
-                    if let error = error {
-                        print("Error updating attendees count: \(error.localizedDescription)")
-                    }
-                }
-                // Update user's joined events
-                if let userId = Auth.auth().currentUser?.uid {
-                    let userRef = db.collection("users").document(userId)
-                    userRef.updateData([
-                        "joinedEventIds": FieldValue.arrayUnion([eventId])
-                    ]) { error in
-                        if let error = error {
-                            print("Error updating user's joined events: \(error.localizedDescription)")
-                        }
-                    }
-                }
-                // Create chat for the event
-                Task {
-                    do {
-                        let ticket = Ticket(
-                            id: ticketRef.documentID,
-                            eventId: eventId,
-                            eventName: event.title,
-                            date: event.date,
-                            location: event.location,
-                            name: name,
-                            email: email,
-                            price: String(format: "%.2f", event.price),
-                            qrcodeUrl: qrCodeUrl,
-                            userId: Auth.auth().currentUser?.uid ?? ""
-                        )
-                        try await chatService?.createChatForTicket(ticket: ticket)
-                    } catch {
-                        print("Error creating chat: \(error.localizedDescription)")
-                    }
-                }
-                isLoading = false
-                alertMessage = "Ticket purchased successfully!"
-                showAlert = true
-                navigateToEvent = true
-            }
+        // Start payment process
+        Task {
+            await preparePayment()
         }
     }
 
