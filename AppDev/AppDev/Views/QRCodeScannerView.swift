@@ -112,10 +112,13 @@ struct QRCodeScannerView: View {
                 return
             }
 
-            if let used = ticketData["used"] as? Bool, used {
-                self.scanResult = "Ticket already used."
-                self.resumeScanningAfterDelay()
-                return
+            // Check ticket status
+            if let status = ticketData["status"] as? String {
+                if status == "used" {
+                    self.scanResult = "Ticket already used."
+                    self.resumeScanningAfterDelay()
+                    return
+                }
             }
 
             guard let eventId = ticketData["eventId"] as? String else {
@@ -155,7 +158,10 @@ struct QRCodeScannerView: View {
                 }
 
                 // Mark ticket as used and increment event attendees
-                ticketRef.updateData(["used": true]) { ticketUpdateErr in
+                ticketRef.updateData([
+                    "status": "used",
+                    "usedAt": Timestamp(date: Date())
+                ]) { ticketUpdateErr in
                     if let ticketUpdateErr = ticketUpdateErr {
                         self.scanResult = "Error updating ticket status: \(ticketUpdateErr.localizedDescription)"
                         self.resumeScanningAfterDelay()

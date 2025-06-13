@@ -21,6 +21,12 @@ struct Ticket: Identifiable, Codable {
     let price: String
     let qrcodeUrl: String
     let userId: String
+    var status: TicketStatus
+    
+    enum TicketStatus: String, Codable {
+        case active
+        case used
+    }
     
     enum CodingKeys: String, CodingKey {
         case id
@@ -33,6 +39,7 @@ struct Ticket: Identifiable, Codable {
         case price
         case qrcodeUrl
         case userId
+        case status
     }
 }
 
@@ -40,6 +47,21 @@ struct TicketsView: View {
     @State private var tickets: [Ticket] = []
     @State private var isLoading = true
     @State private var errorMessage: String?
+    @State private var selectedFilter: TicketFilter = .active
+    
+    enum TicketFilter {
+        case active
+        case used
+    }
+    
+    var filteredTickets: [Ticket] {
+        switch selectedFilter {
+        case .active:
+            return tickets.filter { $0.status == .active }
+        case .used:
+            return tickets.filter { $0.status == .used }
+        }
+    }
     
     var body: some View {
         VStack(spacing: 0) {
@@ -48,11 +70,21 @@ struct TicketsView: View {
                 .padding(.horizontal)
                 .padding(.top, 8)
             
-            // Title
-            HStack {
-                Text("My Tickets")
-                    .font(.title).fontWeight(.heavy)
-                Spacer()
+            // Title and Filter
+            VStack(spacing: 16) {
+                HStack {
+                    Text("My Tickets")
+                        .font(.title).fontWeight(.heavy)
+                    Spacer()
+                }
+                
+                // Filter Picker
+                Picker("Filter", selection: $selectedFilter) {
+                    Text("Active").tag(TicketFilter.active)
+                    Text("Used").tag(TicketFilter.used)
+                }
+                .pickerStyle(SegmentedPickerStyle())
+                .padding(.horizontal)
             }
             .padding([.horizontal, .top])
             
@@ -68,11 +100,11 @@ struct TicketsView: View {
                         .foregroundColor(.red)
                 }
                 .frame(maxWidth: .infinity, maxHeight: .infinity)
-            } else if tickets.isEmpty {
+            } else if filteredTickets.isEmpty {
                 VStack {
                     Text("No tickets found")
                         .font(.headline)
-                    Text("Your purchased tickets will appear here")
+                    Text(selectedFilter == .active ? "You don't have any active tickets" : "You don't have any used tickets")
                         .font(.subheadline)
                         .foregroundColor(.gray)
                 }
@@ -81,7 +113,7 @@ struct TicketsView: View {
                 // Tickets List
                 ScrollView {
                     VStack(spacing: 16) {
-                        ForEach(tickets) { ticket in
+                        ForEach(filteredTickets) { ticket in
                             TicketCard(ticket: ticket)
                         }
                     }
@@ -120,6 +152,10 @@ struct TicketsView: View {
                 tickets = documents.compactMap { doc in
                     var data = doc.data()
                     data["id"] = doc.documentID
+                    // Set default status if not present
+                    if data["status"] == nil {
+                        data["status"] = Ticket.TicketStatus.active.rawValue
+                    }
                     return try? Firestore.Decoder().decode(Ticket.self, from: data)
                 }
             }
@@ -132,9 +168,24 @@ struct TicketCard: View {
 
     var body: some View {
         VStack(alignment: .leading, spacing: 12) {
-            Text(ticket.eventName)
-                .font(.headline)
-                .fontWeight(.semibold)
+            HStack {
+                Text(ticket.eventName)
+                    .font(.headline)
+                    .fontWeight(.semibold)
+                Spacer()
+                // Status Badge
+                Text(ticket.status.rawValue.capitalized)
+                    .font(.caption)
+                    .padding(.horizontal, 8)
+                    .padding(.vertical, 4)
+                    .background(
+                        ticket.status == .active ? Color.green.opacity(0.2) : Color.red.opacity(0.2)
+                    )
+                    .foregroundColor(
+                        ticket.status == .active ? .green : .red
+                    )
+                    .cornerRadius(8)
+            }
             HStack(spacing: 12) {
                 Label(ticket.date, systemImage: "calendar")
                     .font(.subheadline)
