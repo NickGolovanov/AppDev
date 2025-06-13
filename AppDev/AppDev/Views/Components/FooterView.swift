@@ -14,7 +14,7 @@ struct FooterView: View {
 		HStack {
 			Spacer()
 			VStack {
-				Image(systemName: "house")
+				Image(systemName: "house.fill")
 					.foregroundColor(selectedTab == "Home" ? .purple : .gray)
 				Text("Home").font(.caption)
 					.foregroundColor(selectedTab == "Home" ? .purple : .gray)
@@ -26,7 +26,7 @@ struct FooterView: View {
 			}
 			Spacer()
 			VStack {
-				Image(systemName: "ticket")
+				Image(systemName: "ticket.fill")
 					.foregroundColor(selectedTab == "Tickets" ? .purple : .gray)
 				Text("Tickets").font(.caption)
 					.foregroundColor(selectedTab == "Tickets" ? .purple : .gray)
@@ -38,19 +38,19 @@ struct FooterView: View {
 			}
 			Spacer()
 			VStack {
-				Image(systemName: "calendar")
-					.foregroundColor(selectedTab == "Events" ? .purple : .gray)
-				Text("Events").font(.caption)
-					.foregroundColor(selectedTab == "Events" ? .purple : .gray)
+				Image(systemName: "map.fill")
+					.foregroundColor(selectedTab == "Map" ? .purple : .gray)
+				Text("Map").font(.caption)
+					.foregroundColor(selectedTab == "Map" ? .purple : .gray)
 			}
 			.onTapGesture {
 				withAnimation {
-					selectedTab = "Events"
+					selectedTab = "Map"
 				}
 			}
 			Spacer()
 			VStack {
-				Image(systemName: "bubble.left.and.bubble.right")
+				Image(systemName: "bubble.left.and.bubble.right.fill")
 					.foregroundColor(selectedTab == "Chat" ? .purple : .gray)
 				Text("Chat").font(.caption)
 					.foregroundColor(selectedTab == "Chat" ? .purple : .gray)
@@ -61,21 +61,13 @@ struct FooterView: View {
 				}
 			}
 			Spacer()
-			VStack {
-				Image(systemName: "person.crop.circle")
-					.foregroundColor(selectedTab == "Profile" ? .purple : .gray)
-				Text("Profile").font(.caption)
-					.foregroundColor(selectedTab == "Profile" ? .purple : .gray)
-			}
-			.onTapGesture {
-				withAnimation {
-					selectedTab = "Profile"
-				}
-			}
-			Spacer()
 		}
 		.padding(.vertical, 8)
 		.background(Color.white)
 		.shadow(color: Color.black.opacity(0.1), radius: 2, x: 0, y: -1)
 	}
+}
+
+#Preview {
+	FooterView(selectedTab: .constant("Home"))
 }
