@@ -42,7 +42,7 @@ struct StyledDatePicker: View {
         DatePicker(
             "",
             selection: Binding(
-                get: { tempDate },
+                get: { selection ?? tempDate },
                 set: {
                     tempDate = $0
                     selection = $0

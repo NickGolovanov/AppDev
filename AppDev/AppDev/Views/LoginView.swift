@@ -1,6 +1,16 @@
+import FirebaseAuth
 import SwiftUI
 
 struct LoginView: View {
+    @State private var email = ""
+    @State private var password = ""
+    @State private var showAlert = false
+    @State private var alertMessage = ""
+    @State private var isLoading = false
+    @State private var showRegistration = false
+    @EnvironmentObject private var authViewModel: AuthViewModel
+    @AppStorage("userId") var userId: String = ""
+
     var body: some View {
         VStack(spacing: 0) {
             Spacer().frame(height: 32)
@@ -28,33 +38,60 @@ struct LoginView: View {
                     .shadow(radius: 4)
                     .padding(.bottom, 24)
 
-                VStack(spacing: 12) {
+                VStack(spacing: 16) {
+                    // Email Field
+                    TextField("Email", text: $email)
+                        .textFieldStyle(RoundedBorderTextFieldStyle())
+                        .textContentType(.emailAddress)
+                        .keyboardType(.emailAddress)
+                        .autocapitalization(.none)
+                        .padding(.horizontal, 24)
+
+                    // Password Field
+                    SecureField("Password", text: $password)
+                        .textFieldStyle(RoundedBorderTextFieldStyle())
+                        .textContentType(.password)
+                        .padding(.horizontal, 24)
+
                     // Login Button
-                    Button(action: {
-                        // Handle login action
-                    }) {
+                    Button(action: loginUser) {
                         HStack {
-                            Image(systemName: "square.grid.2x2.fill")
-                                .font(.system(size: 20))
-                            Text("Log in with Student Account")
-                                .font(.system(size: 18, weight: .semibold))
+                            if isLoading {
+                                ProgressView()
+                                    .progressViewStyle(CircularProgressViewStyle(tint: .white))
+                            } else {
+                                Image(systemName: "square.grid.2x2.fill")
+                                    .font(.system(size: 20))
+                                Text("Log in")
+                                    .font(.system(size: 18, weight: .semibold))
+                            }
                         }
-                        .foregroundColor(.black)
+                        .foregroundColor(.white)
                         .frame(maxWidth: .infinity)
                         .padding()
-                        .background(Color(white: 0.85))
+                        .background(isFormValid ? Color.blue : Color.gray)
                         .cornerRadius(10)
                     }
+                    .disabled(isLoading || !isFormValid)
                     .padding(.horizontal, 24)
 
-                    Text("Use your university Microsoft email to continue")
+                    // Sign Up Link
+                    Button(action: {
+                        showRegistration = true
+                    }) {
+                        Text("Don't have an account? Sign Up")
+                            .font(.system(size: 14))
+                            .foregroundColor(.blue)
+                    }
+                    .padding(.top, 8)
+
+                    Text("Use your university email to continue")
                         .font(.system(size: 14))
                         .foregroundColor(.gray)
                         .padding(.top, 8)
                         .padding(.horizontal, 24)
                 }
             }
-
             .frame(maxWidth: .infinity)
             Spacer(minLength: 32)
 
@@ -79,9 +116,43 @@ struct LoginView: View {
         }
         .background(Color(red: 0.97, green: 0.97, blue: 1.0))
         .edgesIgnoringSafeArea(.all)
+        .alert(isPresented: $showAlert) {
+            Alert(
+                title: Text("Login"), message: Text(alertMessage),
+                dismissButton: .default(Text("OK")))
+        }
+        .sheet(isPresented: $showRegistration) {
+            RegistrationView()
+                .environmentObject(authViewModel)
+        }
+    }
+
+    private var isFormValid: Bool {
+        !email.isEmpty && !password.isEmpty
+    }
+
+    private func loginUser() {
+        guard isFormValid else { return }
+
+        isLoading = true
+
+        Auth.auth().signIn(withEmail: email, password: password) { authResult, error in
+            isLoading = false
+
+            if let error = error {
+                alertMessage = "Login failed: \(error.localizedDescription)"
+                showAlert = true
+                return
+            }
+
+            if let authResult = authResult {
+                self.userId = authResult.user.uid
+            }
+        }
     }
 }
 
 #Preview {
     LoginView()
+        .environmentObject(AuthViewModel())
 }
