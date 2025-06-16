@@ -61,7 +61,6 @@ struct CreateEventView: View {
         NavigationStack {
             ScrollView {
                 VStack(alignment: .leading, spacing: 20) {
-                    headerSection
                     imagePickerSection
                     eventFormSection
                     createButtonSection
@@ -91,10 +90,6 @@ struct CreateEventView: View {
 
 // MARK: - View Sections
 extension CreateEventView {
-    var headerSection: some View {
-        HeaderView()
-    }
-
     var imagePickerSection: some View {
         Button(action: {
             showImagePicker = true
