@@ -28,7 +28,7 @@ struct ProfileView: View {
             VStack(spacing: 0) {
                 // Fixed top section
                 VStack(spacing: 16) {
-                    HeaderView()
+                    HeaderView(showProfileLink: false)
                     profileInfoSection
                     editAndScanButtons
                     statsSection
