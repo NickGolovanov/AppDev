@@ -9,6 +9,7 @@ struct EventView: View {
     @State private var showGetTicket = false
     @EnvironmentObject var authViewModel: AuthViewModel
     @State private var hasJoinedEvent: Bool = false
+    @Environment(\.dismiss) private var dismiss
 
     var body: some View {
         VStack(spacing: 0) {
@@ -54,20 +55,6 @@ struct EventView: View {
                                     )
                                     .frame(height: 240)
                             }
-                            
-                            // Back and Favorite buttons
-                            HStack {
-                                Button(action: {}) {
-                                    Image(systemName: "chevron.left")
-                                        .foregroundColor(.white)
-                                        .padding(12)
-                                        .background(Color.black.opacity(0.3))
-                                        .clipShape(Circle())
-                                }
-                                Spacer()
-                            }
-                            .padding(.horizontal, 16)
-                            .padding(.top, 16)
                         }
 
                         // Event Card
@@ -201,6 +188,7 @@ struct EventView: View {
             }
         }
         .onAppear(perform: fetchEvent)
+        .navigationBarHidden(true)
     }
 
     func fetchEvent() {
