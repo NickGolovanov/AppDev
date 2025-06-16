@@ -94,23 +94,40 @@ struct GetTicketView: View {
                         .cornerRadius(12)
                         .shadow(color: Color.black.opacity(0.1), radius: 5, x: 0, y: 2)
 
-                        // Purchase Button
-                        Button(action: purchaseTicket) {
-                            if isLoading || isProcessingPayment {
-                                ProgressView()
-                                    .progressViewStyle(CircularProgressViewStyle(tint: .white))
-                            } else {
-                                Text("Get Ticket")
+                        // Conditionally show payment button
+                        if let wrapper = identifiablePaymentSheet {
+                            PaymentSheet.PaymentButton(
+                                paymentSheet: wrapper.paymentSheet,
+                                onCompletion: onPaymentCompletion
+                            ) {
+                                Text("Pay €\(String(format: "%.2f", event.price))")
                                     .fontWeight(.semibold)
+                                    .frame(maxWidth: .infinity)
+                                    .padding()
+                                    .background(Color.purple)
+                                    .foregroundColor(.white)
+                                    .cornerRadius(12)
                             }
+                            .padding(.horizontal)
+                        } else {
+                            // Purchase Button
+                            Button(action: purchaseTicket) {
+                                if isLoading || isProcessingPayment {
+                                    ProgressView()
+                                        .progressViewStyle(CircularProgressViewStyle(tint: .white))
+                                } else {
+                                    Text("Get Ticket")
+                                        .fontWeight(.semibold)
+                                }
+                            }
+                            .frame(maxWidth: .infinity)
+                            .padding()
+                            .background(Color.purple)
+                            .foregroundColor(.white)
+                            .cornerRadius(12)
+                            .padding(.horizontal)
+                            .disabled(isLoading || isProcessingPayment)
                         }
-                        .frame(maxWidth: .infinity)
-                        .padding()
-                        .background(Color.purple)
-                        .foregroundColor(.white)
-                        .cornerRadius(12)
-                        .padding(.horizontal)
-                        .disabled(isLoading || isProcessingPayment)
                     }
                     .padding(.bottom)
                 }
@@ -121,23 +138,6 @@ struct GetTicketView: View {
                     if navigateToEvent {
                         dismiss()
                     }
-                }
-            }
-            .sheet(item: $identifiablePaymentSheet) { wrapper in
-                VStack {
-                    PaymentSheet.PaymentButton(
-                        paymentSheet: wrapper.paymentSheet,
-                        onCompletion: onPaymentCompletion
-                    ) {
-                        Text("Pay €\(String(format: "%.2f", event.price))")
-                            .fontWeight(.semibold)
-                            .frame(maxWidth: .infinity)
-                            .padding()
-                            .background(Color.purple)
-                            .foregroundColor(.white)
-                            .cornerRadius(12)
-                    }
-                    .padding()
                 }
             }
         }
