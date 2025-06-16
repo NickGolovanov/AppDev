@@ -173,6 +173,34 @@ class ChatService: ObservableObject {
                 .setData(chatData)
         }
     }
+    
+    func createOrganizerChat(eventId: String, eventName: String, organizerId: String) async throws {
+        let chatRef = db.collection("chats").document()
+        let chatId = chatRef.documentID
+        
+        let chatData: [String: Any] = [
+            "eventId": eventId,
+            "eventName": eventName,
+            "organizerId": organizerId,
+            "isAdminChat": true,
+            "createdAt": Timestamp(date: Date())
+        ]
+        
+        try await chatRef.setData(chatData)
+        print("Organizer chat created successfully for event: \(eventName) with ID: \(chatId)")
+        
+        // Add an initial message to the chat
+        let messageRef = chatRef.collection("messages").document()
+        let messageData: [String: Any] = [
+            "senderId": organizerId,
+            "senderName": "System", // Or fetch organizer's name
+            "text": "Welcome to the \(eventName) organizer chat!",
+            "timestamp": Timestamp(date: Date())
+        ]
+        
+        try await messageRef.setData(messageData)
+        print("Initial message added to organizer chat.")
+    }
 }
 
 // Helper extension for Firestore encoding
