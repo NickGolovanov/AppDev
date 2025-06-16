@@ -28,12 +28,12 @@ struct GetTicketView: View {
     @State private var isProcessingPayment = false
     
     var body: some View {
-        VStack(spacing: 0) {
+        VStack {
             // Header
             HeaderView(title: "Get Ticket", showBackButton: true)
                 .padding()
                 .background(Color.white)
-
+            
             ScrollView {
                 VStack(spacing: 24) {
                     // Event Image (REMOVED)
