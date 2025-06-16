@@ -18,11 +18,6 @@ struct GetTicketView: View {
     var body: some View {
         NavigationStack {
             VStack(spacing: 0) {
-                // Header
-                HeaderView(title: "Get Ticket", showBackButton: true)
-                    .padding()
-                    .background(Color.white)
-
                 ScrollView {
                     VStack(spacing: 24) {
                         // Event Image (REMOVED)
@@ -47,13 +42,13 @@ struct GetTicketView: View {
 
                             HStack {
                                 Image(systemName: "calendar")
-                                Text(event.date)
+                                Text(event.formattedDate)
                             }
                             .foregroundColor(.gray)
 
                             HStack {
                                 Image(systemName: "clock")
-                                Text("\(event.startTime) - \(event.endTime)")
+                                Text("\(event.formattedTime) - \(event.formattedEndTime)")
                             }
                             .foregroundColor(.gray)
 
@@ -103,6 +98,8 @@ struct GetTicketView: View {
                     .padding(.bottom)
                 }
             }
+            .navigationTitle("Get Ticket")
+            .navigationBarTitleDisplayMode(.inline)
             .background(Color(.systemGray6))
             .alert(alertMessage, isPresented: $showAlert) {
                 Button("OK") {
@@ -248,7 +245,9 @@ struct GetTicketView: View {
         category: "Party",
         price: 15.0,
         maxCapacity: 100,
-        description: "Join us for an amazing beach party!"
+        description: "Join us for an amazing beach party!",
+        latitude: 52.3702,
+        longitude: 4.8952
     ))
     .environmentObject(AuthViewModel())
 }

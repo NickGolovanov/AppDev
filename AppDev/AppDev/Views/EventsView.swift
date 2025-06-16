@@ -165,11 +165,12 @@ struct EventsView: View {
                 else {
                     return nil
                 }
-                let coordinate: CLLocationCoordinate2D? = CLLocationCoordinate2D(latitude: 52.3676, longitude: 4.9041)
+                let latitude = data["latitude"] as? Double
+                let longitude = data["longitude"] as? Double
                 let distance: String? = "-"
                 let category = data["category"] as? String ?? "Other"
                 let price = data["price"] as? Double ?? 0.0
-                return Event(id: id, title: title, date: date, endTime: endTime, startTime: startTime, location: location, imageUrl: imageUrl, attendees: attendees, category: category, price: price, maxCapacity: maxCapacity, description: description, coordinate: coordinate, distance: distance)
+                return Event(id: id, title: title, date: date, endTime: endTime, startTime: startTime, location: location, imageUrl: imageUrl, attendees: attendees, category: category, price: price, maxCapacity: maxCapacity, description: description, latitude: latitude, longitude: longitude, distance: distance)
             }
             filterEvents()
         }

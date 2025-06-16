@@ -25,38 +25,83 @@ struct ProfileView: View {
 
     var body: some View {
         NavigationStack {
-            ScrollView {
+            VStack(spacing: 0) {
+                // Fixed top section
                 VStack(spacing: 16) {
-                    HeaderView()
+                    HeaderView(showProfileLink: false)
                     profileInfoSection
                     editAndScanButtons
                     statsSection
-                    recentEventsSection
+                }
+                .padding()
+                .background(Color.white)
 
+                // Scrollable events section with fixed frame
+                VStack(alignment: .leading, spacing: 12) {
+                    Text("Recent Events")
+                        .font(.headline)
+                        .padding(.horizontal)
+                        .padding(.top, 8)
+
+                    ScrollView {
+                        VStack(spacing: 12) {
+                            ForEach(joinedEvents) { event in
+                                NavigationLink(destination: EventView(eventId: event.id ?? "-1")) {
+                                    eventCard(
+                                        event: event, badge: "Joined", badgeColor: Color.green.opacity(0.2))
+                                }
+                            }
+
+                            ForEach(organizedEvents) { event in
+                                NavigationLink(destination: EventView(eventId: event.id ?? "-1")) {
+                                    eventCard(
+                                        event: event, badge: "Organized", badgeColor: Color.blue.opacity(0.2))
+                                }
+                            }
+
+                            if joinedEvents.isEmpty && organizedEvents.isEmpty {
+                                Text("No recent events.")
+                                    .foregroundColor(.gray)
+                                    .frame(maxWidth: .infinity, alignment: .center)
+                                    .padding()
+                            }
+                        }
+                        .padding(.horizontal)
+                    }
+                    .frame(maxHeight: UIScreen.main.bounds.height * 0.4) // Fixed height for scrollable area
+                }
+                .background(Color(.systemGray6))
+
+                Spacer()
+
+                // Fixed bottom section with logout button
+                VStack {
                     Button(action: logout) {
                         Text("Logout")
                             .fontWeight(.medium)
                             .foregroundColor(.red)
-                            .padding(.vertical, 8)
-                            .padding(.horizontal, 20)
+                            .padding(.vertical, 12)
+                            .padding(.horizontal, 24)
+                            .frame(maxWidth: .infinity)
                             .overlay(
                                 RoundedRectangle(cornerRadius: 10)
                                     .stroke(Color.red, lineWidth: 1.5)
                             )
                     }
-                    .padding(.top, 20)
-
+                    .padding(.horizontal)
+                    .padding(.bottom, 32) // Extra padding to stay above footer
                 }
-                .padding()
-                .navigationDestination(isPresented: $showEditProfile) {
-                    EditProfileView()
-                }
-                .navigationDestination(isPresented: $showOrganizedEventsForScan) {
-                    OrganizedEventsForScanView()
-                }
-                .navigationDestination(isPresented: $showAllEvents) {
-                    AllEventsView()
-                }
+                .background(Color.white)
+            }
+            .navigationDestination(isPresented: $showEditProfile) {
+                EditProfileView()
+                    .onDisappear {
+                        // Refresh profile data when returning from edit view
+                        fetchRecentEvents()
+                    }
+            }
+            .navigationDestination(isPresented: $showOrganizedEventsForScan) {
+                OrganizedEventsForScanView()
             }
         }
         .onAppear(perform: fetchRecentEvents)
@@ -89,12 +134,6 @@ struct ProfileView: View {
                         .overlay(Circle().stroke(Color.white, lineWidth: 2))
                         .shadow(radius: 5)
                 }
-
-                Circle()
-                    .fill(Color(hex: "#7131C5"))
-                    .frame(width: 28, height: 28)
-                    .overlay(Image(systemName: "camera.fill").foregroundColor(.white))
-                    .offset(x: 5, y: 5)
             }
 
             Text(userName)
@@ -151,7 +190,6 @@ struct ProfileView: View {
         HStack(spacing: 16) {
             statBox(title: "\(joinedEvents.count)", subtitle: "Events Joined")
             statBox(title: "\(organizedEvents.count)", subtitle: "Organized")
-            statBox(title: "156", subtitle: "Connections")
         }
     }
 
@@ -169,42 +207,6 @@ struct ProfileView: View {
         .padding()
         .background(Color(.systemGray6))
         .cornerRadius(12)
-    }
-
-    var recentEventsSection: some View {
-        VStack(alignment: .leading, spacing: 12) {
-            HStack {
-                Text("Recent Events")
-                    .font(.headline)
-                Spacer()
-                Button(action: { showAllEvents = true }) {
-                    Text("See All")
-                        .font(.subheadline)
-                        .foregroundColor(Color(hex: "#7131C5"))
-                }
-            }
-
-            VStack(spacing: 12) {
-                ForEach(joinedEvents) { event in
-                    NavigationLink(destination: EventView(eventId: event.id ?? "-1")) {
-                        eventCard(
-                            event: event, badge: "Joined", badgeColor: Color.green.opacity(0.2))
-                    }
-                }
-
-                ForEach(organizedEvents) { event in
-                    NavigationLink(destination: EventView(eventId: event.id ?? "-1")) {
-                        eventCard(
-                            event: event, badge: "Organized", badgeColor: Color.blue.opacity(0.2))
-                    }
-                }
-
-                if joinedEvents.isEmpty && organizedEvents.isEmpty {
-                    Text("No recent events.")
-                        .foregroundColor(.gray)
-                }
-            }
-        }
     }
 
     func eventCard(event: Event, badge: String, badgeColor: Color) -> some View {

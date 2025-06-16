@@ -9,46 +9,41 @@ import SwiftUI
 
 struct HeaderView: View {
     var title: String?
-    var showBackButton: Bool = false
+    var showProfileLink: Bool = true
     
+    @State private var isProfileViewActive: Bool = false
+
     var body: some View {
         HStack {
-            if showBackButton {
-                Button(action: {
-                    // Navigation back action will be handled by the parent view
-                }) {
-                    Image(systemName: "chevron.left")
-                        .foregroundColor(.primary)
-                }
-            }
-            
             if let title = title {
                 Text(title)
                     .font(.headline)
-                    .padding(.leading, showBackButton ? 8 : 0)
             } else {
                 Text("PartyPal")
                     .font(.title2)
                     .fontWeight(.bold)
             }
-
+            
             Spacer()
             
-            if title == nil {
-                ZStack(alignment: .topTrailing) {
-                    Image(systemName: "bell")
-                        .font(.title2)
-                    
-                    Circle()
-                        .fill(Color.red)
-                        .frame(width: 10, height: 10)
-                        .offset(x: 6, y: -6)
-                }
-                NavigationLink(destination: ProfileView()) {
+            if title == nil && showProfileLink {
+                Button(action: {
+                    if !isProfileViewActive {
+                        isProfileViewActive = true
+                    }
+                }) {
                     Image(systemName: "person.crop.circle.fill")
                         .font(.largeTitle)
                         .padding(.leading, 10)
                 }
+                .background(
+                    NavigationLink(
+                        destination: ProfileView(),
+                        isActive: $isProfileViewActive
+                    ) {
+                        EmptyView()
+                    }
+                )
             }
         }
         .padding(2)
@@ -58,6 +53,7 @@ struct HeaderView: View {
 #Preview {
     VStack {
         HeaderView()
-        HeaderView(title: "Chat", showBackButton: true)
+        HeaderView(title: "Chat")
+        HeaderView(title: "Get Ticket", showProfileLink: false)
     }
 }
