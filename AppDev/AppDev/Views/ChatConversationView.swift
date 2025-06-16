@@ -26,7 +26,7 @@ struct ChatConversationView: View {
     var body: some View {
         VStack(spacing: 0) {
             // Header
-            HeaderView(title: chatTitle, showBackButton: true)
+            HeaderView(title: chatTitle)
                 .padding()
                 .background(Color.white)
             
