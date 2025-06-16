@@ -7,6 +7,8 @@ struct EventView: View {
     @State private var isLoading = false
     @State private var errorMessage: String? = nil
     @State private var showGetTicket = false
+    @EnvironmentObject var authViewModel: AuthViewModel
+    @State private var hasJoinedEvent: Bool = false
 
     var body: some View {
         VStack(spacing: 0) {
@@ -152,29 +154,40 @@ struct EventView: View {
                             .cornerRadius(12)
 
                             // Get Ticket Button
-                            let getTicketDestination = getTicketDestination
-                            NavigationLink(destination: getTicketDestination, isActive: $showGetTicket) {
-                                EmptyView()
-                            }
-                            Button(action: {
-                                showGetTicket = true
-                            }) {
-                                Text("Get Ticket Now")
+                            if hasJoinedEvent {
+                                Text("You've already joined")
                                     .font(.headline)
                                     .foregroundColor(.white)
                                     .frame(maxWidth: .infinity)
                                     .padding()
-                                    .background(
-                                        LinearGradient(
-                                            gradient: Gradient(colors: [Color.purple, Color.blue]),
-                                            startPoint: .leading,
-                                            endPoint: .trailing
-                                        )
-                                    )
+                                    .background(Color.gray)
                                     .cornerRadius(12)
+                                    .padding(.top, 8)
+                            } else {
+                                let getTicketDestination = getTicketDestination
+                                NavigationLink(destination: getTicketDestination, isActive: $showGetTicket) {
+                                    EmptyView()
+                                }
+                                Button(action: {
+                                    showGetTicket = true
+                                }) {
+                                    Text("Get Ticket Now")
+                                        .font(.headline)
+                                        .foregroundColor(.white)
+                                        .frame(maxWidth: .infinity)
+                                        .padding()
+                                        .background(
+                                            LinearGradient(
+                                                gradient: Gradient(colors: [Color.purple, Color.blue]),
+                                                startPoint: .leading,
+                                                endPoint: .trailing
+                                            )
+                                        )
+                                        .cornerRadius(12)
+                                }
+                                .padding(.top, 8)
+                                .shadow(color: Color.purple.opacity(0.3), radius: 8, x: 0, y: 4)
                             }
-                            .padding(.top, 8)
-                            .shadow(color: Color.purple.opacity(0.3), radius: 8, x: 0, y: 4)
                         }
                         .padding(20)
                         .background(Color.white)
@@ -205,8 +218,25 @@ struct EventView: View {
                 return
             }
             self.event = try? document.data(as: Event.self)
-            if self.event == nil {
+            if self.event != nil {
+                checkIfUserJoinedEvent()
+            } else {
                 errorMessage = "Failed to decode event."
+            }
+        }
+    }
+
+    func checkIfUserJoinedEvent() {
+        guard let userId = authViewModel.currentUser?.id else { return }
+
+        let db = Firestore.firestore()
+        db.collection("users").document(userId).getDocument { document, _ in
+            if let document = document, document.exists {
+                if let joinedEventIds = document.data()?["joinedEventIds"] as? [String] {
+                    DispatchQueue.main.async {
+                        self.hasJoinedEvent = joinedEventIds.contains(self.eventId)
+                    }
+                }
             }
         }
     }
@@ -222,4 +252,5 @@ struct EventView: View {
 
 #Preview {
     EventView(eventId: "someEventId")
+        .environmentObject(AuthViewModel())
 }
