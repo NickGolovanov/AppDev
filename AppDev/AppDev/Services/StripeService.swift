@@ -14,7 +14,7 @@ class StripeService: ObservableObject {
         // The Stripe secret key should NEVER be exposed in the app.
         
         // TODO: Replace with your backend URL. We will set this up next.
-        guard let url = URL(string: "https://your-cloud-function-url/createPaymentIntent") else {
+        guard let url = URL(string: "http://127.0.0.1:5001/appdev-929a6/us-central1/createPaymentIntent") else {
             throw URLError(.badURL)
         }
         
