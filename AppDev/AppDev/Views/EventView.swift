@@ -55,6 +55,22 @@ struct EventView: View {
                                     )
                                     .frame(height: 240)
                             }
+
+                            // Back and Favorite buttons
+                            HStack {
+                                Button(action: {
+                                    dismiss()
+                                }) {
+                                    Image(systemName: "chevron.left")
+                                        .foregroundColor(.white)
+                                        .padding(12)
+                                        .background(Color.black.opacity(0.3))
+                                        .clipShape(Circle())
+                                }
+                                Spacer()
+                            }
+                            .padding(.horizontal, 16)
+                            .padding(.top, 16)
                         }
 
                         // Event Card
@@ -187,6 +203,8 @@ struct EventView: View {
                 .background(Color(.systemGray6).ignoresSafeArea())
             }
         }
+        .navigationTitle(event?.title ?? "Event")
+        .navigationBarTitleDisplayMode(.inline)
         .onAppear(perform: fetchEvent)
         .navigationBarHidden(true)
     }
