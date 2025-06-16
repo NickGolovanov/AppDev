@@ -25,11 +25,6 @@ struct ChatConversationView: View {
     
     var body: some View {
         VStack(spacing: 0) {
-            // Header
-            HeaderView(title: chatTitle, showBackButton: true)
-                .padding()
-                .background(Color.white)
-            
             // Messages List
             ScrollViewReader { proxy in
                 ScrollView {
@@ -54,6 +49,8 @@ struct ChatConversationView: View {
                 }
             }
         }
+        .navigationTitle(chatTitle)
+        .navigationBarTitleDisplayMode(.inline)
         .safeAreaInset(edge: .bottom) {
             VStack(spacing: 0) {
                 Divider()
