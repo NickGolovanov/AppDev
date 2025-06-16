@@ -5,6 +5,11 @@ import SwiftUI
 import Stripe
 import StripePaymentSheet
 
+struct IdentifiablePaymentSheet: Identifiable {
+    let id = UUID()
+    let paymentSheet: PaymentSheet
+}
+
 struct GetTicketView: View {
     let event: Event
     @Environment(\.dismiss) private var dismiss
@@ -19,8 +24,7 @@ struct GetTicketView: View {
     @State private var chatService: ChatService?
     
     // Stripe related state variables
-    @State private var paymentSheet: PaymentSheet?
-    @State private var paymentResult: PaymentSheetResult?
+    @State private var identifiablePaymentSheet: IdentifiablePaymentSheet?
     @State private var isProcessingPayment = false
     
     var body: some View {
@@ -119,20 +123,22 @@ struct GetTicketView: View {
                     }
                 }
             }
-            .sheet(item: $paymentSheet) { sheet in
-                PaymentSheet.PaymentButton(
-                    paymentSheet: sheet,
-                    onCompletion: onPaymentCompletion
-                ) {
-                    Text("Pay €\(String(format: "%.2f", event.price))")
-                        .fontWeight(.semibold)
-                        .frame(maxWidth: .infinity)
-                        .padding()
-                        .background(Color.purple)
-                        .foregroundColor(.white)
-                        .cornerRadius(12)
+            .sheet(item: $identifiablePaymentSheet) { wrapper in
+                VStack {
+                    PaymentSheet.PaymentButton(
+                        paymentSheet: wrapper.paymentSheet,
+                        onCompletion: onPaymentCompletion
+                    ) {
+                        Text("Pay €\(String(format: "%.2f", event.price))")
+                            .fontWeight(.semibold)
+                            .frame(maxWidth: .infinity)
+                            .padding()
+                            .background(Color.purple)
+                            .foregroundColor(.white)
+                            .cornerRadius(12)
+                    }
+                    .padding()
                 }
-                .padding()
             }
         }
         .onAppear {
@@ -161,7 +167,8 @@ struct GetTicketView: View {
             configuration.merchantDisplayName = "Your App Name"
             configuration.allowsDelayedPaymentMethods = true
             
-            paymentSheet = PaymentSheet(paymentIntentClientSecret: clientSecret, configuration: configuration)
+            let sheet = PaymentSheet(paymentIntentClientSecret: clientSecret, configuration: configuration)
+            self.identifiablePaymentSheet = IdentifiablePaymentSheet(paymentSheet: sheet)
             isProcessingPayment = false
         } catch {
             alertMessage = "Failed to prepare payment: \(error.localizedDescription)"
