@@ -157,6 +157,22 @@ class ChatService: ObservableObject {
                 .setData(chatData)
         }
     }
+
+    func createChatForEvent(event: Event) async throws {
+        let chatDoc = try await db.collection("chats")
+            .document(event.id ?? "")
+            .getDocument()
+        if !chatDoc.exists {
+            let chatData: [String: Any] = [
+                "eventName": event.title,
+                "lastMessage": "Welcome to the \(event.title) chat!",
+                "lastMessageTime": Timestamp(date: Date())
+            ]
+            try await db.collection("chats")
+                .document(event.id ?? "")
+                .setData(chatData)
+        }
+    }
 }
 
 // Helper extension for Firestore encoding
