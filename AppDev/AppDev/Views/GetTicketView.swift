@@ -19,7 +19,7 @@ struct GetTicketView: View {
         NavigationStack {
             VStack(spacing: 0) {
                 // Header
-                HeaderView(title: "Get Ticket", showBackButton: true, showProfileLink: false)
+                HeaderView(title: "Get Ticket", showProfileLink: false)
                     .padding()
                     .background(Color.white)
 
