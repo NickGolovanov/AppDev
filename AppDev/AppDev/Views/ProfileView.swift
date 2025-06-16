@@ -95,6 +95,10 @@ struct ProfileView: View {
             }
             .navigationDestination(isPresented: $showEditProfile) {
                 EditProfileView()
+                    .onDisappear {
+                        // Refresh profile data when returning from edit view
+                        fetchRecentEvents()
+                    }
             }
             .navigationDestination(isPresented: $showOrganizedEventsForScan) {
                 OrganizedEventsForScanView()
@@ -130,12 +134,6 @@ struct ProfileView: View {
                         .overlay(Circle().stroke(Color.white, lineWidth: 2))
                         .shadow(radius: 5)
                 }
-
-                Circle()
-                    .fill(Color(hex: "#7131C5"))
-                    .frame(width: 28, height: 28)
-                    .overlay(Image(systemName: "camera.fill").foregroundColor(.white))
-                    .offset(x: 5, y: 5)
             }
 
             Text(userName)
