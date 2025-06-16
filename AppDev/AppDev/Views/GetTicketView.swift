@@ -18,11 +18,6 @@ struct GetTicketView: View {
     var body: some View {
         NavigationStack {
             VStack(spacing: 0) {
-                // Header
-                HeaderView(title: "Get Ticket", showBackButton: true, showProfileLink: false)
-                    .padding()
-                    .background(Color.white)
-
                 ScrollView {
                     VStack(spacing: 24) {
                         // Event Image (REMOVED)
@@ -103,6 +98,8 @@ struct GetTicketView: View {
                     .padding(.bottom)
                 }
             }
+            .navigationTitle("Get Ticket")
+            .navigationBarTitleDisplayMode(.inline)
             .background(Color(.systemGray6))
             .alert(alertMessage, isPresented: $showAlert) {
                 Button("OK") {

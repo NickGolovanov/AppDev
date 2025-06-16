@@ -31,6 +31,8 @@ struct CreateEventView: View {
     @State private var isLoading: Bool = false
     @State private var navigateToEvent = false
     @State private var createdEventId: String = ""
+    @EnvironmentObject var authViewModel: AuthViewModel
+    @State private var chatService: ChatService?
 
     let categories = [
         "House Party",
@@ -59,12 +61,14 @@ struct CreateEventView: View {
         NavigationStack {
             ScrollView {
                 VStack(alignment: .leading, spacing: 20) {
-                    headerSection
                     imagePickerSection
                     eventFormSection
                     createButtonSection
                 }
                 .padding()
+            }
+            .onAppear {
+                self.chatService = ChatService(authViewModel: authViewModel)
             }
             .navigationTitle("Create Event")
             .navigationBarTitleDisplayMode(.inline)
@@ -86,10 +90,6 @@ struct CreateEventView: View {
 
 // MARK: - View Sections
 extension CreateEventView {
-    var headerSection: some View {
-        HeaderView()
-    }
-
     var imagePickerSection: some View {
         Button(action: {
             showImagePicker = true
@@ -267,15 +267,15 @@ extension CreateEventView {
             let longitude = loc.coordinate.longitude
 
             if let uiImage = self.coverUIImage {
-                self.uploadImageAndCreateEvent(uiImage: uiImage, startDateTime: startDateTime, endDateTime: endDateTime, startTime: startTime, endTime: endTime, latitude: latitude, longitude: longitude)
+                self.uploadImageAndCreateEvent(uiImage: uiImage, startDateTime: startDateTime, endDateTime: endDateTime, latitude: latitude, longitude: longitude)
             } else {
                 let defaultImageUrl = "https://firebasestorage.googleapis.com/v0/b/partypal-93790.appspot.com/o/event_covers%2Fdefault.jpg?alt=media&token=e9535113-1b93-4704-a86a-8f7033529342"
-                self.createEventInFirestore(imageUrl: defaultImageUrl, startDateTime: startDateTime, endDateTime: endDateTime, startTime: startTime, endTime: endTime, latitude: latitude, longitude: longitude)
+                self.createEventInFirestore(imageUrl: defaultImageUrl, startDateTime: startDateTime, endDateTime: endDateTime, latitude: latitude, longitude: longitude)
             }
         }
     }
 
-    private func uploadImageAndCreateEvent(uiImage: UIImage, startDateTime: Date, endDateTime: Date, startTime: Date, endTime: Date, latitude: Double, longitude: Double) {
+    private func uploadImageAndCreateEvent(uiImage: UIImage, startDateTime: Date, endDateTime: Date, latitude: Double, longitude: Double) {
         let storageRef = Storage.storage().reference().child("event_covers/")
         let imageName = UUID().uuidString + ".jpg"
         let imageRef = storageRef.child(imageName)
@@ -301,25 +301,30 @@ extension CreateEventView {
                 }
 
                 let imageUrl = url?.absoluteString ?? ""
-                self.createEventInFirestore(imageUrl: imageUrl, startDateTime: startDateTime, endDateTime: endDateTime, startTime: startTime, endTime: endTime, latitude: latitude, longitude: longitude)
+                self.createEventInFirestore(imageUrl: imageUrl, startDateTime: startDateTime, endDateTime: endDateTime, latitude: latitude, longitude: longitude)
             }
         }
     }
 
-    private func createEventInFirestore(imageUrl: String, startDateTime: Date, endDateTime: Date, startTime: Date, endTime: Date, latitude: Double, longitude: Double) {
+    private func createEventInFirestore(imageUrl: String, startDateTime: Date, endDateTime: Date, latitude: Double, longitude: Double) {
         let db = Firestore.firestore()
+        
+        let dateString = ISO8601DateFormatter().string(from: startDateTime)
+        let startTimeString = ISO8601DateFormatter().string(from: startDateTime)
+        let endTimeString = ISO8601DateFormatter().string(from: endDateTime)
+        
         let eventData: [String: Any] = [
             "title": eventTitle,
-            "date": ISO8601DateFormatter().string(from: startDateTime),
+            "date": dateString,
             "category": category,
-            "startTime": ISO8601DateFormatter().string(from: startTime),
-            "endTime": ISO8601DateFormatter().string(from: endTime),
+            "startTime": startTimeString,
+            "endTime": endTimeString,
             "location": location,
             "description": description,
             "maxCapacity": Int(maxCapacity)!,
             "price": Double(price)!,
             "imageUrl": imageUrl,
-            "attendees": 0,
+            "attendees": 1,
             "createdAt": FieldValue.serverTimestamp(),
             "latitude": latitude,
             "longitude": longitude
@@ -337,9 +342,21 @@ extension CreateEventView {
                 
                 // Add event ID to user's organizedEventIds
                 if let eventID = newEventRef?.documentID, !self.userId.isEmpty {
+                    
+                    let event = Event(id: eventID, title: self.eventTitle, date: dateString, endTime: endTimeString, startTime: startTimeString, location: self.location, imageUrl: imageUrl, attendees: 1, category: self.category, price: Double(self.price) ?? 0, maxCapacity: Int(self.maxCapacity) ?? 0, description: self.description, latitude: latitude, longitude: longitude)
+                    
+                    Task {
+                        do {
+                            try await self.chatService?.createChatForEvent(event: event)
+                        } catch {
+                            print("Error creating chat for event: \(error.localizedDescription)")
+                        }
+                    }
+                    
                     let userRef = db.collection("users").document(self.userId)
                     userRef.updateData([
-                        "organizedEventIds": FieldValue.arrayUnion([eventID])
+                        "organizedEventIds": FieldValue.arrayUnion([eventID]),
+                        "joinedEventIds": FieldValue.arrayUnion([eventID])
                     ]) { err in
                         if let err = err {
                             print("Error updating user organizedEventIds: \(err.localizedDescription)")
