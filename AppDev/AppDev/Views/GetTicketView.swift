@@ -28,116 +28,114 @@ struct GetTicketView: View {
     @State private var isProcessingPayment = false
     
     var body: some View {
-        NavigationStack {
-            VStack(spacing: 0) {
-                // Header
-                HeaderView(title: "Get Ticket", showBackButton: true)
+        VStack(spacing: 0) {
+            // Header
+            HeaderView(title: "Get Ticket", showBackButton: true)
+                .padding()
+                .background(Color.white)
+
+            ScrollView {
+                VStack(spacing: 24) {
+                    // Event Image (REMOVED)
+                    // if let imageUrl = event.imageUrl {
+                    //     AsyncImage(url: URL(string: imageUrl)) { image in
+                    //         image
+                    //             .resizable()
+                    //             .aspectRatio(contentMode: .fill)
+                    //     } placeholder: {
+                    //         Rectangle()
+                    //             .fill(Color.gray.opacity(0.2))
+                    //     }
+                    //     .frame(height: 200)
+                    //     .clipped()
+                    // }
+
+                    // Event Details
+                    VStack(alignment: .leading, spacing: 16) {
+                        Text(event.title)
+                            .font(.title2)
+                            .fontWeight(.bold)
+
+                        HStack {
+                            Image(systemName: "calendar")
+                            Text(event.date)
+                        }
+                        .foregroundColor(.gray)
+
+                        HStack {
+                            Image(systemName: "clock")
+                            Text("\(event.startTime) - \(event.endTime)")
+                        }
+                        .foregroundColor(.gray)
+
+                        HStack {
+                            Image(systemName: "mappin.and.ellipse")
+                            Text(event.location)
+                        }
+                        .foregroundColor(.gray)
+
+                        HStack {
+                            Image(systemName: "person.2")
+                            Text("\(event.attendees)/\(event.maxCapacity) attendees")
+                        }
+                        .foregroundColor(.gray)
+
+                        if event.price > 0 {
+                            HStack {
+                                Image(systemName: "eurosign.circle")
+                                Text("€\(String(format: "%.2f", event.price))")
+                            }
+                            .foregroundColor(.gray)
+                        }
+                    }
                     .padding()
                     .background(Color.white)
+                    .cornerRadius(12)
+                    .shadow(color: Color.black.opacity(0.1), radius: 5, x: 0, y: 2)
 
-                ScrollView {
-                    VStack(spacing: 24) {
-                        // Event Image (REMOVED)
-                        // if let imageUrl = event.imageUrl {
-                        //     AsyncImage(url: URL(string: imageUrl)) { image in
-                        //         image
-                        //             .resizable()
-                        //             .aspectRatio(contentMode: .fill)
-                        //     } placeholder: {
-                        //         Rectangle()
-                        //             .fill(Color.gray.opacity(0.2))
-                        //     }
-                        //     .frame(height: 200)
-                        //     .clipped()
-                        // }
-
-                        // Event Details
-                        VStack(alignment: .leading, spacing: 16) {
-                            Text(event.title)
-                                .font(.title2)
-                                .fontWeight(.bold)
-
-                            HStack {
-                                Image(systemName: "calendar")
-                                Text(event.date)
-                            }
-                            .foregroundColor(.gray)
-
-                            HStack {
-                                Image(systemName: "clock")
-                                Text("\(event.startTime) - \(event.endTime)")
-                            }
-                            .foregroundColor(.gray)
-
-                            HStack {
-                                Image(systemName: "mappin.and.ellipse")
-                                Text(event.location)
-                            }
-                            .foregroundColor(.gray)
-
-                            HStack {
-                                Image(systemName: "person.2")
-                                Text("\(event.attendees)/\(event.maxCapacity) attendees")
-                            }
-                            .foregroundColor(.gray)
-
-                            if event.price > 0 {
-                                HStack {
-                                    Image(systemName: "eurosign.circle")
-                                    Text("€\(String(format: "%.2f", event.price))")
-                                }
-                                .foregroundColor(.gray)
-                            }
+                    // Conditionally show payment button
+                    if let wrapper = identifiablePaymentSheet {
+                        PaymentSheet.PaymentButton(
+                            paymentSheet: wrapper.paymentSheet,
+                            onCompletion: onPaymentCompletion
+                        ) {
+                            Text("Pay €\(String(format: "%.2f", event.price))")
+                                .fontWeight(.semibold)
+                                .frame(maxWidth: .infinity)
+                                .padding()
+                                .background(Color.purple)
+                                .foregroundColor(.white)
+                                .cornerRadius(12)
                         }
-                        .padding()
-                        .background(Color.white)
-                        .cornerRadius(12)
-                        .shadow(color: Color.black.opacity(0.1), radius: 5, x: 0, y: 2)
-
-                        // Conditionally show payment button
-                        if let wrapper = identifiablePaymentSheet {
-                            PaymentSheet.PaymentButton(
-                                paymentSheet: wrapper.paymentSheet,
-                                onCompletion: onPaymentCompletion
-                            ) {
-                                Text("Pay €\(String(format: "%.2f", event.price))")
+                        .padding(.horizontal)
+                    } else {
+                        // Purchase Button
+                        Button(action: purchaseTicket) {
+                            if isLoading || isProcessingPayment {
+                                ProgressView()
+                                    .progressViewStyle(CircularProgressViewStyle(tint: .white))
+                            } else {
+                                Text("Get Ticket")
                                     .fontWeight(.semibold)
-                                    .frame(maxWidth: .infinity)
-                                    .padding()
-                                    .background(Color.purple)
-                                    .foregroundColor(.white)
-                                    .cornerRadius(12)
                             }
-                            .padding(.horizontal)
-                        } else {
-                            // Purchase Button
-                            Button(action: purchaseTicket) {
-                                if isLoading || isProcessingPayment {
-                                    ProgressView()
-                                        .progressViewStyle(CircularProgressViewStyle(tint: .white))
-                                } else {
-                                    Text("Get Ticket")
-                                        .fontWeight(.semibold)
-                                }
-                            }
-                            .frame(maxWidth: .infinity)
-                            .padding()
-                            .background(Color.purple)
-                            .foregroundColor(.white)
-                            .cornerRadius(12)
-                            .padding(.horizontal)
-                            .disabled(isLoading || isProcessingPayment)
                         }
+                        .frame(maxWidth: .infinity)
+                        .padding()
+                        .background(Color.purple)
+                        .foregroundColor(.white)
+                        .cornerRadius(12)
+                        .padding(.horizontal)
+                        .disabled(isLoading || isProcessingPayment)
                     }
-                    .padding(.bottom)
                 }
+                .padding(.bottom)
             }
-            .background(Color(.systemGray6))
-            .alert(alertMessage, isPresented: $showAlert) {
-                Button("OK") {
-                    if navigateToEvent {
-                        dismiss()
-                    }
+        }
+        .background(Color(.systemGray6))
+        .alert(alertMessage, isPresented: $showAlert) {
+            Button("OK") {
+                if navigateToEvent {
+                    dismiss()
                 }
             }
         }
@@ -211,6 +209,7 @@ struct GetTicketView: View {
             if let error = error {
                 self.alertMessage = "Failed to create ticket: \(error.localizedDescription)"
                 self.showAlert = true
+                self.isLoading = false
                 return
             }
             
@@ -220,6 +219,7 @@ struct GetTicketView: View {
                 if let error = error {
                     self.alertMessage = "Failed to update ticket with QR code: \(error.localizedDescription)"
                     self.showAlert = true
+                    self.isLoading = false
                     return
                 }
                 
@@ -249,9 +249,11 @@ struct GetTicketView: View {
                         self.alertMessage = "Ticket purchased successfully!"
                         self.showAlert = true
                         self.navigateToEvent = true
+                        self.isLoading = false
                     } catch {
                         self.alertMessage = "Error updating event data: \(error.localizedDescription)"
                         self.showAlert = true
+                        self.isLoading = false
                     }
                 }
             }
@@ -272,10 +274,16 @@ struct GetTicketView: View {
             showAlert = true
             return
         }
-        
-        // Start payment process
-        Task {
-            await preparePayment()
+
+        if event.price > 0 {
+            // Start payment process for paid events
+            Task {
+                await preparePayment()
+            }
+        } else {
+            // For free events, create the ticket directly
+            isLoading = true
+            createTicket()
         }
     }
 
