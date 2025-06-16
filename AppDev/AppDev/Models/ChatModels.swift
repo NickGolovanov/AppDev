@@ -55,21 +55,20 @@ class ChatService: ObservableObject {
     }
     
     func fetchUserChats() async throws {
-        guard let user = authViewModel.currentUser else { return }
-        let ticketsSnapshot = try await db.collection("tickets").whereField("email", isEqualTo: user.email).getDocuments()
-        let eventIdToEventName: [String: String] = Dictionary(uniqueKeysWithValues: ticketsSnapshot.documents.compactMap { doc in
-            guard let eventId = doc.data()["eventId"] as? String,
-                  let eventName = doc.data()["eventName"] as? String else { return nil }
-            return (eventId, eventName)
-        })
-        for (eventId, ticketEventName) in eventIdToEventName {
+        guard let user = authViewModel.currentUser, let userId = user.id else { return }
+
+        let userDoc = try await db.collection("users").document(userId).getDocument()
+        guard let joinedEventIds = userDoc.data()?["joinedEventIds"] as? [String] else {
+            return
+        }
+
+        for eventId in joinedEventIds {
+            let eventDoc = try await db.collection("events").document(eventId).getDocument()
             let chatDoc = try await db.collection("chats").document(eventId).getDocument()
-            if let chatData = chatDoc.data() {
-                let firestoreEventName = chatData["eventName"] as? String ?? ""
-                let eventName = firestoreEventName.isEmpty ? ticketEventName : firestoreEventName
-                if firestoreEventName != ticketEventName && !ticketEventName.isEmpty {
-                    try? await db.collection("chats").document(eventId).updateData(["eventName": ticketEventName])
-                }
+
+            if chatDoc.exists, let chatData = chatDoc.data() {
+                let eventName = (eventDoc.data()?["title"] as? String) ?? (chatData["eventName"] as? String) ?? "Event"
+                
                 let chat = ChatItem(
                     id: eventId,
                     eventId: eventId,
@@ -79,6 +78,7 @@ class ChatService: ObservableObject {
                     lastMessageTime: (chatData["lastMessageTime"] as? Timestamp)?.dateValue() ?? Date(),
                     unreadCount: 0
                 )
+                
                 DispatchQueue.main.async {
                     if !self.chats.contains(where: { $0.id == chat.id }) {
                         self.chats.append(chat)
