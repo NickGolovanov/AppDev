@@ -15,7 +15,7 @@ class StripeService: ObservableObject {
         
         // TODO: Replace with your backend URL. We will set this up next.
         // Use "localhost" for local development on the iOS simulator.
-        guard let url = URL(string: "http://localhost:5001/appdev-929a6/us-central1/createPaymentIntent") else {
+        guard let url = URL(string: "http://localhost:5001/createPaymentIntent") else {
             throw URLError(.badURL)
         }
         
