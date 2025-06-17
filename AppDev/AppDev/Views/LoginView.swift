@@ -1,5 +1,9 @@
 import FirebaseAuth
 import SwiftUI
+import GoogleSignIn
+import GoogleSignInSwift
+import Firebase
+import FirebaseCore
 
 struct LoginView: View {
     @State private var email = ""
@@ -8,6 +12,9 @@ struct LoginView: View {
     @State private var alertMessage = ""
     @State private var isLoading = false
     @State private var showRegistration = false
+    
+    @State private var isLoggedIn = false
+    @State private var vm = AuthenticationView()
     @EnvironmentObject private var authViewModel: AuthViewModel
     @AppStorage("userId") var userId: String = ""
 
@@ -17,6 +24,7 @@ struct LoginView: View {
             Spacer()
             // Main Content
             VStack(spacing: 50) {
+                Spacer(minLength: 32)
                 VStack(spacing: 16) {
                     Text("🎉 Welcome to PartyPal")
                         .font(.system(size: 26, weight: .bold))
@@ -75,6 +83,13 @@ struct LoginView: View {
                     .disabled(isLoading || !isFormValid)
                     .padding(.horizontal, 24)
 
+                    GoogleSignInButton(viewModel: GoogleSignInButtonViewModel(scheme: .light)){
+                                            vm.signInWithGoogle()
+                                        }
+                                        .frame(maxWidth: .infinity)
+                                        .frame(height: 80)
+                                        .cornerRadius(50)
+                                        .padding(.horizontal, 24)
                     // Sign Up Link
                     Button(action: {
                         showRegistration = true
