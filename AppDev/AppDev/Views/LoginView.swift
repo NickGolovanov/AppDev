@@ -24,6 +24,7 @@ struct LoginView: View {
             Spacer()
             // Main Content
             VStack(spacing: 50) {
+                Spacer(minLength: 32)
                 VStack(spacing: 16) {
                     Text("🎉 Welcome to PartyPal")
                         .font(.system(size: 26, weight: .bold))
