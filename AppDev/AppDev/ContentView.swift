@@ -12,35 +12,6 @@ struct ContentView: View {
     @StateObject private var logout = AuthViewModel()
     
     var body: some View {
-        NavigationView {
-            VStack(spacing: 20) {
-                Image(systemName: "person.circle.fill")
-                    .imageScale(.large)
-                    .font(.system(size: 60))
-                    .foregroundStyle(.blue)
-                
-                Text("Welcome to AppDev")
-                    .font(.title)
-                    .fontWeight(.bold)
-                
-                Button(action: {
-                    logout.signOut()
-                }) {
-                    Text("Sign out")
-                        .font(.headline)
-                        .foregroundColor(.white)
-                        .frame(maxWidth: .infinity)
-                        .padding()
-                        .background(Color.blue)
-                        .cornerRadius(10)
-                }
-                .padding(.horizontal)
-            }
-            .padding()
-            .sheet(isPresented: $showRegistration) {
-                RegistrationView()
-            }
-        }
     }
 }
 
