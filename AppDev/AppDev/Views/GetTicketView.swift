@@ -169,6 +169,7 @@ struct GetTicketView: View {
             self.identifiablePaymentSheet = IdentifiablePaymentSheet(paymentSheet: sheet)
             isProcessingPayment = false
         } catch {
+            print("GetTicketView: Failed to prepare payment. Full error: \(error)")
             alertMessage = "Failed to prepare payment: \(error.localizedDescription)"
             showAlert = true
             isProcessingPayment = false

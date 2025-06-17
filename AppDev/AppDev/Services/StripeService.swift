@@ -30,22 +30,27 @@ class StripeService: ObservableObject {
             "userId": userId
         ]
         
-        request.httpBody = try JSONSerialization.data(withJSONObject: body)
-        
-        let (data, response) = try await URLSession.shared.data(for: request)
-        
-        guard let httpResponse = response as? HTTPURLResponse, httpResponse.statusCode == 200 else {
-            let responseBody = String(data: data, encoding: .utf8) ?? "No response body"
-            print("StripeService: Bad response from server. Status: \((response as? HTTPURLResponse)?.statusCode ?? 0). Body: \(responseBody)")
-            throw URLError(.badServerResponse)
+        do {
+            request.httpBody = try JSONSerialization.data(withJSONObject: body)
+            
+            let (data, response) = try await URLSession.shared.data(for: request)
+            
+            guard let httpResponse = response as? HTTPURLResponse, httpResponse.statusCode == 200 else {
+                let responseBody = String(data: data, encoding: .utf8) ?? "No response body"
+                print("StripeService: Bad response from server. Status: \((response as? HTTPURLResponse)?.statusCode ?? 0). Body: \(responseBody)")
+                throw URLError(.badServerResponse)
+            }
+            
+            guard let json = try JSONSerialization.jsonObject(with: data) as? [String: Any],
+                  let clientSecret = json["clientSecret"] as? String else {
+                throw URLError(.cannotParseResponse)
+            }
+            
+            return clientSecret
+        } catch {
+            print("StripeService: Failed to send request. Error: \(error)")
+            throw error
         }
-        
-        guard let json = try JSONSerialization.jsonObject(with: data) as? [String: Any],
-              let clientSecret = json["clientSecret"] as? String else {
-            throw URLError(.cannotParseResponse)
-        }
-        
-        return clientSecret
     }
     
     func handleSuccessfulPayment(eventId: String, userId: String) async throws {
