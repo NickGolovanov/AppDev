@@ -22,7 +22,6 @@ struct AppDevApp: App {
     var body: some Scene {
         WindowGroup {
             if authViewModel.isAuthenticated {
-                InitialView()
                 MainTabView()
                     .environmentObject(authViewModel)
             } else {

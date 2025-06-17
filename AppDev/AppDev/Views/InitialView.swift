@@ -16,7 +16,7 @@ struct InitialView: View {
     var body: some View {
         VStack{
             if userLoggedIn{
-                ContentView()
+                MainTabView()
             } else {
                 LoginView()
             }
