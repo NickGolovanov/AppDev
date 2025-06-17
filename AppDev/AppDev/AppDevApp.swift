@@ -9,6 +9,8 @@ import FirebaseAuth
 import FirebaseCore
 import FirebaseFirestore
 import SwiftUI
+import GoogleSignIn
+import Firebase
 
 @main
 struct AppDevApp: App {
