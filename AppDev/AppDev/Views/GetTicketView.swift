@@ -74,8 +74,8 @@ struct GetTicketView: View {
             if let user = authViewModel.currentUser {
                 name = user.fullName
                 email = user.email
+                chatService = ChatService(currentUser: user)
             }
-            chatService = ChatService(authViewModel: authViewModel)
         }
     }
     
@@ -110,15 +110,20 @@ struct GetTicketView: View {
                     return
                 }
                 
+                guard let eventId = event.id else {
+                    alertMessage = "Event ID is missing."
+                    isProcessing = false
+                    showingAlert = true
+                    return
+                }
+                
                 // Update Firestore
-                try await stripeService.handleSuccessfulPayment(eventId: event.id, userId: userId)
-                isSuccess = true
-                alertMessage = "Payment successful! Your ticket has been confirmed."
+                try await stripeService.handleSuccessfulPayment(eventId: eventId, userId: userId)
                 
                 // Create chat for the event
                 let ticket = Ticket(
-                    id: event.id,
-                    eventId: event.id,
+                    id: eventId,
+                    eventId: eventId,
                     eventName: event.title,
                     date: event.date,
                     location: event.location,
@@ -126,9 +131,12 @@ struct GetTicketView: View {
                     email: email,
                     price: String(format: "%.2f", event.price),
                     qrcodeUrl: "",
-                    userId: Auth.auth().currentUser?.uid ?? ""
+                    userId: userId
                 )
                 try await chatService?.createChatForTicket(ticket: ticket)
+                
+                isSuccess = true
+                alertMessage = "Payment successful! Your ticket has been confirmed."
             } catch {
                 alertMessage = "Payment processed but failed to update ticket information: \(error.localizedDescription)"
             }
