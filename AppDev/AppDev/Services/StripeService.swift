@@ -6,66 +6,72 @@ import UIKit
 
 class StripeService: ObservableObject {
     private let db = Firestore.firestore()
+    @Published var paymentSheet: PaymentSheet?
+    @Published var isLoading = false
     
     init() {
         // Use Stripe's test publishable key
         StripeAPI.defaultPublishableKey = "pk_test_51O9yYXFqgJf8BUSdQPXzfCLOF8nw1K6W9WjKejT03KosljCtREbZ8Cgdfo00l0kL3sysjcwGo5HZXPPWCBhxpcI002I4FY6tU"
     }
     
-    func validateCard(completion: @escaping (Bool) -> Void) {
-        // Create a basic PaymentIntent for validation
+    func preparePaymentSheet(amount: Int, completion: @escaping (Bool) -> Void) {
+        isLoading = true
+        
+        // Create a PaymentIntent on the backend
         let backendURL = URL(string: "http://localhost:5001/createPaymentIntent")!
         var request = URLRequest(url: backendURL)
         request.httpMethod = "POST"
         request.setValue("application/json", forHTTPHeaderField: "Content-Type")
         
-        // Minimal amount for validation (1 euro in cents)
-        let body: [String: Any] = ["amount": 100, "currency": "eur"]
+        let body: [String: Any] = ["amount": amount, "currency": "eur"]
         request.httpBody = try? JSONSerialization.data(withJSONObject: body)
         
-        URLSession.shared.dataTask(with: request) { data, response, error in
-            guard let data = data else {
+        URLSession.shared.dataTask(with: request) { [weak self] data, response, error in
+            guard let self = self,
+                  let data = data,
+                  let json = try? JSONSerialization.jsonObject(with: data) as? [String: Any],
+                  let clientSecret = json["clientSecret"] as? String else {
                 DispatchQueue.main.async {
+                    self?.isLoading = false
                     completion(false)
                 }
                 return
             }
             
-            do {
-                if let json = try JSONSerialization.jsonObject(with: data) as? [String: Any],
-                   let clientSecret = json["clientSecret"] as? String {
-                    DispatchQueue.main.async {
-                        // Show card input form
-                        var configuration = PaymentSheet.Configuration()
-                        configuration.merchantDisplayName = "AppDev Events"
-                        configuration.allowsDelayedPaymentMethods = false
-                        
-                        let paymentSheet = PaymentSheet(
-                            paymentIntentClientSecret: clientSecret,
-                            configuration: configuration
-                        )
-                        
-                        // Present the payment sheet
-                        paymentSheet.present(from: UIApplication.shared.windows.first?.rootViewController ?? UIViewController()) { result in
-                            switch result {
-                            case .completed:
-                                completion(true)
-                            case .failed, .canceled:
-                                completion(false)
-                            }
-                        }
-                    }
-                } else {
-                    DispatchQueue.main.async {
-                        completion(false)
-                    }
-                }
-            } catch {
-                DispatchQueue.main.async {
-                    completion(false)
-                }
+            DispatchQueue.main.async {
+                var configuration = PaymentSheet.Configuration()
+                configuration.merchantDisplayName = "AppDev Events"
+                configuration.allowsDelayedPaymentMethods = false
+                
+                self.paymentSheet = PaymentSheet(
+                    paymentIntentClientSecret: clientSecret,
+                    configuration: configuration
+                )
+                
+                self.isLoading = false
+                completion(true)
             }
         }.resume()
+    }
+    
+    func presentPaymentSheet(from viewController: UIViewController, completion: @escaping (Bool) -> Void) {
+        guard let paymentSheet = paymentSheet else {
+            completion(false)
+            return
+        }
+        
+        paymentSheet.present(from: viewController) { result in
+            switch result {
+            case .completed:
+                completion(true)
+            case .failed(let error):
+                print("Payment failed: \(error.localizedDescription)")
+                completion(false)
+            case .canceled:
+                print("Payment canceled")
+                completion(false)
+            }
+        }
     }
     
     func handleSuccessfulPayment(eventId: String, userId: String) async throws {

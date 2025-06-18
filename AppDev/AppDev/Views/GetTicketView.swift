@@ -4,6 +4,7 @@ import FirebaseStorage
 import SwiftUI
 import Stripe
 import StripePaymentSheet
+import UIKit
 
 struct IdentifiablePaymentSheet: Identifiable {
     let id = UUID()
@@ -19,13 +20,8 @@ struct GetTicketView: View {
     @State private var email: String = ""
     @State private var showAlert = false
     @State private var alertMessage = ""
-    @State private var isLoading = false
     @State private var navigateToEvent = false
     @State private var chatService: ChatService?
-    
-    // Stripe related state variables
-    @State private var identifiablePaymentSheet: IdentifiablePaymentSheet?
-    @State private var isProcessingPayment = false
     
     var body: some View {
         ScrollView {
@@ -75,7 +71,7 @@ struct GetTicketView: View {
 
                 // Purchase Button
                 Button(action: purchaseTicket) {
-                    if isLoading {
+                    if stripeService.isLoading {
                         ProgressView()
                             .progressViewStyle(CircularProgressViewStyle(tint: .white))
                     } else {
@@ -89,7 +85,7 @@ struct GetTicketView: View {
                 .foregroundColor(.white)
                 .cornerRadius(12)
                 .padding(.horizontal)
-                .disabled(isLoading)
+                .disabled(stripeService.isLoading)
             }
         }
         .background(Color(.systemGray6))
@@ -123,20 +119,34 @@ struct GetTicketView: View {
         }
 
         if event.price > 0 {
-            // For paid events, validate card
-            isLoading = true
-            stripeService.validateCard { success in
-                isLoading = false
+            // For paid events, prepare and show payment sheet
+            let amount = Int(event.price * 100) // Convert to cents
+            stripeService.preparePaymentSheet(amount: amount) { success in
                 if success {
-                    createTicket()
+                    // Get the current window scene
+                    guard let windowScene = UIApplication.shared.connectedScenes.first as? UIWindowScene,
+                          let viewController = windowScene.windows.first?.rootViewController else {
+                        alertMessage = "Could not present payment sheet"
+                        showAlert = true
+                        return
+                    }
+                    
+                    // Present the payment sheet
+                    stripeService.presentPaymentSheet(from: viewController) { success in
+                        if success {
+                            createTicket()
+                        } else {
+                            alertMessage = "Card validation failed. Please try again."
+                            showAlert = true
+                        }
+                    }
                 } else {
-                    alertMessage = "Card validation failed. Please try again."
+                    alertMessage = "Could not prepare payment. Please try again."
                     showAlert = true
                 }
             }
         } else {
             // For free events, create ticket directly
-            isLoading = true
             createTicket()
         }
     }
@@ -161,7 +171,6 @@ struct GetTicketView: View {
             if let error = error {
                 self.alertMessage = "Failed to create ticket: \(error.localizedDescription)"
                 self.showAlert = true
-                self.isLoading = false
                 return
             }
             
@@ -171,7 +180,6 @@ struct GetTicketView: View {
                 if let error = error {
                     self.alertMessage = "Failed to update ticket with QR code: \(error.localizedDescription)"
                     self.showAlert = true
-                    self.isLoading = false
                     return
                 }
                 
@@ -202,13 +210,11 @@ struct GetTicketView: View {
                             self.alertMessage = "Ticket purchased successfully!"
                             self.showAlert = true
                             self.navigateToEvent = true
-                            self.isLoading = false
                         }
                     } catch {
                         await MainActor.run {
                             self.alertMessage = "Error updating event data: \(error.localizedDescription)"
                             self.showAlert = true
-                            self.isLoading = false
                         }
                     }
                 }
