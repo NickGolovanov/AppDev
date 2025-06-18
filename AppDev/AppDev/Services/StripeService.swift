@@ -6,50 +6,26 @@ class StripeService: ObservableObject {
     private let db = Firestore.firestore()
     
     init() {
-        StripeAPI.defaultPublishableKey = StripeConfig.publishableKey
+        // Use Stripe's test publishable key
+        StripeAPI.defaultPublishableKey = "pk_test_51O9yYXFqgJf8BUSdQPXzfCLOF8nw1K6W9WjKejT03KosljCtREbZ8Cgdfo00l0kL3sysjcwGo5HZXPPWCBhxpcI002I4FY6tU"
     }
     
-    func createPaymentIntent(amount: Int, currency: String, eventId: String, userId: String) async throws -> String {
-        // IMPORTANT: This needs to call your backend to create a Payment Intent.
-        // The Stripe secret key should NEVER be exposed in the app.
+    func validateCard(completion: @escaping (Bool) -> Void) {
+        // Create a PaymentMethod without charging
+        let card = STPPaymentMethodCardParams()
+        let billingDetails = STPPaymentMethodBillingDetails()
+        let params = STPPaymentMethodParams(card: card, billingDetails: billingDetails, metadata: nil)
         
-        // TODO: Replace with your backend URL. We will set this up next.
-        // Use "localhost" for local development on the iOS simulator.
-        guard let url = URL(string: "http://localhost:5001/createPaymentIntent") else {
-            throw URLError(.badURL)
-        }
-        
-        var request = URLRequest(url: url)
-        request.httpMethod = "POST"
-        request.setValue("application/json", forHTTPHeaderField: "Content-Type")
-        
-        let body: [String: Any] = [
-            "amount": amount,
-            "currency": currency,
-            "eventId": eventId,
-            "userId": userId
-        ]
-        
-        do {
-            request.httpBody = try JSONSerialization.data(withJSONObject: body)
-            
-            let (data, response) = try await URLSession.shared.data(for: request)
-            
-            guard let httpResponse = response as? HTTPURLResponse, httpResponse.statusCode == 200 else {
-                let responseBody = String(data: data, encoding: .utf8) ?? "No response body"
-                print("StripeService: Bad response from server. Status: \((response as? HTTPURLResponse)?.statusCode ?? 0). Body: \(responseBody)")
-                throw URLError(.badServerResponse)
+        STPAPIClient.shared.createPaymentMethod(with: params) { paymentMethod, error in
+            DispatchQueue.main.async {
+                if let error = error {
+                    print("Card validation failed: \(error.localizedDescription)")
+                    completion(false)
+                } else {
+                    print("Card validation successful")
+                    completion(true)
+                }
             }
-            
-            guard let json = try JSONSerialization.jsonObject(with: data) as? [String: Any],
-                  let clientSecret = json["clientSecret"] as? String else {
-                throw URLError(.cannotParseResponse)
-            }
-            
-            return clientSecret
-        } catch {
-            print("StripeService: Failed to send request. Error: \(error)")
-            throw error
         }
     }
     
