@@ -103,8 +103,15 @@ struct GetTicketView: View {
         
         if success {
             do {
+                guard let userId = authViewModel.currentUser?.id else {
+                    alertMessage = "You must be logged in to purchase a ticket."
+                    isProcessing = false
+                    showingAlert = true
+                    return
+                }
+                
                 // Update Firestore
-                try await stripeService.handleSuccessfulPayment(eventId: event.id, userId: "YOUR_USER_ID") // Replace with actual user ID
+                try await stripeService.handleSuccessfulPayment(eventId: event.id, userId: userId)
                 isSuccess = true
                 alertMessage = "Payment successful! Your ticket has been confirmed."
                 
