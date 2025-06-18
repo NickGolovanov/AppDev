@@ -121,7 +121,7 @@ struct GetTicketView: View {
         if event.price > 0 {
             // For paid events, prepare and show payment sheet
             let amount = Int(event.price * 100) // Convert to cents
-            stripeService.preparePaymentSheet(amount: amount) { success in
+            stripeService.preparePaymentSheet(amount: amount) { success, errorMessage in
                 if success {
                     // Get the current window scene
                     guard let windowScene = UIApplication.shared.connectedScenes.first as? UIWindowScene,
@@ -141,7 +141,7 @@ struct GetTicketView: View {
                         }
                     }
                 } else {
-                    alertMessage = "Could not prepare payment. Please try again."
+                    alertMessage = errorMessage ?? "Could not prepare payment. Please try again."
                     showAlert = true
                 }
             }
