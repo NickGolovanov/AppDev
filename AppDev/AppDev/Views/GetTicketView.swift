@@ -74,8 +74,8 @@ struct GetTicketView: View {
             if let user = authViewModel.currentUser {
                 name = user.fullName
                 email = user.email
-                chatService = ChatService(currentUser: user)
             }
+            chatService = ChatService(authViewModel: authViewModel)
         }
     }
     
