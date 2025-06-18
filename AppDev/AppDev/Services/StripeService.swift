@@ -10,7 +10,7 @@ class StripeService: ObservableObject {
     @Published var isLoading = false
     
     // Use your computer's IP address here if testing on a real device
-    private let backendURL = "http://127.0.0.1:5001"
+    private let backendURL = "http://10.110.110.179:5001"
     
     init() {
         // Use Stripe's test publishable key
@@ -20,80 +20,54 @@ class StripeService: ObservableObject {
     func preparePaymentSheet(amount: Int, completion: @escaping (Bool, String?) -> Void) {
         isLoading = true
         
-        // First check if the server is running
-        let healthCheckURL = URL(string: "\(backendURL)")!
-        var healthCheckRequest = URLRequest(url: healthCheckURL)
-        healthCheckRequest.timeoutInterval = 5
+        // Create payment intent
+        let paymentURL = URL(string: "\(backendURL)/createPaymentIntent")!
+        var request = URLRequest(url: paymentURL)
+        request.httpMethod = "POST"
+        request.setValue("application/json", forHTTPHeaderField: "Content-Type")
         
-        URLSession.shared.dataTask(with: healthCheckRequest) { [weak self] _, response, error in
+        let body: [String: Any] = ["amount": amount, "currency": "eur"]
+        request.httpBody = try? JSONSerialization.data(withJSONObject: body)
+        
+        URLSession.shared.dataTask(with: request) { [weak self] data, response, error in
             guard let self = self else { return }
             
-            if let error = error {
-                DispatchQueue.main.async {
+            DispatchQueue.main.async {
+                if let error = error {
                     self.isLoading = false
-                    completion(false, "Server connection failed: \(error.localizedDescription)")
+                    completion(false, "Network error: \(error.localizedDescription)")
+                    return
                 }
-                return
-            }
-            
-            // If server is running, create payment intent
-            let paymentURL = URL(string: "\(self.backendURL)/createPaymentIntent")!
-            var request = URLRequest(url: paymentURL)
-            request.httpMethod = "POST"
-            request.setValue("application/json", forHTTPHeaderField: "Content-Type")
-            request.timeoutInterval = 10
-            
-            let body: [String: Any] = ["amount": amount, "currency": "eur"]
-            request.httpBody = try? JSONSerialization.data(withJSONObject: body)
-            
-            URLSession.shared.dataTask(with: request) { [weak self] data, response, error in
-                guard let self = self else { return }
                 
-                DispatchQueue.main.async {
-                    if let error = error {
-                        self.isLoading = false
-                        completion(false, "Payment setup failed: \(error.localizedDescription)")
-                        return
-                    }
-                    
-                    guard let httpResponse = response as? HTTPURLResponse else {
-                        self.isLoading = false
-                        completion(false, "Invalid server response")
-                        return
-                    }
-                    
-                    guard httpResponse.statusCode == 200 else {
-                        self.isLoading = false
-                        completion(false, "Server error: \(httpResponse.statusCode)")
-                        return
-                    }
-                    
-                    guard let data = data,
-                          let json = try? JSONSerialization.jsonObject(with: data) as? [String: Any],
-                          let clientSecret = json["clientSecret"] as? String else {
-                        self.isLoading = false
-                        completion(false, "Invalid response format")
-                        return
-                    }
-                    
-                    var configuration = PaymentSheet.Configuration()
-                    configuration.merchantDisplayName = "AppDev Events"
-                    configuration.allowsDelayedPaymentMethods = false
-                    
-                    self.paymentSheet = PaymentSheet(
-                        paymentIntentClientSecret: clientSecret,
-                        configuration: configuration
-                    )
-                    
+                guard let data = data,
+                      let json = try? JSONSerialization.jsonObject(with: data) as? [String: Any],
+                      let clientSecret = json["clientSecret"] as? String else {
                     self.isLoading = false
-                    completion(true, nil)
+                    completion(false, "Invalid response from server")
+                    return
                 }
-            }.resume()
+                
+                // Configure payment sheet
+                var configuration = PaymentSheet.Configuration()
+                configuration.merchantDisplayName = "AppDev Events"
+                configuration.allowsDelayedPaymentMethods = false
+                configuration.defaultBillingDetails.address.country = "NL" // Set to Netherlands
+                
+                // Create payment sheet
+                self.paymentSheet = PaymentSheet(
+                    paymentIntentClientSecret: clientSecret,
+                    configuration: configuration
+                )
+                
+                self.isLoading = false
+                completion(true, nil)
+            }
         }.resume()
     }
     
     func presentPaymentSheet(from viewController: UIViewController, completion: @escaping (Bool) -> Void) {
         guard let paymentSheet = paymentSheet else {
+            print("Payment sheet not initialized")
             completion(false)
             return
         }
@@ -101,6 +75,7 @@ class StripeService: ObservableObject {
         paymentSheet.present(from: viewController) { result in
             switch result {
             case .completed:
+                print("Payment completed")
                 completion(true)
             case .failed(let error):
                 print("Payment failed: \(error.localizedDescription)")

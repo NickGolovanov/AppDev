@@ -121,28 +121,39 @@ struct GetTicketView: View {
         if event.price > 0 {
             // For paid events, prepare and show payment sheet
             let amount = Int(event.price * 100) // Convert to cents
-            stripeService.preparePaymentSheet(amount: amount) { success, errorMessage in
+            print("Preparing payment for amount: \(amount)")
+            
+            stripeService.preparePaymentSheet(amount: amount) { success, error in
                 if success {
-                    // Get the current window scene
-                    guard let windowScene = UIApplication.shared.connectedScenes.first as? UIWindowScene,
-                          let viewController = windowScene.windows.first?.rootViewController else {
-                        alertMessage = "Could not present payment sheet"
-                        showAlert = true
-                        return
-                    }
-                    
-                    // Present the payment sheet
-                    stripeService.presentPaymentSheet(from: viewController) { success in
-                        if success {
-                            createTicket()
+                    print("Payment sheet prepared successfully")
+                    // Get the root view controller
+                    DispatchQueue.main.async {
+                        if let windowScene = UIApplication.shared.connectedScenes.first as? UIWindowScene,
+                           let window = windowScene.windows.first,
+                           let rootViewController = window.rootViewController {
+                            
+                            // Present the payment sheet
+                            self.stripeService.presentPaymentSheet(from: rootViewController) { success in
+                                DispatchQueue.main.async {
+                                    if success {
+                                        print("Payment successful, creating ticket")
+                                        self.createTicket()
+                                    } else {
+                                        self.alertMessage = "Payment failed. Please try again."
+                                        self.showAlert = true
+                                    }
+                                }
+                            }
                         } else {
-                            alertMessage = "Card validation failed. Please try again."
-                            showAlert = true
+                            self.alertMessage = "Could not present payment form. Please try again."
+                            self.showAlert = true
                         }
                     }
                 } else {
-                    alertMessage = errorMessage ?? "Could not prepare payment. Please try again."
-                    showAlert = true
+                    DispatchQueue.main.async {
+                        self.alertMessage = error ?? "Could not prepare payment. Please try again."
+                        self.showAlert = true
+                    }
                 }
             }
         } else {
