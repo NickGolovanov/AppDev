@@ -276,15 +276,35 @@ struct GetTicketView: View {
             return
         }
 
-        if event.price > 0 {
-            // Start payment process for paid events
-            Task {
-                await preparePayment()
+        // Start card validation process
+        isLoading = true
+        
+        // Configure the card input form
+        var configuration = PaymentSheet.Configuration()
+        configuration.merchantDisplayName = "AppDev Events"
+        configuration.allowsDelayedPaymentMethods = false
+        
+        // Create PaymentSheet for card validation only
+        let paymentSheet = PaymentSheet(
+            paymentIntentClientSecret: nil,
+            configuration: configuration
+        )
+        
+        // Show the payment sheet for card details
+        paymentSheet.present(from: UIApplication.shared.windows.first?.rootViewController ?? UIViewController()) { result in
+            switch result {
+            case .completed:
+                // Card details were valid, create ticket
+                self.createTicket()
+            case .failed(let error):
+                self.alertMessage = "Card validation failed: \(error.localizedDescription)"
+                self.showAlert = true
+                self.isLoading = false
+            case .canceled:
+                self.alertMessage = "Card validation was canceled"
+                self.showAlert = true
+                self.isLoading = false
             }
-        } else {
-            // For free events, create the ticket directly
-            isLoading = true
-            createTicket()
         }
     }
 
