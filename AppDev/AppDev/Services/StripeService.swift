@@ -11,20 +11,17 @@ class StripeService: ObservableObject {
     }
     
     func validateCard(completion: @escaping (Bool) -> Void) {
-        // Create a PaymentMethod without charging
-        let card = STPPaymentMethodCardParams()
-        let billingDetails = STPPaymentMethodBillingDetails()
-        let params = STPPaymentMethodParams(card: card, billingDetails: billingDetails, metadata: nil)
+        // Show card input form
+        let config = PaymentSheet.Configuration()
+        let paymentSheet = PaymentSheet(configuration: config)
         
-        STPAPIClient.shared.createPaymentMethod(with: params) { paymentMethod, error in
-            DispatchQueue.main.async {
-                if let error = error {
-                    print("Card validation failed: \(error.localizedDescription)")
-                    completion(false)
-                } else {
-                    print("Card validation successful")
-                    completion(true)
-                }
+        // Present the payment sheet
+        paymentSheet.present(from: UIApplication.shared.windows.first?.rootViewController ?? UIViewController()) { result in
+            switch result {
+            case .completed:
+                completion(true)
+            case .failed, .canceled:
+                completion(false)
             }
         }
     }
