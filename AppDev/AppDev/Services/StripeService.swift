@@ -1,6 +1,8 @@
 import Foundation
 import Stripe
 import FirebaseFirestore
+import StripePaymentSheet
+import UIKit
 
 class StripeService: ObservableObject {
     private let db = Firestore.firestore()
@@ -11,19 +13,48 @@ class StripeService: ObservableObject {
     }
     
     func validateCard(completion: @escaping (Bool) -> Void) {
-        // Show card input form
-        let config = PaymentSheet.Configuration()
-        let paymentSheet = PaymentSheet(configuration: config)
+        // Create a basic PaymentIntent for validation
+        let backendURL = URL(string: "http://localhost:5001/createPaymentIntent")!
+        var request = URLRequest(url: backendURL)
+        request.httpMethod = "POST"
+        request.setValue("application/json", forHTTPHeaderField: "Content-Type")
         
-        // Present the payment sheet
-        paymentSheet.present(from: UIApplication.shared.windows.first?.rootViewController ?? UIViewController()) { result in
-            switch result {
-            case .completed:
-                completion(true)
-            case .failed, .canceled:
-                completion(false)
+        // Minimal amount for validation (1 euro in cents)
+        let body = ["amount": 100, "currency": "eur"]
+        request.httpBody = try? JSONSerialization.data(withJSONObject: body)
+        
+        URLSession.shared.dataTask(with: request) { [weak self] data, response, error in
+            guard let data = data,
+                  let json = try? JSONSerialization.jsonObject(with: data, as: [String: Any]),
+                  let clientSecret = json["clientSecret"] as? String else {
+                DispatchQueue.main.async {
+                    completion(false)
+                }
+                return
             }
-        }
+            
+            DispatchQueue.main.async {
+                // Show card input form
+                var configuration = PaymentSheet.Configuration()
+                configuration.merchantDisplayName = "AppDev Events"
+                configuration.allowsDelayedPaymentMethods = false
+                
+                let paymentSheet = PaymentSheet(
+                    paymentIntentClientSecret: clientSecret,
+                    configuration: configuration
+                )
+                
+                // Present the payment sheet
+                paymentSheet.present(from: UIApplication.shared.windows.first?.rootViewController ?? UIViewController()) { result in
+                    switch result {
+                    case .completed:
+                        completion(true)
+                    case .failed, .canceled:
+                        completion(false)
+                    }
+                }
+            }
+        }.resume()
     }
     
     func handleSuccessfulPayment(eventId: String, userId: String) async throws {
