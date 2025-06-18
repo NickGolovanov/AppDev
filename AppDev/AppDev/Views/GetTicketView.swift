@@ -28,107 +28,68 @@ struct GetTicketView: View {
     @State private var isProcessingPayment = false
     
     var body: some View {
-        VStack {
-            // Header
-            HeaderView(title: "Get Ticket", showBackButton: true)
-                .padding()
-                .background(Color.white)
-            
-            ScrollView {
-                VStack(spacing: 24) {
-                    // Event Image (REMOVED)
-                    // if let imageUrl = event.imageUrl {
-                    //     AsyncImage(url: URL(string: imageUrl)) { image in
-                    //         image
-                    //             .resizable()
-                    //             .aspectRatio(contentMode: .fill)
-                    //     } placeholder: {
-                    //         Rectangle()
-                    //             .fill(Color.gray.opacity(0.2))
-                    //     }
-                    //     .frame(height: 200)
-                    //     .clipped()
-                    // }
+        ScrollView {
+            VStack(spacing: 20) {
+                // Event details section
+                VStack(alignment: .leading, spacing: 16) {
+                    Text(event.title)
+                        .font(.title2)
+                        .fontWeight(.bold)
 
-                    // Event Details
-                    VStack(alignment: .leading, spacing: 16) {
-                        Text(event.title)
-                            .font(.title2)
-                            .fontWeight(.bold)
-
-                        HStack {
-                            Image(systemName: "calendar")
-                            Text(event.date)
-                        }
-                        .foregroundColor(.gray)
-
-                        HStack {
-                            Image(systemName: "clock")
-                            Text("\(event.startTime) - \(event.endTime)")
-                        }
-                        .foregroundColor(.gray)
-
-                        HStack {
-                            Image(systemName: "mappin.and.ellipse")
-                            Text(event.location)
-                        }
-                        .foregroundColor(.gray)
-
-                        HStack {
-                            Image(systemName: "person.2")
-                            Text("\(event.attendees)/\(event.maxCapacity) attendees")
-                        }
-                        .foregroundColor(.gray)
-
-                        if event.price > 0 {
-                            HStack {
-                                Image(systemName: "eurosign.circle")
-                                Text("€\(String(format: "%.2f", event.price))")
-                            }
-                            .foregroundColor(.gray)
-                        }
+                    HStack {
+                        Image(systemName: "calendar")
+                        Text(event.date)
                     }
-                    .padding()
-                    .background(Color.white)
-                    .cornerRadius(12)
-                    .shadow(color: Color.black.opacity(0.1), radius: 5, x: 0, y: 2)
+                    .foregroundColor(.gray)
 
-                    // Conditionally show payment button
-                    if let wrapper = identifiablePaymentSheet {
-                        PaymentSheet.PaymentButton(
-                            paymentSheet: wrapper.paymentSheet,
-                            onCompletion: onPaymentCompletion
-                        ) {
-                            Text("Pay €\(String(format: "%.2f", event.price))")
-                                .fontWeight(.semibold)
-                                .frame(maxWidth: .infinity)
-                                .padding()
-                                .background(Color.purple)
-                                .foregroundColor(.white)
-                                .cornerRadius(12)
+                    HStack {
+                        Image(systemName: "clock")
+                        Text("\(event.startTime) - \(event.endTime)")
+                    }
+                    .foregroundColor(.gray)
+
+                    HStack {
+                        Image(systemName: "mappin.and.ellipse")
+                        Text(event.location)
+                    }
+                    .foregroundColor(.gray)
+
+                    HStack {
+                        Image(systemName: "person.2")
+                        Text("\(event.attendees)/\(event.maxCapacity) attendees")
+                    }
+                    .foregroundColor(.gray)
+
+                    if event.price > 0 {
+                        HStack {
+                            Image(systemName: "eurosign.circle")
+                            Text("€\(String(format: "%.2f", event.price))")
                         }
-                        .padding(.horizontal)
-                    } else {
-                        // Purchase Button
-                        Button(action: purchaseTicket) {
-                            if isLoading || isProcessingPayment {
-                                ProgressView()
-                                    .progressViewStyle(CircularProgressViewStyle(tint: .white))
-                            } else {
-                                Text("Get Ticket")
-                                    .fontWeight(.semibold)
-                            }
-                        }
-                        .frame(maxWidth: .infinity)
-                        .padding()
-                        .background(Color.purple)
-                        .foregroundColor(.white)
-                        .cornerRadius(12)
-                        .padding(.horizontal)
-                        .disabled(isLoading || isProcessingPayment)
+                        .foregroundColor(.gray)
                     }
                 }
-                .padding(.bottom)
+                .padding()
+                .background(Color.white)
+                .cornerRadius(12)
+                .shadow(color: Color.black.opacity(0.1), radius: 5, x: 0, y: 2)
+
+                // Purchase Button
+                Button(action: purchaseTicket) {
+                    if isLoading {
+                        ProgressView()
+                            .progressViewStyle(CircularProgressViewStyle(tint: .white))
+                    } else {
+                        Text(event.price > 0 ? "Pay €\(String(format: "%.2f", event.price))" : "Get Free Ticket")
+                            .fontWeight(.semibold)
+                    }
+                }
+                .frame(maxWidth: .infinity)
+                .padding()
+                .background(Color.purple)
+                .foregroundColor(.white)
+                .cornerRadius(12)
+                .padding(.horizontal)
+                .disabled(isLoading)
             }
         }
         .background(Color(.systemGray6))
@@ -143,53 +104,43 @@ struct GetTicketView: View {
             if let user = authViewModel.currentUser {
                 name = user.fullName
                 email = user.email
-            } else {
-                print("[GetTicketView] AuthViewModel currentUser is nil onAppear")
             }
             chatService = ChatService(authViewModel: authViewModel)
         }
     }
 
-    private func preparePayment() async {
-        isProcessingPayment = true
+    private func purchaseTicket() {
+        guard !name.isEmpty else {
+            alertMessage = "User name is missing. Please log in again."
+            showAlert = true
+            return
+        }
         
-        do {
-            let clientSecret = try await stripeService.createPaymentIntent(
-                amount: Int(event.price * 100), // Convert to cents
-                currency: "eur",
-                eventId: event.id ?? "",
-                userId: Auth.auth().currentUser?.uid ?? ""
-            )
-            
-            var configuration = PaymentSheet.Configuration()
-            configuration.merchantDisplayName = "Your App Name"
-            configuration.allowsDelayedPaymentMethods = true
-            
-            let sheet = PaymentSheet(paymentIntentClientSecret: clientSecret, configuration: configuration)
-            self.identifiablePaymentSheet = IdentifiablePaymentSheet(paymentSheet: sheet)
-            isProcessingPayment = false
-        } catch {
-            print("GetTicketView: Failed to prepare payment. Full error: \(error)")
-            alertMessage = "Failed to prepare payment: \(error.localizedDescription)"
+        guard !email.isEmpty else {
+            alertMessage = "User email is missing. Please log in again."
             showAlert = true
-            isProcessingPayment = false
+            return
         }
-    }
-    
-    private func onPaymentCompletion(result: PaymentSheetResult) {
-        switch result {
-        case .completed:
-            // Payment successful, proceed with ticket creation
+
+        if event.price > 0 {
+            // For paid events, validate card
+            isLoading = true
+            stripeService.validateCard { success in
+                isLoading = false
+                if success {
+                    createTicket()
+                } else {
+                    alertMessage = "Card validation failed. Please try again."
+                    showAlert = true
+                }
+            }
+        } else {
+            // For free events, create ticket directly
+            isLoading = true
             createTicket()
-        case .failed(let error):
-            alertMessage = "Payment failed: \(error.localizedDescription)"
-            showAlert = true
-        case .canceled:
-            alertMessage = "Payment was canceled"
-            showAlert = true
         }
     }
-    
+
     private func createTicket() {
         let db = Firestore.firestore()
         let eventId = event.id ?? ""
@@ -214,7 +165,7 @@ struct GetTicketView: View {
                 return
             }
             
-            // Use API QR code link instead of generating/uploading image
+            // Use API QR code link
             let qrCodeUrl = "https://api.qrserver.com/v1/create-qr-code/?data=\(ticketRef.documentID)"
             ticketRef.updateData(["qrcodeUrl": qrCodeUrl]) { error in
                 if let error = error {
@@ -247,63 +198,20 @@ struct GetTicketView: View {
                         )
                         try await chatService?.createChatForTicket(ticket: ticket)
                         
-                        self.alertMessage = "Ticket purchased successfully!"
-                        self.showAlert = true
-                        self.navigateToEvent = true
-                        self.isLoading = false
+                        await MainActor.run {
+                            self.alertMessage = "Ticket purchased successfully!"
+                            self.showAlert = true
+                            self.navigateToEvent = true
+                            self.isLoading = false
+                        }
                     } catch {
-                        self.alertMessage = "Error updating event data: \(error.localizedDescription)"
-                        self.showAlert = true
-                        self.isLoading = false
+                        await MainActor.run {
+                            self.alertMessage = "Error updating event data: \(error.localizedDescription)"
+                            self.showAlert = true
+                            self.isLoading = false
+                        }
                     }
                 }
-            }
-        }
-    }
-
-    private func purchaseTicket() {
-        guard !name.isEmpty else {
-            alertMessage = "User name is missing. Please log in again."
-            print("[GetTicketView] User name is missing. Aborting ticket creation.")
-            showAlert = true
-            return
-        }
-        
-        guard !email.isEmpty else {
-            alertMessage = "User email is missing. Please log in again."
-            print("[GetTicketView] User email is missing. Aborting ticket creation.")
-            showAlert = true
-            return
-        }
-
-        // Start card validation process
-        isLoading = true
-        
-        // Configure the card input form
-        var configuration = PaymentSheet.Configuration()
-        configuration.merchantDisplayName = "AppDev Events"
-        configuration.allowsDelayedPaymentMethods = false
-        
-        // Create PaymentSheet for card validation only
-        let paymentSheet = PaymentSheet(
-            paymentIntentClientSecret: nil,
-            configuration: configuration
-        )
-        
-        // Show the payment sheet for card details
-        paymentSheet.present(from: UIApplication.shared.windows.first?.rootViewController ?? UIViewController()) { result in
-            switch result {
-            case .completed:
-                // Card details were valid, create ticket
-                self.createTicket()
-            case .failed(let error):
-                self.alertMessage = "Card validation failed: \(error.localizedDescription)"
-                self.showAlert = true
-                self.isLoading = false
-            case .canceled:
-                self.alertMessage = "Card validation was canceled"
-                self.showAlert = true
-                self.isLoading = false
             }
         }
     }
