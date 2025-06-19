@@ -55,7 +55,7 @@ final class ChatServiceTests: XCTestCase {
             password: "password123"
         )
         // Initialize with a mock user
-        mockAuthViewModel = MockAuthViewModel(testCurrentUser: mockUser) // Corrected argument label
+        mockAuthViewModel = MockAuthViewModel(testCurrentUser: mockUser)
         chatService = ChatService(authViewModel: mockAuthViewModel)
     }
 
