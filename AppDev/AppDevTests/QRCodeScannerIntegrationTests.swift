@@ -93,7 +93,8 @@ final class QRCodeScannerIntegrationTests: XCTestCase {
             price: 10.0,
             maxCapacity: 100,
             description: "An event for QR scanning tests.",
-            latitude: 0, longitude: 0
+            latitude: 0,
+            longitude: 0
         )
         
         // Setup initial ticket ID
