@@ -53,6 +53,16 @@ jobs:
             CODE_SIGN_IDENTITY="" \
             CODE_SIGNING_REQUIRED=NO \
             ONLY_ACTIVE_ARCH=YES
+      - name: Run Tests
+        run: |
+          cd AppDev && xcodebuild test \
+            -project AppDev.xcodeproj \
+            -scheme AppDev \
+            -destination 'platform=iOS Simulator,name=iPhone 16 Pro,OS=18.2' \
+            -only-testing:AppDevTests \
+            CODE_SIGN_IDENTITY="" \
+            CODE_SIGNING_REQUIRED=NO \
+            ONLY_ACTIVE_ARCH=YES
 
   acceptance:
     needs: testing
