@@ -22,6 +22,10 @@ struct EditProfileView: View {
     @State private var showAlert = false
     @AppStorage("userId") var userId: String = ""
     @State private var profileImageUrl: String = ""
+    
+    //----
+    @Binding var needsRefresh: Bool
+    //---
 
     var body: some View {
         ScrollView {
@@ -131,6 +135,7 @@ struct EditProfileView: View {
                             "\(imageUploadErrorMessage ?? "Image upload failed.")"
                     } else {
                         self.alertMessage = "Profile updated successfully!"
+                        needsRefresh = true
                     }
                     // Successfully saved, so update the local profileImageUrl state if it changed
                     self.profileImageUrl = imageUrlToSave
@@ -247,5 +252,5 @@ struct EditProfileView: View {
 }
 
 #Preview {
-    EditProfileView()
+    EditProfileView(needsRefresh: .constant(false))
 }

@@ -19,7 +19,9 @@ struct ProfileView: View {
     @State private var userHandle: String = "@loading..."
     @State private var userBio: String = "Loading bio..."
     @State private var userProfileImageURL: String = ""
-
+    //---------new bool to handle data fetch for gg users
+    @State private var needsRefresh = false
+    //---------
     @State private var joinedEvents: [Event] = []
     @State private var organizedEvents: [Event] = []
 
@@ -49,8 +51,16 @@ struct ProfileView: View {
                 }
                 .padding()
                 .navigationDestination(isPresented: $showEditProfile) {
-                    EditProfileView()
+                    EditProfileView(needsRefresh: $needsRefresh) //----before was empty
                 }
+                //------
+                .onChange(of: needsRefresh) { refresh in
+                    if refresh {
+                        fetchRecentEvents()
+                        needsRefresh = false 
+                    }
+                }
+                //----
                 .navigationDestination(isPresented: $showOrganizedEventsForScan) {
                     OrganizedEventsForScanView()
                 }
