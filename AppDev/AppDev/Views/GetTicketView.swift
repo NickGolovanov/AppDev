@@ -137,6 +137,7 @@ struct GetTicketView: View {
     private func handlePayment() async {
         isProcessing = true
 
+        // Handle payment for paid events
         if event.price > 0 {
             guard let windowScene = UIApplication.shared.connectedScenes.first as? UIWindowScene,
                   let viewController = windowScene.windows.first?.rootViewController else {
@@ -156,6 +157,7 @@ struct GetTicketView: View {
             }
         }
 
+        // Create ticket and update database
         do {
             guard let userId = authViewModel.currentUser?.id else {
                 alertMessage = "You must be logged in to purchase a ticket."
