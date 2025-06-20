@@ -9,7 +9,7 @@ This repository contains the source code for **Party Pal**, a vibrant mobile app
 *   **In-App Chat:** Facilitates communication between attendees and organizers, enhancing the social aspect of events.
 *   **QR Code Scanning (for Organizers):** Provides organizers with a robust tool to validate tickets at events using QR code scanning, streamlining the check-in process.
 
-## �� Folder Structure
+## Folder Structure
 
 The project follows a standard Xcode project structure, organized to separate application logic from test code.
 
@@ -46,6 +46,28 @@ The project follows a standard Xcode project structure, organized to separate ap
 *   **Combine:** For reactive programming and handling asynchronous operations.
 *   **XCTest:** Apple's native testing framework for unit and integration tests.
 *   **CoreImage & UIKit:** Used for QR code generation.
+
+## 📡 APIs Used
+
+This project interacts with several APIs, primarily through Firebase and Firestore, as well as an external QR code generation service:
+
+### Firestore Collections
+- **users**: Stores user profiles and metadata (e.g., email, full name, username, description, profile image URL, joined/organized event IDs).
+- **events**: Stores event details (title, date, time, location, image URL, attendees, category, price, max capacity, description, coordinates, etc.).
+- **tickets**: Stores ticket information for users and events (eventId, eventName, userId, name, email, price, QR code URL, status, etc.).
+- **chats**: Stores chat metadata for each event or ticket (eventId, eventName, lastMessage, lastMessageTime, etc.).
+- **chats/{chatId}/messages**: Stores individual chat messages for each chat (content, senderId, senderName, timestamp, etc.).
+
+### Firebase Authentication
+- Used for user registration, login, and authentication (including Google Sign-In).
+
+### Firebase Storage
+- Used for storing event cover images and user profile images.
+
+### External APIs
+- **QR Code Generation**: [api.qrserver.com/v1/create-qr-code/](https://api.qrserver.com/v1/create-qr-code/) is used to generate QR codes for tickets.
+
+These APIs are accessed via the Firebase SDKs and REST endpoints as appropriate within the app's Swift codebase.
 
 ## 🛠️ Setup Instructions
 
@@ -104,4 +126,14 @@ The project includes various types of tests that can be run directly from Xcode.
 
 ## 📄 Documentation
 
-(Add links to any external documentation, API references, or deployment guides here if applicable.) 
+- **Project Overview & Features:** See the top of this README for a summary of app features and architecture.
+- **API Reference:** The 'APIs Used' section above details all Firestore collections, authentication, storage, and external APIs used by the app.
+- **Setup & Configuration:** See the 'Setup Instructions' section for step-by-step guidance on running the app locally and configuring Firebase.
+- **Testing:** The 'How to Run Tests' section explains how to run unit and integration tests, and notes about integration with live Firebase data.
+- **External References:**
+  - [Firebase Documentation](https://firebase.google.com/docs)
+  - [Firestore Documentation](https://firebase.google.com/docs/firestore)
+  - [SwiftUI Documentation](https://developer.apple.com/documentation/swiftui/)
+  - [QRServer API Docs](https://goqr.me/api/)
+
+For further details on app architecture, data models, or contributing, please refer to the relevant sections above or contact the maintainers. 
