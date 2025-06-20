@@ -83,6 +83,7 @@ class StripeService: ObservableObject {
         }.resume()
     }
     
+    @MainActor
     func presentPaymentSheet(from viewController: UIViewController) async -> Bool {
         guard let paymentSheet = paymentSheet else {
             print("Payment sheet not initialized")

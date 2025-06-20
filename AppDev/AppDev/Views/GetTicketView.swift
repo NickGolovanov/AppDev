@@ -26,51 +26,96 @@ struct GetTicketView: View {
     @State private var chatService: ChatService?
     
     var body: some View {
-        VStack(spacing: 20) {
-            Text("Get Your Ticket")
-                .font(.title)
-                .fontWeight(.bold)
-            
-            Text("Event: \(event.title)")
-                .font(.headline)
-            
-            Text("Price: €\(event.price)")
-                .font(.title2)
-                .foregroundColor(.green)
-            
-            if isProcessing {
-                ProgressView("Processing payment...")
-            } else {
-                Button(action: {
-                    Task {
-                        await handlePayment()
-                    }
-                }) {
-                    Text("Pay Now")
-                        .font(.headline)
-                        .foregroundColor(.white)
+        NavigationStack {
+            VStack(spacing: 0) {
+                ScrollView {
+                    VStack(spacing: 24) {
+                        // Event Details
+                        VStack(alignment: .leading, spacing: 16) {
+                            Text(event.title)
+                                .font(.title2)
+                                .fontWeight(.bold)
+
+                            HStack {
+                                Image(systemName: "calendar")
+                                Text(event.formattedDate)
+                            }
+                            .foregroundColor(.gray)
+
+                            HStack {
+                                Image(systemName: "clock")
+                                Text("\(event.formattedTime) - \(event.formattedEndTime)")
+                            }
+                            .foregroundColor(.gray)
+
+                            HStack {
+                                Image(systemName: "mappin.and.ellipse")
+                                Text(event.location)
+                            }
+                            .foregroundColor(.gray)
+
+                            HStack {
+                                Image(systemName: "person.2")
+                                Text("\(event.attendees)/\(event.maxCapacity) attendees")
+                            }
+                            .foregroundColor(.gray)
+
+                            if event.price > 0 {
+                                HStack {
+                                    Image(systemName: "eurosign.circle")
+                                    Text("€\(String(format: "%.2f", event.price))")
+                                }
+                                .foregroundColor(.gray)
+                            }
+                        }
+                        .padding()
+                        .background(Color.white)
+                        .cornerRadius(12)
+                        .shadow(color: Color.black.opacity(0.1), radius: 5, x: 0, y: 2)
+
+                        // Purchase Button
+                        Button(action: {
+                            Task {
+                                await handlePayment()
+                            }
+                        }) {
+                            if isProcessing {
+                                ProgressView()
+                                    .progressViewStyle(CircularProgressViewStyle(tint: .white))
+                            } else {
+                                Text("Get Ticket")
+                                    .fontWeight(.semibold)
+                            }
+                        }
                         .frame(maxWidth: .infinity)
                         .padding()
                         .background(Color.blue)
+                        .foregroundColor(.white)
                         .cornerRadius(10)
+                        .disabled(stripeService.isLoading || isProcessing)
+                    }
+                    .padding()
                 }
-                .disabled(stripeService.isLoading)
+            }
+            .navigationTitle("Get Ticket")
+            .navigationBarTitleDisplayMode(.inline)
+            .background(Color(.systemGray6))
+            .alert(isPresented: $showingAlert) {
+                Alert(
+                    title: Text(isSuccess ? "Success!" : "Error"),
+                    message: Text(alertMessage),
+                    dismissButton: .default(Text("OK")) {
+                        if isSuccess {
+                            presentationMode.wrappedValue.dismiss()
+                        }
+                    }
+                )
             }
         }
-        .padding()
-        .alert(isPresented: $showingAlert) {
-            Alert(
-                title: Text(isSuccess ? "Success!" : "Error"),
-                message: Text(alertMessage),
-                dismissButton: .default(Text("OK")) {
-                    if isSuccess {
-                        presentationMode.wrappedValue.dismiss()
-                    }
-                }
-            )
-        }
         .onAppear {
-            preparePayment()
+            if event.price > 0 {
+                preparePayment()
+            }
             if let user = authViewModel.currentUser {
                 name = user.fullName
                 email = user.email
@@ -90,58 +135,87 @@ struct GetTicketView: View {
     }
     
     private func handlePayment() async {
-        guard let windowScene = UIApplication.shared.connectedScenes.first as? UIWindowScene,
-              let viewController = windowScene.windows.first?.rootViewController else {
-            showingAlert = true
-            alertMessage = "Could not present payment sheet"
-            return
-        }
-        
         isProcessing = true
-        
-        let success = await stripeService.presentPaymentSheet(from: viewController)
-        
-        if success {
-            do {
-                guard let userId = authViewModel.currentUser?.id else {
-                    alertMessage = "You must be logged in to purchase a ticket."
-                    isProcessing = false
-                    showingAlert = true
-                    return
-                }
-                
-                guard let eventId = event.id else {
-                    alertMessage = "Event ID is missing."
-                    isProcessing = false
-                    showingAlert = true
-                    return
-                }
-                
-                // Update Firestore
-                try await stripeService.handleSuccessfulPayment(eventId: eventId, userId: userId)
-                
-                // Create chat for the event
-                let ticket = Ticket(
-                    id: eventId,
-                    eventId: eventId,
-                    eventName: event.title,
-                    date: event.date,
-                    location: event.location,
-                    name: name,
-                    email: email,
-                    price: String(format: "%.2f", event.price),
-                    qrcodeUrl: "",
-                    userId: userId
-                )
-                try await chatService?.createChatForTicket(ticket: ticket)
-                
-                isSuccess = true
-                alertMessage = "Payment successful! Your ticket has been confirmed."
-            } catch {
-                alertMessage = "Payment processed but failed to update ticket information: \(error.localizedDescription)"
+
+        if event.price > 0 {
+            guard let windowScene = UIApplication.shared.connectedScenes.first as? UIWindowScene,
+                  let viewController = windowScene.windows.first?.rootViewController else {
+                alertMessage = "Could not present payment sheet"
+                showingAlert = true
+                isProcessing = false
+                return
             }
-        } else {
-            alertMessage = "Payment failed or was cancelled"
+            
+            let success = await stripeService.presentPaymentSheet(from: viewController)
+            
+            if !success {
+                alertMessage = "Payment failed or was cancelled"
+                showingAlert = true
+                isProcessing = false
+                return
+            }
+        }
+
+        do {
+            guard let userId = authViewModel.currentUser?.id else {
+                alertMessage = "You must be logged in to purchase a ticket."
+                isProcessing = false
+                showingAlert = true
+                return
+            }
+            
+            guard let eventId = event.id else {
+                alertMessage = "Event ID is missing."
+                isProcessing = false
+                showingAlert = true
+                return
+            }
+            
+            // Handle successful payment in StripeService (updates attendees, etc.)
+            try await stripeService.handleSuccessfulPayment(eventId: eventId, userId: userId)
+            
+            // Create ticket in Firestore
+            let db = Firestore.firestore()
+            let ticketRef = db.collection("tickets").document()
+            let qrCodeUrl = "https://api.qrserver.com/v1/create-qr-code/?data=\(ticketRef.documentID)"
+            
+            let ticketData: [String: Any] = [
+                "eventId": eventId,
+                "eventName": event.title,
+                "date": event.date,
+                "location": event.location,
+                "userId": userId,
+                "name": name,
+                "email": email,
+                "price": String(format: "%.2f", event.price),
+                "qrcodeUrl": qrCodeUrl,
+                "status": "active",
+                "createdAt": Timestamp(date: Date())
+            ]
+            
+            try await ticketRef.setData(ticketData)
+            
+            // Create chat for the event
+            let ticket = Ticket(
+                id: ticketRef.documentID,
+                eventId: eventId,
+                eventName: event.title,
+                date: event.date,
+                location: event.location,
+                name: name,
+                email: email,
+                price: String(format: "%.2f", event.price),
+                qrcodeUrl: qrCodeUrl,
+                userId: userId,
+                status: .active
+            )
+            try await chatService?.createChatForTicket(ticket: ticket)
+            
+            isSuccess = true
+            alertMessage = "Payment successful! Your ticket has been confirmed."
+            
+        } catch {
+            alertMessage = "Payment processed but failed to update ticket information: \(error.localizedDescription)"
         }
         
         isProcessing = false
@@ -175,7 +249,9 @@ struct GetTicketView: View {
         category: "Party",
         price: 15.0,
         maxCapacity: 100,
-        description: "Join us for an amazing beach party!"
+        description: "Join us for an amazing beach party!",
+        latitude: 52.3702,
+        longitude: 4.8952
     ))
     .environmentObject(AuthViewModel())
 }
