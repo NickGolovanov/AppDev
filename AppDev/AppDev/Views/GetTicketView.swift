@@ -2,38 +2,34 @@ import FirebaseAuth
 import FirebaseFirestore
 import FirebaseStorage
 import SwiftUI
+import Stripe
+import StripePaymentSheet
+import UIKit
+
+struct IdentifiablePaymentSheet: Identifiable {
+    let id = UUID()
+    let paymentSheet: PaymentSheet
+}
 
 struct GetTicketView: View {
     let event: Event
-    @Environment(\.dismiss) private var dismiss
+    @Environment(\.presentationMode) var presentationMode
+    @State private var showingAlert = false
+    @State private var alertMessage = ""
+    @State private var isSuccess = false
+    @State private var isProcessing = false
     @EnvironmentObject var authViewModel: AuthViewModel
+    @StateObject private var stripeService = StripeService()
     @State private var name: String = ""
     @State private var email: String = ""
-    @State private var showAlert = false
-    @State private var alertMessage = ""
-    @State private var isLoading = false
     @State private var navigateToEvent = false
     @State private var chatService: ChatService?
-
+    
     var body: some View {
         NavigationStack {
             VStack(spacing: 0) {
                 ScrollView {
                     VStack(spacing: 24) {
-                        // Event Image (REMOVED)
-                        // if let imageUrl = event.imageUrl {
-                        //     AsyncImage(url: URL(string: imageUrl)) { image in
-                        //         image
-                        //             .resizable()
-                        //             .aspectRatio(contentMode: .fill)
-                        //     } placeholder: {
-                        //         Rectangle()
-                        //             .fill(Color.gray.opacity(0.2))
-                        //     }
-                        //     .frame(height: 200)
-                        //     .clipped()
-                        // }
-
                         // Event Details
                         VStack(alignment: .leading, spacing: 16) {
                             Text(event.title)
@@ -78,8 +74,12 @@ struct GetTicketView: View {
                         .shadow(color: Color.black.opacity(0.1), radius: 5, x: 0, y: 2)
 
                         // Purchase Button
-                        Button(action: purchaseTicket) {
-                            if isLoading {
+                        Button(action: {
+                            Task {
+                                await handlePayment()
+                            }
+                        }) {
+                            if isProcessing {
                                 ProgressView()
                                     .progressViewStyle(CircularProgressViewStyle(tint: .white))
                             } else {
@@ -89,133 +89,188 @@ struct GetTicketView: View {
                         }
                         .frame(maxWidth: .infinity)
                         .padding()
-                        .background(Color.purple)
+                        .background(Color.blue)
                         .foregroundColor(.white)
-                        .cornerRadius(12)
-                        .padding(.horizontal)
-                        .disabled(isLoading)
+                        .cornerRadius(10)
+                        .disabled(stripeService.isLoading || isProcessing)
                     }
-                    .padding(.bottom)
+                    .padding()
                 }
             }
             .navigationTitle("Get Ticket")
             .navigationBarTitleDisplayMode(.inline)
             .background(Color(.systemGray6))
-            .alert(alertMessage, isPresented: $showAlert) {
-                Button("OK") {
-                    if navigateToEvent {
-                        dismiss()
+            .alert(isPresented: $showingAlert) {
+                Alert(
+                    title: Text(isSuccess ? "Success!" : "Error"),
+                    message: Text(alertMessage),
+                    dismissButton: .default(Text("OK")) {
+                        if isSuccess {
+                            presentationMode.wrappedValue.dismiss()
+                        }
                     }
-                }
+                )
             }
         }
         .onAppear {
+            if event.price > 0 {
+                preparePayment()
+            }
             if let user = authViewModel.currentUser {
                 name = user.fullName
                 email = user.email
-            } else {
-                print("[GetTicketView] AuthViewModel currentUser is nil onAppear")
             }
             chatService = ChatService(authViewModel: authViewModel)
         }
     }
+    
+    private func preparePayment() {
+        let amount = Int(event.price * 100) // Convert to cents
+        stripeService.preparePaymentSheet(amount: amount) { success, error in
+            if !success {
+                showingAlert = true
+                alertMessage = error ?? "Failed to prepare payment"
+            }
+        }
+    }
+    
+    private func handlePayment() async {
+        isProcessing = true
 
-    private func purchaseTicket() {
-        guard !name.isEmpty else {
-            alertMessage = "User name is missing. Please log in again."
-            print("[GetTicketView] User name is missing. Aborting ticket creation.")
-            showAlert = true
-            return
-        }
-        
-        guard !email.isEmpty else {
-            alertMessage = "User email is missing. Please log in again."
-            print("[GetTicketView] User email is missing. Aborting ticket creation.")
-            showAlert = true
-            return
-        }
-        
-        isLoading = true
-        
-        let db = Firestore.firestore()
-        let eventId = event.id ?? ""
-        let ticketRef = db.collection("tickets").document()
-        let ticketData: [String: Any] = [
-            "eventId": eventId,
-            "eventName": event.title,
-            "date": event.date,
-            "location": event.location,
-            "userId": Auth.auth().currentUser?.uid ?? "",
-            "name": name,
-            "email": email,
-            "price": String(format: "%.2f", event.price),
-            "qrcodeUrl": "",
-            "status": "active",
-            "createdAt": Timestamp(date: Date())
-        ]
-        ticketRef.setData(ticketData) { error in
-            if let error = error {
-                isLoading = false
-                alertMessage = "Failed to purchase ticket: \(error.localizedDescription)"
-                showAlert = true
+        // Handle payment for paid events
+        if event.price > 0 {
+            guard let windowScene = UIApplication.shared.connectedScenes.first as? UIWindowScene,
+                  let viewController = windowScene.windows.first?.rootViewController else {
+                alertMessage = "Could not present payment sheet"
+                showingAlert = true
+                isProcessing = false
                 return
             }
-            // Use API QR code link instead of generating/uploading image
-            let qrCodeUrl = "https://api.qrserver.com/v1/create-qr-code/?data=\(ticketRef.documentID)"
-            ticketRef.updateData(["qrcodeUrl": qrCodeUrl]) { error in
-                if let error = error {
-                    isLoading = false
-                    alertMessage = "Failed to update ticket with QR code: \(error.localizedDescription)"
-                    showAlert = true
-                    return
-                }
-                // Update event attendees count
-                let eventRef = db.collection("events").document(eventId)
-                eventRef.updateData([
-                    "attendees": FieldValue.increment(Int64(1))
-                ]) { error in
-                    if let error = error {
-                        print("Error updating attendees count: \(error.localizedDescription)")
-                    }
-                }
-                // Update user's joined events
-                if let userId = Auth.auth().currentUser?.uid {
-                    let userRef = db.collection("users").document(userId)
-                    userRef.updateData([
-                        "joinedEventIds": FieldValue.arrayUnion([eventId])
-                    ]) { error in
-                        if let error = error {
-                            print("Error updating user's joined events: \(error.localizedDescription)")
-                        }
-                    }
-                }
-                // Create chat for the event
-                Task {
-                    do {
-                        let ticket = Ticket(
-                            id: ticketRef.documentID,
-                            eventId: eventId,
-                            eventName: event.title,
-                            date: event.date,
-                            location: event.location,
-                            name: name,
-                            email: email,
-                            price: String(format: "%.2f", event.price),
-                            qrcodeUrl: qrCodeUrl,
-                            userId: Auth.auth().currentUser?.uid ?? "",
-                            status: .active
-                        )
-                        try await chatService?.createChatForTicket(ticket: ticket)
-                    } catch {
-                        print("Error creating chat: \(error.localizedDescription)")
-                    }
-                }
-                isLoading = false
-                alertMessage = "Ticket purchased successfully!"
-                showAlert = true
-                navigateToEvent = true
+            
+            let success = await stripeService.presentPaymentSheet(from: viewController)
+            
+            if !success {
+                alertMessage = "Payment failed or was cancelled"
+                showingAlert = true
+                isProcessing = false
+                return
             }
         }
+  // Create ticket and update database
+        do {
+            guard let userId = authViewModel.currentUser?.id else {
+                alertMessage = "You must be logged in to purchase a ticket."
+                isProcessing = false
+                showingAlert = true
+                return
+            }
+            
+            guard let eventId = event.id else {
+                alertMessage = "Event ID is missing."
+                isProcessing = false
+                showingAlert = true
+                return
+            }
+            
+            // Handle successful payment in StripeService (updates attendees, etc.)
+            try await stripeService.handleSuccessfulPayment(eventId: eventId, userId: userId)
+            
+            // Create ticket in Firestore
+            let db = Firestore.firestore()
+            let ticketRef = db.collection("tickets").document()
+            let qrCodeUrl = "https://api.qrserver.com/v1/create-qr-code/?data=\(ticketRef.documentID)"
+            
+            let ticketData: [String: Any] = [
+                "eventId": eventId,
+                "eventName": event.title,
+                "date": event.date,
+                "location": event.location,
+                "userId": userId,
+                "name": name,
+                "email": email,
+                "price": String(format: "%.2f", event.price),
+                "qrcodeUrl": qrCodeUrl,
+                "status": "active",
+                "createdAt": Timestamp(date: Date())
+            ]
+            
+            try await ticketRef.setData(ticketData)
+            
+            // Create chat for the event
+            let ticket = Ticket(
+                id: ticketRef.documentID,
+                eventId: eventId,
+                eventName: event.title,
+                date: event.date,
+                location: event.location,
+                name: name,
+                email: email,
+                price: String(format: "%.2f", event.price),
+                qrcodeUrl: qrCodeUrl,
+                userId: userId,
+                status: .active
+            )
+            try await chatService?.createChatForTicket(ticket: ticket)
+            
+            isSuccess = true
+            alertMessage = "Payment successful! Your ticket has been confirmed."
+            
+        } catch {
+            alertMessage = "Payment processed but failed to update ticket information: \(error.localizedDescription)"
+        }
+        
+        isProcessing = false
+        showingAlert = true
+            
+            // Handle successful payment in StripeService (updates attendees, etc.)
+            try await stripeService.handleSuccessfulPayment(eventId: eventId, userId: userId)
+            
+            // Create ticket in Firestore
+            let db = Firestore.firestore()
+            let ticketRef = db.collection("tickets").document()
+            let qrCodeUrl = "https://api.qrserver.com/v1/create-qr-code/?data=\(ticketRef.documentID)"
+            
+            let ticketData: [String: Any] = [
+                "eventId": eventId,
+                "eventName": event.title,
+                "date": event.date,
+                "location": event.location,
+                "userId": userId,
+                "name": name,
+                "email": email,
+                "price": String(format: "%.2f", event.price),
+                "qrcodeUrl": qrCodeUrl,
+                "status": "active",
+                "createdAt": Timestamp(date: Date())
+            ]
+            
+            try await ticketRef.setData(ticketData)
+            
+            // Create chat for the event
+            let ticket = Ticket(
+                id: ticketRef.documentID,
+                eventId: eventId,
+                eventName: event.title,
+                date: event.date,
+                location: event.location,
+                name: name,
+                email: email,
+                price: String(format: "%.2f", event.price),
+                qrcodeUrl: qrCodeUrl,
+                userId: userId,
+                status: .active
+            )
+            try await chatService?.createChatForTicket(ticket: ticket)
+            
+            isSuccess = true
+            alertMessage = "Payment successful! Your ticket has been confirmed."
+            
+        } catch {
+            alertMessage = "Payment processed but failed to update ticket information: \(error.localizedDescription)"
+        }
+        
+        isProcessing = false
+        showingAlert = true
     }
 
     private func generateQRCode(from string: String) -> UIImage? {
