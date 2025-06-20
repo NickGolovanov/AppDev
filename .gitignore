@@ -14,6 +14,17 @@ DerivedData/
 *.dSYM
 *.xcarchive
 *.xcworkspace/
+*.pbxuser
+!default.pbxuser
+*.mode1v3
+!default.mode1v3
+*.mode2v3
+!default.mode2v3
+*.perspectivev3
+!default.perspectivev3
+xcuserdata
+*.moved-aside
+!default.xcworkspace
 
 # Swift Package Manager
 .build/
@@ -72,3 +83,6 @@ integration_logs/
 # Environment files
 .env
 .env.*
+
+# Config files with sensitive data
+AppDev/Config/Config.plist

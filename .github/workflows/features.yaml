@@ -1,32 +1,32 @@
-name: Feature Branch PR Checks
+# name: Feature Branch PR Checks
 
-on:
-  pull_request:
-    branches:
-      - develop
-    paths-ignore:
-      - "**/README.md"
-    types: [opened, synchronize, reopened]
+# on:
+#   pull_request:
+#     branches:
+#       - develop
+#     paths-ignore:
+#       - "**/README.md"
+#     types: [opened, synchronize, reopened]
 
-jobs:
-  feature-pr-checks:
-    runs-on: macos-latest
-    if: startsWith(github.head_ref, 'feature/')
-    steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
-      - name: Set up Swift
-        uses: fwal/setup-swift@v1
-        with:
-          swift-version: "5.8"
-      - name: Run Tests
-        if: false
-        run: |
-          cd AppDev && xcodebuild test \
-            -project AppDev.xcodeproj \
-            -scheme AppDev \
-            -destination 'platform=iOS Simulator,name=iPhone 16 Pro,OS=18.2' \
-            -only-testing:AppDevTests \
-            CODE_SIGN_IDENTITY="" \
-            CODE_SIGNING_REQUIRED=NO \
-            ONLY_ACTIVE_ARCH=YES
+# jobs:
+#   feature-pr-checks:
+#     runs-on: macos-latest
+#     if: startsWith(github.head_ref, 'feature/')
+#     steps:
+#       - name: Checkout code
+#         uses: actions/checkout@v4
+#       - name: Set up Swift
+#         uses: fwal/setup-swift@v1
+#         with:
+#           swift-version: "5.8"
+#       - name: Run Tests
+#         if: false
+#         run: |
+#           cd AppDev && xcodebuild test \
+#             -project AppDev.xcodeproj \
+#             -scheme AppDev \
+#             -destination 'platform=iOS Simulator,name=iPhone 16 Pro,OS=18.2' \
+#             -only-testing:AppDevTests \
+#             CODE_SIGN_IDENTITY="" \
+#             CODE_SIGNING_REQUIRED=NO \
+#             ONLY_ACTIVE_ARCH=YES
