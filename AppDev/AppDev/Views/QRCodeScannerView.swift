@@ -15,10 +15,12 @@ struct QRCodeScannerView: View {
     @State private var scanResult: String = "Scanning..."
     @State private var isScanning = false
     @Environment(\.presentationMode) var presentationMode
+    var eventName: String
+    var eventId: String
 
     var body: some View {
         VStack {
-            Text("Scan QR Code")
+            Text(eventName.isEmpty ? "Scan QR Code" : "Scan QR Code for \(eventName)")
                 .font(.title)
                 .padding()
 
@@ -85,40 +87,111 @@ struct QRCodeScannerView: View {
     }
 
     func handleScannedTicket(_ ticketId: String) {
-        // Prevent rescanning the same code immediately
         self.isScanning = false
         self.scanResult = "Processing ticket..."
 
         let db = Firestore.firestore()
-        db.collection("tickets").document(ticketId).getDocument { document, error in
-            if let document = document, document.exists {
-                if let used = document.data()?["used"] as? Bool, !used {
-                    // Ticket exists and is not used, mark as used
-                    db.collection("tickets").document(ticketId).updateData(["used": true]) { err in
-                        if let err = err {
-                            self.scanResult = "Error updating ticket: \(err.localizedDescription)"
-                        } else {
-                            self.scanResult = "Ticket scanned successfully!"
-                        }
-                        // Allow scanning again after a short delay
-                        DispatchQueue.main.asyncAfter(deadline: .now() + 2) {
-                            self.isScanning = true
-                        }
-                    }
-                } else if let used = document.data()?["used"] as? Bool, used {
-                    self.scanResult = "Ticket already used."
-                    // Allow scanning again after a short delay
-                    DispatchQueue.main.asyncAfter(deadline: .now() + 2) { self.isScanning = true }
-                } else {
-                    self.scanResult = "Ticket data incomplete."
-                    // Allow scanning again after a short delay
-                    DispatchQueue.main.asyncAfter(deadline: .now() + 2) { self.isScanning = true }
-                }
-            } else {
-                self.scanResult = "Ticket not found."
-                // Allow scanning again after a short delay
-                DispatchQueue.main.asyncAfter(deadline: .now() + 2) { self.isScanning = true }
+        let ticketRef = db.collection("tickets").document(ticketId)
+
+        ticketRef.getDocument { ticketDocument, ticketError in
+            if let ticketError = ticketError {
+                self.scanResult = "Error fetching ticket: \(ticketError.localizedDescription)"
+                self.resumeScanningAfterDelay()
+                return
             }
+
+            guard let ticketDocument = ticketDocument, ticketDocument.exists else {
+                self.scanResult = "Ticket not found."
+                self.resumeScanningAfterDelay()
+                return
+            }
+
+            guard let ticketData = ticketDocument.data() else {
+                self.scanResult = "Ticket data incomplete."
+                self.resumeScanningAfterDelay()
+                return
+            }
+
+            // Check if ticket belongs to this event
+            guard let ticketEventId = ticketData["eventId"] as? String else {
+                self.scanResult = "Ticket missing event ID."
+                self.resumeScanningAfterDelay()
+                return
+            }
+
+            if ticketEventId != self.eventId {
+                self.scanResult = "This ticket is for a different event."
+                self.resumeScanningAfterDelay()
+                return
+            }
+
+            // Check ticket status
+            if let status = ticketData["status"] as? String {
+                if status == "used" {
+                    self.scanResult = "Ticket already used."
+                    self.resumeScanningAfterDelay()
+                    return
+                }
+            }
+
+            // Fetch event details to check capacity
+            let eventRef = db.collection("events").document(self.eventId)
+            eventRef.getDocument { eventDocument, eventError in
+                if let eventError = eventError {
+                    self.scanResult = "Error fetching event: \(eventError.localizedDescription)"
+                    self.resumeScanningAfterDelay()
+                    return
+                }
+
+                guard let eventDocument = eventDocument, eventDocument.exists else {
+                    self.scanResult = "Associated event not found."
+                    self.resumeScanningAfterDelay()
+                    return
+                }
+
+                guard let eventData = eventDocument.data(),
+                      let attendees = eventData["attendees"] as? Int,
+                      let maxCapacity = eventData["maxCapacity"] as? Int
+                else {
+                    self.scanResult = "Event data incomplete (attendees/capacity)."
+                    self.resumeScanningAfterDelay()
+                    return
+                }
+
+                if attendees >= maxCapacity {
+                    self.scanResult = "Event is full. Max capacity reached."
+                    self.resumeScanningAfterDelay()
+                    return
+                }
+
+                // Mark ticket as used and increment event attendees
+                ticketRef.updateData([
+                    "status": "used",
+                    "usedAt": Timestamp(date: Date())
+                ]) { ticketUpdateErr in
+                    if let ticketUpdateErr = ticketUpdateErr {
+                        self.scanResult = "Error updating ticket status: \(ticketUpdateErr.localizedDescription)"
+                        self.resumeScanningAfterDelay()
+                        return
+                    }
+
+                    eventRef.updateData(["attendees": FieldValue.increment(Int64(1))]) { eventUpdateErr in
+                        if let eventUpdateErr = eventUpdateErr {
+                            self.scanResult = "Error incrementing attendees: \(eventUpdateErr.localizedDescription)"
+                        } else {
+                            self.scanResult = "Ticket scanned successfully! Welcome!"
+                        }
+                        self.resumeScanningAfterDelay()
+                    }
+                }
+            }
+        }
+    }
+    
+    private func resumeScanningAfterDelay() {
+        DispatchQueue.main.asyncAfter(deadline: .now() + 2) {
+            self.isScanning = true
+            self.scannedCode = nil // Reset scanned code to allow new scans
         }
     }
 }
@@ -221,5 +294,5 @@ struct QRCodeScannerCameraView: UIViewRepresentable {
 }
 
 #Preview {
-    QRCodeScannerView()
+    QRCodeScannerView(eventName: "My Event", eventId: "123")
 }

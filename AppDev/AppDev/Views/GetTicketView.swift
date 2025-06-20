@@ -156,8 +156,7 @@ struct GetTicketView: View {
                 return
             }
         }
-
-        // Create ticket and update database
+  // Create ticket and update database
         do {
             guard let userId = authViewModel.currentUser?.id else {
                 alertMessage = "You must be logged in to purchase a ticket."
@@ -172,6 +171,56 @@ struct GetTicketView: View {
                 showingAlert = true
                 return
             }
+            
+            // Handle successful payment in StripeService (updates attendees, etc.)
+            try await stripeService.handleSuccessfulPayment(eventId: eventId, userId: userId)
+            
+            // Create ticket in Firestore
+            let db = Firestore.firestore()
+            let ticketRef = db.collection("tickets").document()
+            let qrCodeUrl = "https://api.qrserver.com/v1/create-qr-code/?data=\(ticketRef.documentID)"
+            
+            let ticketData: [String: Any] = [
+                "eventId": eventId,
+                "eventName": event.title,
+                "date": event.date,
+                "location": event.location,
+                "userId": userId,
+                "name": name,
+                "email": email,
+                "price": String(format: "%.2f", event.price),
+                "qrcodeUrl": qrCodeUrl,
+                "status": "active",
+                "createdAt": Timestamp(date: Date())
+            ]
+            
+            try await ticketRef.setData(ticketData)
+            
+            // Create chat for the event
+            let ticket = Ticket(
+                id: ticketRef.documentID,
+                eventId: eventId,
+                eventName: event.title,
+                date: event.date,
+                location: event.location,
+                name: name,
+                email: email,
+                price: String(format: "%.2f", event.price),
+                qrcodeUrl: qrCodeUrl,
+                userId: userId,
+                status: .active
+            )
+            try await chatService?.createChatForTicket(ticket: ticket)
+            
+            isSuccess = true
+            alertMessage = "Payment successful! Your ticket has been confirmed."
+            
+        } catch {
+            alertMessage = "Payment processed but failed to update ticket information: \(error.localizedDescription)"
+        }
+        
+        isProcessing = false
+        showingAlert = true
             
             // Handle successful payment in StripeService (updates attendees, etc.)
             try await stripeService.handleSuccessfulPayment(eventId: eventId, userId: userId)

@@ -21,6 +21,12 @@ struct Ticket: Identifiable, Codable {
     let price: String
     let qrcodeUrl: String
     let userId: String
+    var status: TicketStatus
+    
+    enum TicketStatus: String, Codable {
+        case active
+        case used
+    }
     
     enum CodingKeys: String, CodingKey {
         case id
@@ -33,6 +39,17 @@ struct Ticket: Identifiable, Codable {
         case price
         case qrcodeUrl
         case userId
+        case status
+    }
+    
+    var formattedDate: String {
+        let isoFormatter = ISO8601DateFormatter()
+        if let dateObj = isoFormatter.date(from: self.date) {
+            let formatter = DateFormatter()
+            formatter.dateFormat = "d MMM yyyy"
+            return formatter.string(from: dateObj)
+        }
+        return self.date
     }
 }
 
@@ -40,57 +57,84 @@ struct TicketsView: View {
     @State private var tickets: [Ticket] = []
     @State private var isLoading = true
     @State private var errorMessage: String?
+    @State private var selectedFilter: TicketFilter = .active
+    
+    enum TicketFilter {
+        case active
+        case used
+    }
+    
+    var filteredTickets: [Ticket] {
+        switch selectedFilter {
+        case .active:
+            return tickets.filter { $0.status == .active }
+        case .used:
+            return tickets.filter { $0.status == .used }
+        }
+    }
     
     var body: some View {
-        VStack(spacing: 0) {
-            // Header
-            HeaderView()
-                .padding(.horizontal)
-                .padding(.top, 8)
-            
-            // Title
-            HStack {
-                Text("My Tickets")
-                    .font(.title).fontWeight(.heavy)
-                Spacer()
-            }
-            .padding([.horizontal, .top])
-            
-            if isLoading {
-                ProgressView()
-                    .frame(maxWidth: .infinity, maxHeight: .infinity)
-            } else if let error = errorMessage {
-                VStack {
-                    Text("Error loading tickets")
-                        .font(.headline)
-                    Text(error)
-                        .font(.subheadline)
-                        .foregroundColor(.red)
-                }
-                .frame(maxWidth: .infinity, maxHeight: .infinity)
-            } else if tickets.isEmpty {
-                VStack {
-                    Text("No tickets found")
-                        .font(.headline)
-                    Text("Your purchased tickets will appear here")
-                        .font(.subheadline)
-                        .foregroundColor(.gray)
-                }
-                .frame(maxWidth: .infinity, maxHeight: .infinity)
-            } else {
-                // Tickets List
-                ScrollView {
-                    VStack(spacing: 16) {
-                        ForEach(tickets) { ticket in
-                            TicketCard(ticket: ticket)
-                        }
+        NavigationStack {
+            VStack(spacing: 0) {
+                // Header
+                HeaderView()
+                    .padding(.horizontal)
+                    .padding(.top, 8)
+                
+                // Title and Filter
+                VStack(spacing: 16) {
+                    HStack {
+                        Text("My Tickets")
+                            .font(.title).fontWeight(.heavy)
+                        Spacer()
                     }
-                    .padding()
+                    
+                    // Filter Picker
+                    Picker("Filter", selection: $selectedFilter) {
+                        Text("Active").tag(TicketFilter.active)
+                        Text("Used").tag(TicketFilter.used)
+                    }
+                    .pickerStyle(SegmentedPickerStyle())
+                    .padding(.horizontal)
+                }
+                .padding([.horizontal, .top])
+                
+                if isLoading {
+                    ProgressView()
+                        .frame(maxWidth: .infinity, maxHeight: .infinity)
+                } else if let error = errorMessage {
+                    VStack {
+                        Text("Error loading tickets")
+                            .font(.headline)
+                        Text(error)
+                            .font(.subheadline)
+                            .foregroundColor(.red)
+                    }
+                    .frame(maxWidth: .infinity, maxHeight: .infinity)
+                } else if filteredTickets.isEmpty {
+                    VStack {
+                        Text("No tickets found")
+                            .font(.headline)
+                        Text(selectedFilter == .active ? "You don't have any active tickets" : "You don't have any used tickets")
+                            .font(.subheadline)
+                            .foregroundColor(.gray)
+                    }
+                    .frame(maxWidth: .infinity, maxHeight: .infinity)
+                } else {
+                    // Tickets List
+                    ScrollView {
+                        VStack(spacing: 16) {
+                            ForEach(filteredTickets) { ticket in
+                                TicketCard(ticket: ticket)
+                            }
+                        }
+                        .padding()
+                    }
                 }
             }
-        }
-        .onAppear {
-            fetchTickets()
+            .onAppear {
+                fetchTickets()
+            }
         }
     }
     
@@ -120,6 +164,10 @@ struct TicketsView: View {
                 tickets = documents.compactMap { doc in
                     var data = doc.data()
                     data["id"] = doc.documentID
+                    // Set default status if not present
+                    if data["status"] == nil {
+                        data["status"] = Ticket.TicketStatus.active.rawValue
+                    }
                     return try? Firestore.Decoder().decode(Ticket.self, from: data)
                 }
             }
@@ -132,18 +180,45 @@ struct TicketCard: View {
 
     var body: some View {
         VStack(alignment: .leading, spacing: 12) {
-            Text(ticket.eventName)
-                .font(.headline)
-                .fontWeight(.semibold)
-            HStack(spacing: 12) {
-                Label(ticket.date, systemImage: "calendar")
-                    .font(.subheadline)
+            HStack {
+                Text(ticket.eventName)
+                    .font(.headline)
+                    .fontWeight(.semibold)
                 Spacer()
+                // Status Badge
+                Text(ticket.status.rawValue.capitalized)
+                    .font(.caption)
+                    .padding(.horizontal, 8)
+                    .padding(.vertical, 4)
+                    .background(
+                        ticket.status == .active ? Color.green.opacity(0.2) : Color.red.opacity(0.2)
+                    )
+                    .foregroundColor(
+                        ticket.status == .active ? .green : .red
+                    )
+                    .cornerRadius(8)
             }
-            HStack(spacing: 12) {
-                Label(ticket.location, systemImage: "mappin.and.ellipse")
-                    .font(.subheadline)
-                Spacer()
+            VStack(alignment: .leading, spacing: 6) {
+                Text(ticket.eventName)
+                    .font(.headline)
+                    .fontWeight(.bold)
+                    .foregroundColor(.primary)
+
+                HStack {
+                    Image(systemName: "calendar")
+                        .font(.subheadline)
+                    Text(ticket.formattedDate)
+                        .font(.subheadline)
+                }
+                .foregroundColor(.secondary)
+
+                HStack {
+                    Image(systemName: "mappin.and.ellipse")
+                        .font(.subheadline)
+                    Text(ticket.location)
+                        .font(.subheadline)
+                }
+                .foregroundColor(.secondary)
             }
             Divider()
             VStack(alignment: .leading, spacing: 4) {
