@@ -5,23 +5,24 @@
 //  Created by Nikita Golovanov on 5/8/25.
 //
 
-import Foundation
-import SwiftUI
 import Firebase
 import FirebaseFirestore
 import FirebaseStorage
+import Foundation
+import SwiftUI
 
 struct EditProfileView: View {
+    @Environment(\.dismiss) private var dismiss
     @State private var fullName: String = ""
     @State private var username: String = ""
     @State private var bio: String = ""
     @State private var email: String = ""
     @State private var profileImage: UIImage?
     @State private var showImagePicker = false
-    @State private var alertMessage = ""
-    @State private var showAlert = false
+    @State private var showSuccessAlert = false
     @AppStorage("userId") var userId: String = ""
     @State private var profileImageUrl: String = ""
+    @State private var profileUpdatedAndReadyToDismiss: Bool = false
 
     var body: some View {
         ScrollView {
@@ -63,81 +64,66 @@ struct EditProfileView: View {
                         .cornerRadius(12)
                 }
                 .padding(.top, 30)
-                .alert(isPresented: $showAlert) {
-                    Alert(title: Text("Profile Update"), message: Text(alertMessage), dismissButton: .default(Text("OK")))
-                }
             }
             .padding()
         }
         .navigationTitle("Edit Profile")
         .navigationBarTitleDisplayMode(.inline)
-        .alert(isPresented: $showAlert) {
-            Alert(title: Text("Profile Update"), message: Text(alertMessage), dismissButton: .default(Text("OK")))
+        .alert("Success", isPresented: $showSuccessAlert) {
+            Button("Ok") {
+                if profileUpdatedAndReadyToDismiss {
+                    print("EditProfileView: Dismissing view via dismiss() after OK.")
+                    dismiss()
+                }
+            }
+        } message: {
+            Text("Profile updated successfully!")
         }
+        .onAppear(perform: fetchUserData)
     }
 
     func saveProfile() {
-        guard !fullName.isEmpty, !username.isEmpty, !email.isEmpty else {
-            alertMessage = "Please fill in all required fields."
-            showAlert = true
-            return
-        }
+        guard !userId.isEmpty else { return }
+        guard !fullName.isEmpty, !username.isEmpty, !email.isEmpty else { return }
 
-        if let image = profileImage {
-            uploadProfileImage(image) { result in
-                switch result {
-                case .success(let url):
-                    saveUserData(profileImageUrl: url.absoluteString)
-                case .failure(let error):
-                    alertMessage = "Image upload failed: \(error.localizedDescription)"
-                    showAlert = true
-                }
-            }
-        } else {
-            saveUserData(profileImageUrl: "")
-        }
-    }
-
-    func saveUserData(profileImageUrl: String) {
-        let userData: [String: Any] = [
+        let userDataToUpdate: [String: Any] = [
             "fullName": fullName,
             "username": username,
             "description": bio,
             "email": email,
-            "profileImageUrl": profileImageUrl,
-            "joinedEventIds": [],
-            "organizedEventIds": []
+            "profileImageUrl": profileImageUrl
         ]
 
-        Firestore.firestore().collection("users").document(userId).setData(userData, merge: true) { error in
-            alertMessage = error == nil ? "Profile updated successfully!" : "Error saving profile: \(error!.localizedDescription)"
-            showAlert = true
-        }
-    }
-
-    func uploadProfileImage(_ image: UIImage, completion: @escaping (Result<URL, Error>) -> Void) {
-        guard let imageData = image.jpegData(compressionQuality: 0.8) else {
-            completion(.failure(NSError(domain: "ImageConversion", code: 1)))
-            return
-        }
-
-        let storageRef = Storage.storage().reference().child("profileImages/\(UUID().uuidString).jpg")
-        storageRef.putData(imageData, metadata: nil) { _, error in
-            if let error = error {
-                completion(.failure(error))
-                return
-            }
-            storageRef.downloadURL { url, error in
-                if let url = url {
-                    completion(.success(url))
-                } else {
-                    completion(.failure(error!))
-                }
+        Firestore.firestore().collection("users").document(userId).updateData(userDataToUpdate) { error in
+            if error == nil {
+                profileUpdatedAndReadyToDismiss = true
+                print("EditProfileView: Profile saved successfully. Showing success alert.")
+                showSuccessAlert = true
+            } else {
+                print("EditProfileView: Error saving profile: \(error?.localizedDescription ?? "unknown error")")
             }
         }
     }
 
-    func labeledTextField(_ label: String, text: Binding<String>, prefix: String = "", keyboardType: UIKeyboardType = .default) -> some View {
+    func fetchUserData() {
+        guard !userId.isEmpty else { return }
+
+        Firestore.firestore().collection("users").document(userId).getDocument { document, error in
+            if let document = document, document.exists {
+                let data = document.data()
+                fullName = data?["fullName"] as? String ?? ""
+                username = data?["username"] as? String ?? ""
+                bio = data?["description"] as? String ?? ""
+                email = data?["email"] as? String ?? ""
+                profileImageUrl = data?["profileImageUrl"] as? String ?? ""
+            }
+        }
+    }
+
+    func labeledTextField(
+        _ label: String, text: Binding<String>, prefix: String = "",
+        keyboardType: UIKeyboardType = .default
+    ) -> some View {
         VStack(alignment: .leading) {
             Text(label)
                 .font(.caption)
