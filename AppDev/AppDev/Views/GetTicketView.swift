@@ -2,34 +2,38 @@ import FirebaseAuth
 import FirebaseFirestore
 import FirebaseStorage
 import SwiftUI
-import Stripe
-import StripePaymentSheet
-import UIKit
-
-struct IdentifiablePaymentSheet: Identifiable {
-    let id = UUID()
-    let paymentSheet: PaymentSheet
-}
 
 struct GetTicketView: View {
     let event: Event
-    @Environment(\.presentationMode) var presentationMode
-    @State private var showingAlert = false
-    @State private var alertMessage = ""
-    @State private var isSuccess = false
-    @State private var isProcessing = false
+    @Environment(\.dismiss) private var dismiss
     @EnvironmentObject var authViewModel: AuthViewModel
-    @StateObject private var stripeService = StripeService()
     @State private var name: String = ""
     @State private var email: String = ""
+    @State private var showAlert = false
+    @State private var alertMessage = ""
+    @State private var isLoading = false
     @State private var navigateToEvent = false
     @State private var chatService: ChatService?
-    
+
     var body: some View {
         NavigationStack {
             VStack(spacing: 0) {
                 ScrollView {
                     VStack(spacing: 24) {
+                        // Event Image (REMOVED)
+                        // if let imageUrl = event.imageUrl {
+                        //     AsyncImage(url: URL(string: imageUrl)) { image in
+                        //         image
+                        //             .resizable()
+                        //             .aspectRatio(contentMode: .fill)
+                        //     } placeholder: {
+                        //         Rectangle()
+                        //             .fill(Color.gray.opacity(0.2))
+                        //     }
+                        //     .frame(height: 200)
+                        //     .clipped()
+                        // }
+
                         // Event Details
                         VStack(alignment: .leading, spacing: 16) {
                             Text(event.title)
@@ -74,12 +78,8 @@ struct GetTicketView: View {
                         .shadow(color: Color.black.opacity(0.1), radius: 5, x: 0, y: 2)
 
                         // Purchase Button
-                        Button(action: {
-                            Task {
-                                await handlePayment()
-                            }
-                        }) {
-                            if isProcessing {
+                        Button(action: purchaseTicket) {
+                            if isLoading {
                                 ProgressView()
                                     .progressViewStyle(CircularProgressViewStyle(tint: .white))
                             } else {
@@ -89,54 +89,38 @@ struct GetTicketView: View {
                         }
                         .frame(maxWidth: .infinity)
                         .padding()
-                        .background(Color.blue)
+                        .background(Color.purple)
                         .foregroundColor(.white)
-                        .cornerRadius(10)
-                        .disabled(stripeService.isLoading || isProcessing)
+                        .cornerRadius(12)
+                        .padding(.horizontal)
+                        .disabled(isLoading)
                     }
-                    .padding()
+                    .padding(.bottom)
                 }
             }
             .navigationTitle("Get Ticket")
             .navigationBarTitleDisplayMode(.inline)
             .background(Color(.systemGray6))
-            .alert(isPresented: $showingAlert) {
-                Alert(
-                    title: Text(isSuccess ? "Success!" : "Error"),
-                    message: Text(alertMessage),
-                    dismissButton: .default(Text("OK")) {
-                        if isSuccess {
-                            presentationMode.wrappedValue.dismiss()
-                        }
+            .alert(alertMessage, isPresented: $showAlert) {
+                Button("OK") {
+                    if navigateToEvent {
+                        dismiss()
                     }
-                )
+                }
             }
         }
         .onAppear {
-            if event.price > 0 {
-                preparePayment()
-            }
             if let user = authViewModel.currentUser {
                 name = user.fullName
                 email = user.email
+            } else {
+                print("[GetTicketView] AuthViewModel currentUser is nil onAppear")
             }
             chatService = ChatService(authViewModel: authViewModel)
         }
     }
-    
-    private func preparePayment() {
-        let amount = Int(event.price * 100) // Convert to cents
-        stripeService.preparePaymentSheet(amount: amount) { success, error in
-            if !success {
-                showingAlert = true
-                alertMessage = error ?? "Failed to prepare payment"
-            }
-        }
-    }
-    
-    private func handlePayment() async {
-        isProcessing = true
 
+<<<<<<< HEAD
         // Handle payment for paid events
         if event.price > 0 {
             guard let windowScene = UIApplication.shared.connectedScenes.first as? UIWindowScene,
@@ -222,6 +206,104 @@ struct GetTicketView: View {
         
         isProcessing = false
         showingAlert = true
+=======
+    private func purchaseTicket() {
+        guard !name.isEmpty else {
+            alertMessage = "User name is missing. Please log in again."
+            print("[GetTicketView] User name is missing. Aborting ticket creation.")
+            showAlert = true
+            return
+        }
+        
+        guard !email.isEmpty else {
+            alertMessage = "User email is missing. Please log in again."
+            print("[GetTicketView] User email is missing. Aborting ticket creation.")
+            showAlert = true
+            return
+        }
+        
+        isLoading = true
+        
+        let db = Firestore.firestore()
+        let eventId = event.id ?? ""
+        let ticketRef = db.collection("tickets").document()
+        let ticketData: [String: Any] = [
+            "eventId": eventId,
+            "eventName": event.title,
+            "date": event.date,
+            "location": event.location,
+            "userId": Auth.auth().currentUser?.uid ?? "",
+            "name": name,
+            "email": email,
+            "price": String(format: "%.2f", event.price),
+            "qrcodeUrl": "",
+            "status": "active",
+            "createdAt": Timestamp(date: Date())
+        ]
+        ticketRef.setData(ticketData) { error in
+            if let error = error {
+                isLoading = false
+                alertMessage = "Failed to purchase ticket: \(error.localizedDescription)"
+                showAlert = true
+                return
+            }
+            // Use API QR code link instead of generating/uploading image
+            let qrCodeUrl = "https://api.qrserver.com/v1/create-qr-code/?data=\(ticketRef.documentID)"
+            ticketRef.updateData(["qrcodeUrl": qrCodeUrl]) { error in
+                if let error = error {
+                    isLoading = false
+                    alertMessage = "Failed to update ticket with QR code: \(error.localizedDescription)"
+                    showAlert = true
+                    return
+                }
+                // Update event attendees count
+                let eventRef = db.collection("events").document(eventId)
+                eventRef.updateData([
+                    "attendees": FieldValue.increment(Int64(1))
+                ]) { error in
+                    if let error = error {
+                        print("Error updating attendees count: \(error.localizedDescription)")
+                    }
+                }
+                // Update user's joined events
+                if let userId = Auth.auth().currentUser?.uid {
+                    let userRef = db.collection("users").document(userId)
+                    userRef.updateData([
+                        "joinedEventIds": FieldValue.arrayUnion([eventId])
+                    ]) { error in
+                        if let error = error {
+                            print("Error updating user's joined events: \(error.localizedDescription)")
+                        }
+                    }
+                }
+                // Create chat for the event
+                Task {
+                    do {
+                        let ticket = Ticket(
+                            id: ticketRef.documentID,
+                            eventId: eventId,
+                            eventName: event.title,
+                            date: event.date,
+                            location: event.location,
+                            name: name,
+                            email: email,
+                            price: String(format: "%.2f", event.price),
+                            qrcodeUrl: qrCodeUrl,
+                            userId: Auth.auth().currentUser?.uid ?? "",
+                            status: .active
+                        )
+                        try await chatService?.createChatForTicket(ticket: ticket)
+                    } catch {
+                        print("Error creating chat: \(error.localizedDescription)")
+                    }
+                }
+                isLoading = false
+                alertMessage = "Ticket purchased successfully!"
+                showAlert = true
+                navigateToEvent = true
+            }
+        }
+>>>>>>> parent of 3b496ea (Merge branch 'feature/stripe' into develop)
     }
 
     private func generateQRCode(from string: String) -> UIImage? {
