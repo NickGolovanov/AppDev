@@ -36,96 +36,93 @@ struct EventsView: View {
 
     var body: some View {
         NavigationStack {
-            ScrollView {
-                VStack(spacing: 0) {
-                    HeaderView()
-                        .padding(.horizontal)
-                        .padding(.bottom, 8)
-
-                    // Search Bar
-                    HStack {
-                        Image(systemName: "magnifyingglass")
-                            .foregroundColor(.gray)
-                        TextField("Search events...", text: $searchText)
-                            .onChange(of: searchText) { _ in
-                                filterEvents()
-                            }
-                    }
-                    .padding(12)
-                    .background(Color(.systemGray6))
-                    .cornerRadius(12)
-                    .padding(.horizontal)
-                    .padding(.top, 4)
-
-                    // Filter Chips
-                    ScrollView(.horizontal, showsIndicators: false) {
-                        HStack(spacing: 12) {
-                            ForEach(filters, id: \.self) { filter in
-                                Text(filter)
-                                    .padding(.horizontal, 16)
-                                    .padding(.vertical, 8)
-                                    .background(
-                                        selectedFilter == filter
-                                            ? Color.purple.opacity(0.2) : Color(.systemGray5)
-                                    )
-                                    .foregroundColor(selectedFilter == filter ? .purple : .black)
-                                    .font(.subheadline)
-                                    .fontWeight(selectedFilter == filter ? .semibold : .regular)
-                                    .cornerRadius(20)
-                                    .onTapGesture { 
-                                        selectedFilter = filter
-                                        filterEvents()
-                                    }
-                            }
-                        }
-                        .padding(.horizontal)
-                    }
-                    .padding(.top, 8)
-
-                    // Featured Event
-                    if let firstEvent = filteredEvents.first {
-                        FeaturedEventView(event: firstEvent)
-                    }
-
-                    // Upcoming Events
-                    VStack(alignment: .leading, spacing: 8) {
-                        Text("Upcoming Events")
-                            .font(.headline)
-                            .fontWeight(.semibold)
+            ZStack(alignment: .bottomTrailing) {
+                ScrollView {
+                    VStack(spacing: 0) {
+                        HeaderView()
                             .padding(.horizontal)
-                        if isLoading {
-                            ProgressView().padding()
-                        } else if let errorMessage = errorMessage {
-                            Text(errorMessage).foregroundColor(.red).padding()
-                        } else {
-                            ForEach(filteredEvents) { event in
-                                UpcomingEventView(event: event)
+                            .padding(.bottom, 8)
+
+                        // Search Bar
+                        HStack {
+                            Image(systemName: "magnifyingglass")
+                                .foregroundColor(.gray)
+                            TextField("Search events...", text: $searchText)
+                                .onChange(of: searchText) { _ in
+                                    filterEvents()
+                                }
+                        }
+                        .padding(12)
+                        .background(Color(.systemGray6))
+                        .cornerRadius(12)
+                        .padding(.horizontal)
+                        .padding(.top, 4)
+
+                        // Filter Chips
+                        ScrollView(.horizontal, showsIndicators: false) {
+                            HStack(spacing: 12) {
+                                ForEach(filters, id: \.self) { filter in
+                                    Text(filter)
+                                        .padding(.horizontal, 16)
+                                        .padding(.vertical, 8)
+                                        .background(
+                                            selectedFilter == filter
+                                                ? Color.purple.opacity(0.2) : Color(.systemGray5)
+                                        )
+                                        .foregroundColor(selectedFilter == filter ? .purple : .black)
+                                        .font(.subheadline)
+                                        .fontWeight(selectedFilter == filter ? .semibold : .regular)
+                                        .cornerRadius(20)
+                                        .onTapGesture { 
+                                            selectedFilter = filter
+                                            filterEvents()
+                                        }
+                                }
+                            }
+                            .padding(.horizontal)
+                        }
+                        .padding(.top, 8)
+
+                        // Featured Event
+                        if let firstEvent = filteredEvents.first {
+                            FeaturedEventView(event: firstEvent)
+                        }
+
+                        // Upcoming Events
+                        VStack(alignment: .leading, spacing: 8) {
+                            Text("Upcoming Events")
+                                .font(.headline)
+                                .fontWeight(.semibold)
+                                .padding(.horizontal)
+                            if isLoading {
+                                ProgressView().padding()
+                            } else if let errorMessage = errorMessage {
+                                Text(errorMessage).foregroundColor(.red).padding()
+                            } else {
+                                ForEach(filteredEvents) { event in
+                                    UpcomingEventView(event: event)
+                                }
                             }
                         }
-                    }
-                    .padding(.top, 8)
+                        .padding(.top, 8)
 
-                    Spacer()
-
-                    // Floating Action Button
-                    HStack {
                         Spacer()
-                        Button(action: {
-                            showCreateEvent = true
-                        }) {
-                            Image(systemName: "plus")
-                                .font(.title)
-                                .foregroundColor(.white)
-                                .padding(24)
-                                .background(Color.purple)
-                                .clipShape(Circle())
-                                .shadow(radius: 4)
-                        }
-                        .padding(.trailing, 24)
-                        .padding(.bottom, 8)
                     }
-                    .padding(.top, 16)
                 }
+                // Floating Action Button (FAB) always visible above the tab bar
+                Button(action: {
+                    showCreateEvent = true
+                }) {
+                    Image(systemName: "plus")
+                        .font(.title)
+                        .foregroundColor(.white)
+                        .padding(24)
+                        .background(Color.purple)
+                        .clipShape(Circle())
+                        .shadow(radius: 4)
+                }
+                .padding(.trailing, 24)
+                .padding(.bottom, 80) // Adjust this value to sit above the tab bar/footer
             }
             .background(Color.white.ignoresSafeArea())
             .navigationDestination(isPresented: $showCreateEvent) {
@@ -165,11 +162,12 @@ struct EventsView: View {
                 else {
                     return nil
                 }
-                let coordinate: CLLocationCoordinate2D? = CLLocationCoordinate2D(latitude: 52.3676, longitude: 4.9041)
+                let latitude = data["latitude"] as? Double
+                let longitude = data["longitude"] as? Double
                 let distance: String? = "-"
                 let category = data["category"] as? String ?? "Other"
                 let price = data["price"] as? Double ?? 0.0
-                return Event(id: id, title: title, date: date, endTime: endTime, startTime: startTime, location: location, imageUrl: imageUrl, attendees: attendees, category: category, price: price, maxCapacity: maxCapacity, description: description, coordinate: coordinate, distance: distance)
+                return Event(id: id, title: title, date: date, endTime: endTime, startTime: startTime, location: location, imageUrl: imageUrl, attendees: attendees, category: category, price: price, maxCapacity: maxCapacity, description: description, latitude: latitude, longitude: longitude, distance: distance)
             }
             filterEvents()
         }
