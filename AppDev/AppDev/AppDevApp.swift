@@ -57,13 +57,15 @@ class AuthViewModel: ObservableObject {
         }
     }
 
-    private func fetchUserProfile(email: String?) {
+    func fetchUserProfile(email: String?) {
         guard let email = email else {
             print("AuthViewModel: fetchUserProfile - email is nil, returning.")
             return
         }
         print("AuthViewModel: Attempting to fetch user profile for email: \(email)")
         let db = Firestore.firestore()
+        
+        // First try to fetch by email
         db.collection("users").whereField("email", isEqualTo: email).getDocuments {
             snapshot, error in
             if let error = error {
@@ -76,12 +78,32 @@ class AuthViewModel: ObservableObject {
                     print("AuthViewModel: Successfully set currentUser: \(user.fullName) (ID: \(user.id ?? "nil"))")
                 }
             } else {
-                print("AuthViewModel: No user document found for email \(email) or decoding failed.")
+                print("AuthViewModel: No user document found for email \(email), trying by UID...")
+                
+                // If email search fails, try fetching by Firebase Auth UID
+                if let firebaseUser = Auth.auth().currentUser {
+                    db.collection("users").document(firebaseUser.uid).getDocument { document, error in
+                        if let error = error {
+                            print("AuthViewModel: Error fetching user by UID: \(error.localizedDescription)")
+                            return
+                        }
+                        
+                        if let document = document, document.exists, let user = try? document.data(as: User.self) {
+                            DispatchQueue.main.async {
+                                self.currentUser = user
+                                print("AuthViewModel: Successfully set currentUser by UID: \(user.fullName) (ID: \(user.id ?? "nil"))")
+                            }
+                        } else {
+                            print("AuthViewModel: No user document found for UID \(firebaseUser.uid) either.")
+                        }
+                    }
+                }
             }
         }
     }
 
-    func signOut() {
+
+func signOut() {
         do {
             try Auth.auth().signOut()
             self.currentUser = nil
