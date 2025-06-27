@@ -1,0 +1,26 @@
+import Foundation
+import FirebaseFirestore
+
+struct Rating: Codable, Identifiable {
+    @DocumentID var id: String?
+    let eventId: String
+    let userId: String
+    let musicRating: Int
+    let locationRating: Int 
+    let vibeRating: Int
+    let comment: String?
+    let timestamp: Date
+    
+    var averageRating: Double {
+        return Double(musicRating + locationRating + vibeRating) / 3.0
+    }
+}
+
+struct EventRatingSummary: Codable {
+    let eventId: String
+    let totalRatings: Int
+    let averageMusicRating: Double
+    let averageLocationRating: Double
+    let averageVibeRating: Double
+    let overallAverageRating: Double
+}
