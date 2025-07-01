@@ -137,7 +137,7 @@ struct ReviewCard: View {
     let review: Review
     
     var body: some View {
-        VStack(alignment: .leading, spacing: 12) {
+        VStack(alignment: .leading, spacing: 16) {
             // User Info and Overall Rating
             HStack {
                 Circle()
@@ -178,17 +178,50 @@ struct ReviewCard: View {
                 ratingPill("Vibe", rating: review.vibeRating, color: .pink)
             }
             
-            // Comment
+            // Comment Section - Enhanced visibility
             if !review.comment.isEmpty {
-                Text(review.comment)
-                    .font(.subheadline)
-                    .foregroundColor(.primary)
+                VStack(alignment: .leading, spacing: 8) {
+                    HStack {
+                        Image(systemName: "quote.bubble")
+                            .foregroundColor(.gray)
+                            .font(.caption)
+                        Text("Comment")
+                            .font(.caption)
+                            .fontWeight(.medium)
+                            .foregroundColor(.gray)
+                        Spacer()
+                    }
+                    
+                    Text(review.comment)
+                        .font(.body)
+                        .foregroundColor(.primary)
+                        .padding(.horizontal, 12)
+                        .padding(.vertical, 8)
+                        .background(Color(.systemGray6).opacity(0.5))
+                        .cornerRadius(8)
+                        .fixedSize(horizontal: false, vertical: true)
+                }
+            } else {
+                // Show when no comment is provided
+                HStack {
+                    Image(systemName: "text.bubble")
+                        .foregroundColor(.gray.opacity(0.5))
+                        .font(.caption)
+                    Text("No comment provided")
+                        .font(.caption)
+                        .foregroundColor(.gray.opacity(0.7))
+                        .italic()
+                }
             }
         }
-        .padding()
+        .padding(16)
         .background(Color(.systemBackground))
         .cornerRadius(12)
-        .shadow(color: Color.black.opacity(0.05), radius: 4, x: 0, y: 2)
+        .shadow(color: Color.black.opacity(0.08), radius: 6, x: 0, y: 3)
+        .overlay(
+            RoundedRectangle(cornerRadius: 12)
+                .stroke(Color.gray.opacity(0.1), lineWidth: 1)
+        )
     }
     
     private func ratingPill(_ title: String, rating: Double, color: Color) -> some View {
