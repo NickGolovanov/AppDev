@@ -164,10 +164,29 @@ struct EventsView: View {
                 }
                 let latitude = data["latitude"] as? Double
                 let longitude = data["longitude"] as? Double
-                let distance: String? = "-"
                 let category = data["category"] as? String ?? "Other"
                 let price = data["price"] as? Double ?? 0.0
-                return Event(id: id, title: title, date: date, endTime: endTime, startTime: startTime, location: location, imageUrl: imageUrl, attendees: attendees, category: category, price: price, maxCapacity: maxCapacity, description: description, latitude: latitude, longitude: longitude, distance: distance)
+                let averageRating = data["averageRating"] as? Double
+                let totalReviews = data["totalReviews"] as? Int
+                
+                return Event(
+                    id: id,
+                    title: title,
+                    date: date,
+                    endTime: endTime,
+                    startTime: startTime,
+                    location: location,
+                    imageUrl: imageUrl,
+                    attendees: attendees,
+                    category: category,
+                    price: price,
+                    maxCapacity: maxCapacity,
+                    description: description,
+                    latitude: latitude,
+                    longitude: longitude,
+                    averageRating: averageRating,
+                    totalReviews: totalReviews
+                )
             }
             filterEvents()
         }
@@ -199,59 +218,78 @@ struct FeaturedEventView: View {
     let event: Event
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 8) {
-            Text("Featured Event")
-                .font(.headline)
-                .fontWeight(.semibold)
-                .padding(.horizontal)
+        NavigationLink(destination: EventView(eventId: event.id ?? "-1")) {
+            VStack(alignment: .leading, spacing: 8) {
+                Text("Featured Event")
+                    .font(.headline)
+                    .fontWeight(.semibold)
+                    .padding(.horizontal)
+                    .foregroundColor(.primary)
 
-            ZStack(alignment: .bottomLeading) {
-                if let imageUrl = URL(string: event.imageUrl) {
-                    AsyncImage(url: imageUrl) { image in
-                        image.resizable().aspectRatio(contentMode: .fill)
-                    } placeholder: {
-                        Rectangle().fill(
-                            LinearGradient(
-                                gradient: Gradient(colors: [Color.purple.opacity(0.7), Color.blue.opacity(0.5)]),
-                                startPoint: .topLeading,
-                                endPoint: .bottomTrailing
+                ZStack(alignment: .bottomLeading) {
+                    if let imageUrl = URL(string: event.imageUrl) {
+                        AsyncImage(url: imageUrl) { image in
+                            image.resizable().aspectRatio(contentMode: .fill)
+                        } placeholder: {
+                            Rectangle().fill(
+                                LinearGradient(
+                                    gradient: Gradient(colors: [Color.purple.opacity(0.7), Color.blue.opacity(0.5)]),
+                                    startPoint: .topLeading,
+                                    endPoint: .bottomTrailing
+                                )
                             )
-                        )
+                        }
+                        .frame(height: 200)
+                        .cornerRadius(16)
                     }
+
+                    LinearGradient(
+                        gradient: Gradient(colors: [Color.black.opacity(0.7), .clear]),
+                        startPoint: .bottom,
+                        endPoint: .top
+                    )
                     .frame(height: 200)
                     .cornerRadius(16)
-                }
 
-                LinearGradient(
-                    gradient: Gradient(colors: [Color.black.opacity(0.7), .clear]),
-                    startPoint: .bottom,
-                    endPoint: .top
-                )
-                .frame(height: 200)
-                .cornerRadius(16)
+                    VStack(alignment: .leading, spacing: 4) {
+                        Text(event.title)
+                            .font(.title3)
+                            .fontWeight(.bold)
+                            .foregroundColor(.white)
+                            .lineLimit(2)
 
-                VStack(alignment: .leading, spacing: 4) {
-                    Text(event.title)
-                        .font(.title3)
-                        .fontWeight(.bold)
-                        .foregroundColor(.white)
-                        .lineLimit(2)
-
-                    HStack {
-                        Text(event.formattedDate)
-                        Text(event.formattedTime)
-                        Text("•")
-                        Text(event.location)
+                        HStack {
+                            Text(event.formattedDate)
+                            Text(event.formattedTime)
+                            Text("•")
+                            Text(event.location)
+                        }
+                        .foregroundColor(.white.opacity(0.9))
+                        .font(.subheadline)
+                        
+                        // Display rating if available
+                        if let rating = event.averageRating, rating > 0 {
+                            HStack(spacing: 4) {
+                                HStack(spacing: 2) {
+                                    ForEach(1...5, id: \.self) { star in
+                                        Image(systemName: star <= Int(rating.rounded()) ? "star.fill" : "star")
+                                            .foregroundColor(.yellow)
+                                            .font(.caption)
+                                    }
+                                }
+                                Text("(\(event.totalReviews ?? 0))")
+                                    .font(.caption)
+                                    .foregroundColor(.white.opacity(0.9))
+                            }
+                        }
                     }
-                    .foregroundColor(.white.opacity(0.9))
-                    .font(.subheadline)
+                    .padding(16)
                 }
-                .padding(16)
+                .padding(.horizontal)
+                .shadow(color: Color.black.opacity(0.1), radius: 8, x: 0, y: 4)
             }
-            .padding(.horizontal)
-            .shadow(color: Color.black.opacity(0.1), radius: 8, x: 0, y: 4)
+            .padding(.top, 8)
         }
-        .padding(.top, 8)
     }
 }
 
@@ -321,13 +359,30 @@ struct UpcomingEventView: View {
                         .lineLimit(1)
                 }
                 
-                HStack(spacing: 4) {
-                    Image(systemName: "person.2.fill")
-                        .foregroundColor(.purple)
-                        .font(.caption)
-                    Text("\(event.attendees) going")
-                        .font(.caption)
-                        .foregroundColor(.purple)
+                HStack(spacing: 8) {
+                    HStack(spacing: 4) {
+                        Image(systemName: "person.2.fill")
+                            .foregroundColor(.purple)
+                            .font(.caption)
+                        Text("\(event.attendees) going")
+                            .font(.caption)
+                            .foregroundColor(.purple)
+                    }
+                    
+                    // Display rating if available
+                    if let rating = event.averageRating, rating > 0 {
+                        HStack(spacing: 2) {
+                            Image(systemName: "star.fill")
+                                .foregroundColor(.yellow)
+                                .font(.caption2)
+                            Text(String(format: "%.1f", rating))
+                                .font(.caption)
+                                .foregroundColor(.gray)
+                            Text("(\(event.totalReviews ?? 0))")
+                                .font(.caption)
+                                .foregroundColor(.gray)
+                        }
+                    }
                 }
             }
             
@@ -347,7 +402,6 @@ struct UpcomingEventView: View {
         .cornerRadius(16)
         .shadow(color: Color.black.opacity(0.05), radius: 8, x: 0, y: 2)
         .padding(.horizontal)
-    
     }
 }
 
