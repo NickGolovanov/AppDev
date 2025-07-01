@@ -71,6 +71,24 @@ struct GetTicketView: View {
                                 }
                                 .foregroundColor(.gray)
                             }
+                            
+                            // Display rating if available
+                            if let rating = event.averageRating, rating > 0 {
+                                HStack {
+                                    Image(systemName: "star.fill")
+                                        .foregroundColor(.purple)
+                                    HStack(spacing: 2) {
+                                        ForEach(1...5, id: \.self) { star in
+                                            Image(systemName: star <= Int(rating.rounded()) ? "star.fill" : "star")
+                                                .foregroundColor(.purple)
+                                                .font(.caption)
+                                        }
+                                    }
+                                    Text("(\(event.totalReviews ?? 0) reviews)")
+                                        .font(.caption)
+                                        .foregroundColor(.gray)
+                                }
+                            }
                         }
                         .padding()
                         .background(Color.white)
@@ -247,7 +265,9 @@ struct GetTicketView: View {
         maxCapacity: 100,
         description: "Join us for an amazing beach party!",
         latitude: 52.3702,
-        longitude: 4.8952
+        longitude: 4.8952,
+        averageRating: 4.5,
+        totalReviews: 12
     ))
     .environmentObject(AuthViewModel())
 }
