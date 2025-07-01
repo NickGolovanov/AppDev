@@ -1,5 +1,5 @@
-import Foundation
 import FirebaseFirestore
+import FirebaseAuth
 
 class ReviewService: ObservableObject {
     private let db = Firestore.firestore()
@@ -15,63 +15,51 @@ class ReviewService: ObservableObject {
             "locationRating": review.locationRating,
             "vibeRating": review.vibeRating,
             "comment": review.comment,
-            "createdAt": Timestamp(date: review.createdAt)
+            "createdAt": FieldValue.serverTimestamp()
         ]
         
         try await db.collection("reviews").addDocument(data: reviewData)
         
         // Update event's average rating
-        try await updateEventRatings(eventId: review.eventId)
-    }
-    
-    func fetchReviews(for eventId: String) async throws -> [Review] {
-        let snapshot = try await db.collection("reviews")
-            .whereField("eventId", isEqualTo: eventId)
-            .order(by: "createdAt", descending: true)
-            .getDocuments()
-        
-        return snapshot.documents.compactMap { document in
-            try? document.data(as: Review.self)
-        }
+        try await updateEventAverageRating(eventId: review.eventId)
     }
     
     func checkIfUserReviewed(eventId: String, userId: String) async throws -> Bool {
-        let snapshot = try await db.collection("reviews")
+        let query = db.collection("reviews")
             .whereField("eventId", isEqualTo: eventId)
             .whereField("userId", isEqualTo: userId)
+        
+        let snapshot = try await query.getDocuments()
+        return !snapshot.isEmpty
+    }
+    
+    func fetchReviews(for eventId: String) async throws -> [Review] {
+        // Simple query without ordering to avoid index requirement
+        let snapshot = try await db.collection("reviews")
+            .whereField("eventId", isEqualTo: eventId)
             .getDocuments()
         
-        return !snapshot.documents.isEmpty
-    }
-    
-    func getEventRatingSummary(eventId: String) async throws -> EventRatingSummary {
-        let reviews = try await fetchReviews(for: eventId)
-        
-        guard !reviews.isEmpty else {
-            return EventRatingSummary.empty
+        var reviews = snapshot.documents.compactMap { doc in
+            try? doc.data(as: Review.self)
         }
         
-        let totalReviews = reviews.count
-        let avgOverall = reviews.map { $0.overallRating }.reduce(0, +) / Double(totalReviews)
-        let avgMusic = reviews.map { $0.musicRating }.reduce(0, +) / Double(totalReviews)
-        let avgLocation = reviews.map { $0.locationRating }.reduce(0, +) / Double(totalReviews)
-        let avgVibe = reviews.map { $0.vibeRating }.reduce(0, +) / Double(totalReviews)
+        // Sort locally by creation date (descending)
+        reviews.sort { $0.createdAt > $1.createdAt }
         
-        return EventRatingSummary(
-            totalReviews: totalReviews,
-            averageOverallRating: avgOverall,
-            averageMusicRating: avgMusic,
-            averageLocationRating: avgLocation,
-            averageVibeRating: avgVibe
-        )
+        return reviews
     }
     
-    private func updateEventRatings(eventId: String) async throws {
-        let summary = try await getEventRatingSummary(eventId: eventId)
+    private func updateEventAverageRating(eventId: String) async throws {
+        let reviews = try await fetchReviews(for: eventId)
+        
+        guard !reviews.isEmpty else { return }
+        
+        let totalRating = reviews.reduce(0) { $0 + $1.overallRating }
+        let averageRating = totalRating / Double(reviews.count)
         
         try await db.collection("events").document(eventId).updateData([
-            "averageRating": summary.averageOverallRating,
-            "totalReviews": summary.totalReviews
+            "averageRating": averageRating,
+            "totalReviews": reviews.count
         ])
     }
 }
