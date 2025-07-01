@@ -10,11 +10,16 @@ struct EventReviewsView: View {
     var body: some View {
         ScrollView {
             VStack(alignment: .leading, spacing: 20) {
-                // Rating Summary
-                ratingSummarySection
-                
-                // Individual Reviews
-                reviewsSection
+                if isLoading {
+                    ProgressView("Loading reviews...")
+                        .frame(maxWidth: .infinity, maxHeight: .infinity)
+                } else {
+                    // Rating Summary
+                    ratingSummarySection
+                    
+                    // Individual Reviews
+                    reviewsSection
+                }
             }
             .padding()
         }
@@ -200,5 +205,11 @@ struct ReviewCard: View {
         .background(color.opacity(0.1))
         .foregroundColor(color)
         .cornerRadius(8)
+    }
+}
+
+#Preview {
+    NavigationView {
+        EventReviewsView(eventId: "sample-event-id")
     }
 }

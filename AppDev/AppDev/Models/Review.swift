@@ -14,25 +14,53 @@ struct Review: Identifiable, Codable {
     let comment: String
     let createdAt: Date
     
-    enum CodingKeys: String, CodingKey {
-        case id, eventId, userId, userName, userProfileImageUrl
-        case overallRating, musicRating, locationRating, vibeRating
-        case comment, createdAt
+    init(id: String? = nil,
+         eventId: String,
+         userId: String,
+         userName: String,
+         userProfileImageUrl: String?,
+         overallRating: Double,
+         musicRating: Double,
+         locationRating: Double,
+         vibeRating: Double,
+         comment: String,
+         createdAt: Date) {
+        self.id = id
+        self.eventId = eventId
+        self.userId = userId
+        self.userName = userName
+        self.userProfileImageUrl = userProfileImageUrl
+        self.overallRating = overallRating
+        self.musicRating = musicRating
+        self.locationRating = locationRating
+        self.vibeRating = vibeRating
+        self.comment = comment
+        self.createdAt = createdAt
     }
-}
-
-struct EventRatingSummary {
-    let totalReviews: Int
-    let averageOverallRating: Double
-    let averageMusicRating: Double
-    let averageLocationRating: Double
-    let averageVibeRating: Double
     
-    static let empty = EventRatingSummary(
-        totalReviews: 0,
-        averageOverallRating: 0.0,
-        averageMusicRating: 0.0,
-        averageLocationRating: 0.0,
-        averageVibeRating: 0.0
-    )
+    init(from data: [String: Any]) throws {
+        guard let eventId = data["eventId"] as? String,
+              let userId = data["userId"] as? String,
+              let userName = data["userName"] as? String,
+              let overallRating = data["overallRating"] as? Double,
+              let musicRating = data["musicRating"] as? Double,
+              let locationRating = data["locationRating"] as? Double,
+              let vibeRating = data["vibeRating"] as? Double,
+              let comment = data["comment"] as? String,
+              let createdAt = data["createdAt"] as? Date else {
+            throw NSError(domain: "ReviewDecoding", code: 1, userInfo: [NSLocalizedDescriptionKey: "Failed to decode review"])
+        }
+        
+        self.id = data["id"] as? String
+        self.eventId = eventId
+        self.userId = userId
+        self.userName = userName
+        self.userProfileImageUrl = data["userProfileImageUrl"] as? String
+        self.overallRating = overallRating
+        self.musicRating = musicRating
+        self.locationRating = locationRating
+        self.vibeRating = vibeRating
+        self.comment = comment
+        self.createdAt = createdAt
+    }
 }

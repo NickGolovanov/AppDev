@@ -1,5 +1,6 @@
 import FirebaseFirestore
 import FirebaseAuth
+import Foundation
 
 class ReviewService: ObservableObject {
     private let db = Firestore.firestore()
@@ -34,13 +35,20 @@ class ReviewService: ObservableObject {
     }
     
     func fetchReviews(for eventId: String) async throws -> [Review] {
-        // Simple query without ordering to avoid index requirement
         let snapshot = try await db.collection("reviews")
             .whereField("eventId", isEqualTo: eventId)
             .getDocuments()
         
-        var reviews = snapshot.documents.compactMap { doc in
-            try? doc.data(as: Review.self)
+        var reviews = snapshot.documents.compactMap { doc -> Review? in
+            var data = doc.data()
+            data["id"] = doc.documentID
+            
+            // Handle Firestore Timestamp conversion
+            if let timestamp = data["createdAt"] as? Timestamp {
+                data["createdAt"] = timestamp.dateValue()
+            }
+            
+            return try? Review(from: data)
         }
         
         // Sort locally by creation date (descending)
@@ -49,17 +57,35 @@ class ReviewService: ObservableObject {
         return reviews
     }
     
-    private func updateEventAverageRating(eventId: String) async throws {
+    func getEventRatingSummary(eventId: String) async throws -> EventRatingSummary {
         let reviews = try await fetchReviews(for: eventId)
         
-        guard !reviews.isEmpty else { return }
+        guard !reviews.isEmpty else {
+            return EventRatingSummary.empty
+        }
         
-        let totalRating = reviews.reduce(0) { $0 + $1.overallRating }
-        let averageRating = totalRating / Double(reviews.count)
+        let totalOverall = reviews.reduce(0) { $0 + $1.overallRating }
+        let totalMusic = reviews.reduce(0) { $0 + $1.musicRating }
+        let totalLocation = reviews.reduce(0) { $0 + $1.locationRating }
+        let totalVibe = reviews.reduce(0) { $0 + $1.vibeRating }
+        
+        let count = Double(reviews.count)
+        
+        return EventRatingSummary(
+            averageOverallRating: totalOverall / count,
+            averageMusicRating: totalMusic / count,
+            averageLocationRating: totalLocation / count,
+            averageVibeRating: totalVibe / count,
+            totalReviews: reviews.count
+        )
+    }
+    
+    private func updateEventAverageRating(eventId: String) async throws {
+        let summary = try await getEventRatingSummary(eventId: eventId)
         
         try await db.collection("events").document(eventId).updateData([
-            "averageRating": averageRating,
-            "totalReviews": reviews.count
+            "averageRating": summary.averageOverallRating,
+            "totalReviews": summary.totalReviews
         ])
     }
 }
