@@ -139,7 +139,9 @@ struct EventsMapView: View {
                 }
                 let category = data["category"] as? String ?? "Other"
                 let price = data["price"] as? Double ?? 0.0
-                let distance: String? = "-"
+                let averageRating = data["averageRating"] as? Double
+                let totalReviews = data["totalReviews"] as? Int
+                
                 let event = Event(
                     id: id,
                     title: title,
@@ -155,7 +157,8 @@ struct EventsMapView: View {
                     description: description,
                     latitude: latitude,
                     longitude: longitude,
-                    distance: distance
+                    averageRating: averageRating,
+                    totalReviews: totalReviews
                 )
                 tempEvents.append(event)
             }
@@ -246,12 +249,30 @@ struct EventPreviewSheet: View {
                         }
                         .foregroundColor(.purple)
                         
-                        if event.price != nil {
+                        if event.price > 0 {
                             HStack {
                                 Image(systemName: "ticket.fill")
-                                Text("€\(String(format: "%.2f", event.price ?? 0.0))")
+                                Text("€\(String(format: "%.2f", event.price))")
                             }
                             .foregroundColor(.purple)
+                        }
+                        
+                        // Display rating if available
+                        if let rating = event.averageRating, rating > 0 {
+                            HStack {
+                                Image(systemName: "star.fill")
+                                    .foregroundColor(.purple)
+                                HStack(spacing: 2) {
+                                    ForEach(1...5, id: \.self) { star in
+                                        Image(systemName: star <= Int(rating.rounded()) ? "star.fill" : "star")
+                                            .foregroundColor(.purple)
+                                            .font(.caption)
+                                    }
+                                }
+                                Text("(\(event.totalReviews ?? 0) reviews)")
+                                    .font(.caption)
+                                    .foregroundColor(.gray)
+                            }
                         }
                     }
                     .padding()
@@ -332,6 +353,22 @@ struct EventCard: View {
                         Text("\(event.formattedDate), \(event.formattedTime)")
                             .font(.subheadline)
                             .foregroundColor(.gray)
+                    }
+                    
+                    // Display rating if available
+                    if let rating = event.averageRating, rating > 0 {
+                        HStack(spacing: 4) {
+                            HStack(spacing: 2) {
+                                ForEach(1...5, id: \.self) { star in
+                                    Image(systemName: star <= Int(rating.rounded()) ? "star.fill" : "star")
+                                        .foregroundColor(.purple)
+                                        .font(.caption2)
+                                }
+                            }
+                            Text("(\(event.totalReviews ?? 0))")
+                                .font(.caption2)
+                                .foregroundColor(.gray)
+                        }
                     }
                 }
                 Spacer()
