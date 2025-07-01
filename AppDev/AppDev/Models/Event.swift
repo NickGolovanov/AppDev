@@ -1,10 +1,3 @@
-//
-//  Event.swift
-//  AppDev
-//
-//  Created by Nikita Golovanov on 5/8/25.
-//
-
 import FirebaseFirestore
 import Foundation
 import MapKit
@@ -24,6 +17,9 @@ struct Event: Identifiable, Codable {
     let description: String 
     let latitude: Double?
     let longitude: Double?
+    // New rating fields
+    let averageRating: Double?
+    let totalReviews: Int?
 
     
     var coordinate: CLLocationCoordinate2D? {
@@ -35,33 +31,16 @@ struct Event: Identifiable, Codable {
     var distance: String? = nil
 
     enum CodingKeys: String, CodingKey {
-            case id, title, date, endTime, startTime, location, imageUrl, attendees, category, price, maxCapacity, description, latitude, longitude
+        case id, title, date, endTime, startTime, location, imageUrl, attendees, category, price, maxCapacity, description, latitude, longitude, averageRating, totalReviews
+    }
+    
+    // Helper computed property to check if event has ended
+    var hasEnded: Bool {
+        let isoFormatter = ISO8601DateFormatter()
+        guard let endDateTime = isoFormatter.date(from: endTime) else { return false }
+        return endDateTime < Date()
     }
 }
-//
-//extension Event: Decodable {
-//    enum CodingKeys: String, CodingKey {
-//        case id, title, date, endTime, startTime, location, imageUrl, attendees, category, price, maxCapacity, description
-//    }
-//    
-//    init(from decoder: Decoder) throws {
-//        let container = try decoder.container(keyedBy: CodingKeys.self)
-//        self.id = try container.decode(String.self, forKey: .id)
-//        self.title = try container.decode(String.self, forKey: .title)
-//        self.date = try container.decode(String.self, forKey: .date)
-//        self.endTime = try container.decode(String.self, forKey: .endTime)
-//        self.startTime = try container.decode(String.self, forKey: .startTime)
-//        self.location = try container.decode(String.self, forKey: .location)
-//        self.imageUrl = try container.decode(String.self, forKey: .imageUrl)
-//        self.attendees = try container.decode(Int.self, forKey: .attendees)
-//        self.category = try container.decode(String.self, forKey: .category)
-//        self.price = try container.decode(Double.self, forKey: .price)
-//        self.maxCapacity = try container.decode(Int.self, forKey: .maxCapacity)
-//        self.description = try container.decodeIfPresent(String.self, forKey: .description)
-//        self.coordinate = nil
-//        self.distance = nil
-//    }
-//}
 
 extension Event {
     var formattedDate: String {

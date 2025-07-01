@@ -327,7 +327,9 @@ extension CreateEventView {
             "attendees": 1,
             "createdAt": FieldValue.serverTimestamp(),
             "latitude": latitude,
-            "longitude": longitude
+            "longitude": longitude,
+            "averageRating": 0.0,
+            "totalReviews": 0
         ]
 
         var newEventRef: DocumentReference? = nil
@@ -343,7 +345,7 @@ extension CreateEventView {
                 // Add event ID to user's organizedEventIds
                 if let eventID = newEventRef?.documentID, !self.userId.isEmpty {
                     
-                    let event = Event(id: eventID, title: self.eventTitle, date: dateString, endTime: endTimeString, startTime: startTimeString, location: self.location, imageUrl: imageUrl, attendees: 1, category: self.category, price: Double(self.price) ?? 0, maxCapacity: Int(self.maxCapacity) ?? 0, description: self.description, latitude: latitude, longitude: longitude)
+                    let event = Event(id: eventID, title: self.eventTitle, date: dateString, endTime: endTimeString, startTime: startTimeString, location: self.location, imageUrl: imageUrl, attendees: 1, category: self.category, price: Double(self.price) ?? 0, maxCapacity: Int(self.maxCapacity) ?? 0, description: self.description, latitude: latitude, longitude: longitude, averageRating: 0.0, totalReviews: 0)
                     
                     Task {
                         do {
