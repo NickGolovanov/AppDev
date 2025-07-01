@@ -1,5 +1,6 @@
 import SwiftUI
 import FirebaseFirestore
+import FirebaseAuth
 
 struct EventView: View {
     let eventId: String
@@ -10,6 +11,15 @@ struct EventView: View {
     @EnvironmentObject var authViewModel: AuthViewModel
     @State private var hasJoinedEvent: Bool = false
     @Environment(\.dismiss) private var dismiss
+    
+    // Review-related states
+    @StateObject private var reviewService = ReviewService()
+    @State private var reviews: [Review] = []
+    @State private var showCreateReview = false
+    @State private var canReview = false
+    @State private var hasReviewed = false
+    @State private var isCheckingReviewStatus = false
+    @State private var isLoadingReviews = false
 
     var body: some View {
         VStack(spacing: 0) {
@@ -191,6 +201,9 @@ struct EventView: View {
                                 .padding(.top, 8)
                                 .shadow(color: Color.purple.opacity(0.3), radius: 8, x: 0, y: 4)
                             }
+                            
+                            // REVIEWS SECTION - NEW
+                            reviewsSection
                         }
                         .padding(20)
                         .background(Color.white)
@@ -207,6 +220,106 @@ struct EventView: View {
         .navigationBarTitleDisplayMode(.inline)
         .onAppear(perform: fetchEvent)
         .navigationBarHidden(true)
+        .sheet(isPresented: $showCreateReview) {
+            if let event = event {
+                CreateReviewView(event: event, onReviewCreated: {
+                    fetchReviews()
+                    Task { await checkReviewStatus() }
+                })
+            }
+        }
+        .task {
+            if let event = event {
+                await checkReviewStatus()
+                fetchReviews()
+            }
+        }
+    }
+    
+    // Reviews Section View
+    @ViewBuilder
+    private var reviewsSection: some View {
+        VStack(alignment: .leading, spacing: 16) {
+            Divider()
+                .padding(.vertical, 8)
+            
+            HStack {
+                Text("Reviews")
+                    .font(.title2)
+                    .fontWeight(.bold)
+                Spacer()
+                
+                // Show average rating if available
+                if let rating = event?.averageRating, rating > 0 {
+                    HStack(spacing: 4) {
+                        HStack(spacing: 2) {
+                            ForEach(1...5, id: \.self) { star in
+                                Image(systemName: star <= Int(rating.rounded()) ? "star.fill" : "star")
+                                    .foregroundColor(.purple)
+                                    .font(.caption)
+                            }
+                        }
+                        Text(String(format: "%.1f", rating))
+                            .font(.caption)
+                            .foregroundColor(.gray)
+                        Text("(\(event?.totalReviews ?? 0))")
+                            .font(.caption)
+                            .foregroundColor(.gray)
+                    }
+                }
+            }
+            
+            // Write Review Button (for ended events you attended)
+            if let event = event, event.hasEnded && canReview && !hasReviewed && !isCheckingReviewStatus {
+                Button(action: {
+                    showCreateReview = true
+                }) {
+                    HStack {
+                        Image(systemName: "star.fill")
+                        Text("Write a Review")
+                    }
+                    .frame(maxWidth: .infinity)
+                    .padding()
+                    .background(Color.purple)
+                    .foregroundColor(.white)
+                    .cornerRadius(12)
+                }
+            }
+            
+            // Loading state for review check
+            if isCheckingReviewStatus {
+                HStack {
+                    ProgressView()
+                        .scaleEffect(0.8)
+                    Text("Checking review status...")
+                        .font(.caption)
+                        .foregroundColor(.gray)
+                }
+            }
+            
+            // Reviews List
+            if isLoadingReviews {
+                HStack {
+                    ProgressView()
+                        .scaleEffect(0.8)
+                    Text("Loading reviews...")
+                        .font(.caption)
+                        .foregroundColor(.gray)
+                }
+                .padding()
+            } else if reviews.isEmpty {
+                Text("No reviews yet")
+                    .foregroundColor(.gray)
+                    .italic()
+                    .padding()
+            } else {
+                LazyVStack(alignment: .leading, spacing: 12) {
+                    ForEach(reviews, id: \.id) { review in
+                        ReviewRowView(review: review)
+                    }
+                }
+            }
+        }
     }
 
     func fetchEvent() {
@@ -226,6 +339,10 @@ struct EventView: View {
             self.event = try? document.data(as: Event.self)
             if self.event != nil {
                 checkIfUserJoinedEvent()
+                Task {
+                    await checkReviewStatus()
+                    fetchReviews()
+                }
             } else {
                 errorMessage = "Failed to decode event."
             }
@@ -253,6 +370,117 @@ struct EventView: View {
         } else {
             return AnyView(EmptyView())
         }
+    }
+    
+    // Review Functions
+    private func checkReviewStatus() async {
+        guard let event = event,
+              let eventId = event.id,
+              !eventId.isEmpty,
+              event.hasEnded,
+              let userId = Auth.auth().currentUser?.uid,
+              !userId.isEmpty else {
+            return
+        }
+        
+        DispatchQueue.main.async {
+            self.isCheckingReviewStatus = true
+        }
+        
+        do {
+            let userHasReviewed = try await reviewService.checkIfUserReviewed(eventId: eventId, userId: userId)
+            
+            // Check if user attended the event (has a ticket)
+            let db = Firestore.firestore()
+            let ticketsQuery = db.collection("tickets")
+                .whereField("eventId", isEqualTo: eventId)
+                .whereField("userId", isEqualTo: userId)
+                .whereField("status", isEqualTo: "active")
+            
+            let ticketSnapshot = try await ticketsQuery.getDocuments()
+            let userAttended = !ticketSnapshot.isEmpty
+            
+            DispatchQueue.main.async {
+                self.hasReviewed = userHasReviewed
+                self.canReview = userAttended && !userHasReviewed
+                self.isCheckingReviewStatus = false
+            }
+            
+        } catch {
+            print("Error checking review status: \(error.localizedDescription)")
+            DispatchQueue.main.async {
+                self.canReview = false
+                self.isCheckingReviewStatus = false
+            }
+        }
+    }
+
+    private func fetchReviews() {
+        guard let eventId = event?.id else { return }
+        
+        isLoadingReviews = true
+        
+        let db = Firestore.firestore()
+        db.collection("reviews")
+            .whereField("eventId", isEqualTo: eventId)
+            .order(by: "createdAt", descending: true)
+            .getDocuments { snapshot, error in
+                DispatchQueue.main.async {
+                    self.isLoadingReviews = false
+                    
+                    if let error = error {
+                        print("Error fetching reviews: \(error.localizedDescription)")
+                        return
+                    }
+                    
+                    guard let documents = snapshot?.documents else {
+                        self.reviews = []
+                        return
+                    }
+                    
+                    self.reviews = documents.compactMap { doc in
+                        try? doc.data(as: Review.self)
+                    }
+                }
+            }
+    }
+}
+
+// Review Row View
+struct ReviewRowView: View {
+    let review: Review
+    
+    var body: some View {
+        VStack(alignment: .leading, spacing: 8) {
+            HStack {
+                Text(review.userName)
+                    .font(.headline)
+                    .fontWeight(.semibold)
+                
+                Spacer()
+                
+                HStack(spacing: 2) {
+                    ForEach(1...5, id: \.self) { star in
+                        Image(systemName: star <= review.rating ? "star.fill" : "star")
+                            .foregroundColor(.purple)
+                            .font(.caption)
+                    }
+                }
+            }
+            
+            if !review.comment.isEmpty {
+                Text(review.comment)
+                    .font(.body)
+                    .fixedSize(horizontal: false, vertical: true)
+            }
+            
+            Text(review.createdAt.formatted(date: .abbreviated, time: .shortened))
+                .font(.caption)
+                .foregroundColor(.gray)
+        }
+        .padding()
+        .background(Color(.systemGray6))
+        .cornerRadius(12)
     }
 }
 

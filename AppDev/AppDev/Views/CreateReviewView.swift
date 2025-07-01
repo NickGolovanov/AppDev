@@ -2,6 +2,8 @@ import SwiftUI
 
 struct CreateReviewView: View {
     let event: Event
+    let onReviewCreated: (() -> Void)? // Add completion handler
+    
     @AppStorage("userId") var userId: String = ""
     @AppStorage("userName") var userName: String = ""
     @Environment(\.dismiss) private var dismiss
@@ -16,6 +18,12 @@ struct CreateReviewView: View {
     @State private var alertMessage = ""
     
     @StateObject private var reviewService = ReviewService()
+    
+    // Add this initializer to support completion handler
+    init(event: Event, onReviewCreated: (() -> Void)? = nil) {
+        self.event = event
+        self.onReviewCreated = onReviewCreated
+    }
     
     var body: some View {
         NavigationStack {
@@ -101,9 +109,18 @@ struct CreateReviewView: View {
             }
             .navigationTitle("Write Review")
             .navigationBarTitleDisplayMode(.large)
+            .toolbar {
+                ToolbarItem(placement: .navigationBarLeading) {
+                    Button("Cancel") {
+                        dismiss()
+                    }
+                }
+            }
             .alert("Review Submission", isPresented: $showAlert) {
                 Button("OK") {
                     if alertMessage.contains("successfully") {
+                        // Call completion handler on successful submission
+                        onReviewCreated?()
                         dismiss()
                     }
                 }
@@ -219,4 +236,30 @@ struct CreateReviewView: View {
             }
         }
     }
+}
+
+#Preview {
+    CreateReviewView(
+        event: Event(
+            id: "preview",
+            title: "Summer Beach Party",
+            date: "2024-07-15",
+            endTime: "23:00",
+            startTime: "18:00",
+            location: "Amsterdam Beach",
+            imageUrl: "https://example.com/beach-party.jpg",
+            attendees: 50,
+            category: "Party",
+            price: 15.0,
+            maxCapacity: 100,
+            description: "Join us for an amazing beach party!",
+            latitude: 52.3702,
+            longitude: 4.8952,
+            averageRating: 4.5,
+            totalReviews: 12
+        ),
+        onReviewCreated: {
+            print("Review created successfully!")
+        }
+    )
 }
