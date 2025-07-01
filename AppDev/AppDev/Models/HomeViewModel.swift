@@ -48,6 +48,8 @@ class HomeViewModel: ObservableObject {
                         
                         let latitude = data["latitude"] as? Double
                         let longitude = data["longitude"] as? Double
+                        let averageRating = data["averageRating"] as? Double
+                        let totalReviews = data["totalReviews"] as? Int
                         
                         return Event(
                             id: id,
@@ -63,7 +65,9 @@ class HomeViewModel: ObservableObject {
                             maxCapacity: maxCapacity,
                             description: description,
                             latitude: latitude,
-                            longitude: longitude
+                            longitude: longitude,
+                            averageRating: averageRating,
+                            totalReviews: totalReviews
                         )
                     }
                 }
