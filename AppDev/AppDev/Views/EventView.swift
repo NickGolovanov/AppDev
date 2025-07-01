@@ -202,7 +202,7 @@ struct EventView: View {
                                 .shadow(color: Color.purple.opacity(0.3), radius: 8, x: 0, y: 4)
                             }
                             
-                            // REVIEWS SECTION - NEW
+                            // REVIEWS SECTION
                             reviewsSection
                         }
                         .padding(20)
@@ -446,12 +446,13 @@ struct EventView: View {
     }
 }
 
-// Review Row View
+// MARK: - Review Row View (Updated for Multi-Rating System)
 struct ReviewRowView: View {
     let review: Review
     
     var body: some View {
-        VStack(alignment: .leading, spacing: 8) {
+        VStack(alignment: .leading, spacing: 12) {
+            // Header with user name and overall rating
             HStack {
                 Text(review.userName)
                     .font(.headline)
@@ -459,21 +460,43 @@ struct ReviewRowView: View {
                 
                 Spacer()
                 
+                // Show overall rating prominently
                 HStack(spacing: 2) {
                     ForEach(1...5, id: \.self) { star in
-                        Image(systemName: star <= review.rating ? "star.fill" : "star")
+                        Image(systemName: star <= Int(review.overallRating) ? "star.fill" : "star")
                             .foregroundColor(.purple)
                             .font(.caption)
                     }
+                    Text(String(format: "%.1f", review.overallRating))
+                        .font(.caption)
+                        .foregroundColor(.gray)
                 }
             }
             
+            // Detailed ratings section
+            VStack(alignment: .leading, spacing: 8) {
+                HStack(spacing: 20) {
+                    ratingRow(title: "Music", rating: review.musicRating, color: .blue, icon: "music.note")
+                    Spacer()
+                    ratingRow(title: "Location", rating: review.locationRating, color: .green, icon: "location.fill")
+                }
+                
+                HStack(spacing: 20) {
+                    ratingRow(title: "Vibe", rating: review.vibeRating, color: .pink, icon: "heart.fill")
+                    Spacer()
+                }
+            }
+            .padding(.vertical, 4)
+            
+            // Comment section
             if !review.comment.isEmpty {
                 Text(review.comment)
                     .font(.body)
                     .fixedSize(horizontal: false, vertical: true)
+                    .padding(.top, 4)
             }
             
+            // Date
             Text(review.createdAt.formatted(date: .abbreviated, time: .shortened))
                 .font(.caption)
                 .foregroundColor(.gray)
@@ -481,6 +504,30 @@ struct ReviewRowView: View {
         .padding()
         .background(Color(.systemGray6))
         .cornerRadius(12)
+    }
+    
+    private func ratingRow(title: String, rating: Double, color: Color, icon: String) -> some View {
+        HStack(spacing: 4) {
+            Image(systemName: icon)
+                .foregroundColor(color)
+                .font(.caption2)
+            
+            Text(title)
+                .font(.caption)
+                .foregroundColor(.gray)
+            
+            HStack(spacing: 1) {
+                ForEach(1...5, id: \.self) { star in
+                    Image(systemName: star <= Int(rating) ? "star.fill" : "star")
+                        .foregroundColor(color)
+                        .font(.caption2)
+                }
+            }
+            
+            Text(String(format: "%.1f", rating))
+                .font(.caption2)
+                .foregroundColor(.gray)
+        }
     }
 }
 
