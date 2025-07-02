@@ -20,7 +20,7 @@ struct Event: Identifiable, Codable {
     // New rating fields
     let averageRating: Double?
     let totalReviews: Int?
-    // Recommendation tracking
+    // Recommendation tracking - these are computed/runtime properties, not stored in Firestore
     var recommendationScore: Double? = nil
     var isRecommended: Bool = false
 
@@ -33,8 +33,65 @@ struct Event: Identifiable, Codable {
     }
     var distance: String? = nil
 
-    enum CodingKeys: String, CaseIterable {
+    enum CodingKeys: String, CodingKey {
         case id, title, date, endTime, startTime, location, imageUrl, attendees, category, price, maxCapacity, description, latitude, longitude, averageRating, totalReviews
+        // Note: recommendationScore and isRecommended are NOT included as they're runtime-only properties
+    }
+    
+    // Custom initializer from decoder that handles missing recommendation fields
+    init(from decoder: Decoder) throws {
+        let container = try decoder.container(keyedBy: CodingKeys.self)
+        
+        // Decode DocumentID
+        _id = try container.decode(DocumentID<String>.self, forKey: .id)
+        
+        // Decode required fields
+        title = try container.decode(String.self, forKey: .title)
+        date = try container.decode(String.self, forKey: .date)
+        endTime = try container.decode(String.self, forKey: .endTime)
+        startTime = try container.decode(String.self, forKey: .startTime)
+        location = try container.decode(String.self, forKey: .location)
+        imageUrl = try container.decode(String.self, forKey: .imageUrl)
+        attendees = try container.decode(Int.self, forKey: .attendees)
+        category = try container.decode(String.self, forKey: .category)
+        price = try container.decode(Double.self, forKey: .price)
+        maxCapacity = try container.decode(Int.self, forKey: .maxCapacity)
+        description = try container.decode(String.self, forKey: .description)
+        
+        // Decode optional fields
+        latitude = try container.decodeIfPresent(Double.self, forKey: .latitude)
+        longitude = try container.decodeIfPresent(Double.self, forKey: .longitude)
+        averageRating = try container.decodeIfPresent(Double.self, forKey: .averageRating)
+        totalReviews = try container.decodeIfPresent(Int.self, forKey: .totalReviews)
+        
+        // Initialize runtime properties with default values
+        recommendationScore = nil
+        isRecommended = false
+        distance = nil
+    }
+    
+    // Custom encoder that only encodes Firestore fields
+    func encode(to encoder: Encoder) throws {
+        var container = encoder.container(keyedBy: CodingKeys.self)
+        
+        try container.encode(_id, forKey: .id)
+        try container.encode(title, forKey: .title)
+        try container.encode(date, forKey: .date)
+        try container.encode(endTime, forKey: .endTime)
+        try container.encode(startTime, forKey: .startTime)
+        try container.encode(location, forKey: .location)
+        try container.encode(imageUrl, forKey: .imageUrl)
+        try container.encode(attendees, forKey: .attendees)
+        try container.encode(category, forKey: .category)
+        try container.encode(price, forKey: .price)
+        try container.encode(maxCapacity, forKey: .maxCapacity)
+        try container.encode(description, forKey: .description)
+        try container.encodeIfPresent(latitude, forKey: .latitude)
+        try container.encodeIfPresent(longitude, forKey: .longitude)
+        try container.encodeIfPresent(averageRating, forKey: .averageRating)
+        try container.encodeIfPresent(totalReviews, forKey: .totalReviews)
+        
+        // Note: We don't encode recommendationScore, isRecommended, or distance as they're runtime-only
     }
     
     // Helper computed property to check if event has ended
