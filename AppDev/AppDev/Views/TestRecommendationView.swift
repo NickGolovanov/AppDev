@@ -24,6 +24,7 @@ struct TestRecommendationView: View {
                             }
                         }
                         .buttonStyle(.borderedProminent)
+                        .disabled(testDataService.isCreatingTestData)
                         
                         Button("Simulate User Behavior") {
                             Task {
@@ -34,6 +35,7 @@ struct TestRecommendationView: View {
                             }
                         }
                         .buttonStyle(.borderedProminent)
+                        .disabled(testDataService.isCreatingTestData)
                         
                         Button("Generate Recommendations") {
                             Task {
@@ -44,7 +46,7 @@ struct TestRecommendationView: View {
                             }
                         }
                         .buttonStyle(.borderedProminent)
-                        .disabled(isRunningTests)
+                        .disabled(isRunningTests || recommendationService.isLoading)
                         
                         Button("Track Test Interaction") {
                             if let firstEvent = recommendationService.recommendedEvents.first {
@@ -57,6 +59,18 @@ struct TestRecommendationView: View {
                             }
                         }
                         .buttonStyle(.bordered)
+                        .disabled(recommendationService.recommendedEvents.isEmpty)
+                        
+                        // Show current operation
+                        if testDataService.isCreatingTestData {
+                            HStack {
+                                ProgressView()
+                                    .scaleEffect(0.8)
+                                Text(testDataService.lastOperation)
+                                    .font(.caption)
+                                    .foregroundColor(.blue)
+                            }
+                        }
                     }
                     
                     // Test Results
@@ -65,7 +79,7 @@ struct TestRecommendationView: View {
                             .font(.headline)
                             .fontWeight(.semibold)
                         
-                        if isRunningTests {
+                        if isRunningTests || recommendationService.isLoading {
                             ProgressView("Running tests...")
                                 .frame(maxWidth: .infinity, alignment: .center)
                         }
@@ -76,6 +90,13 @@ struct TestRecommendationView: View {
                                 .padding(8)
                                 .background(Color(.systemGray6))
                                 .cornerRadius(8)
+                        }
+                        
+                        if !testDataService.lastOperation.isEmpty && !testDataService.isCreatingTestData {
+                            Text("Last operation: \(testDataService.lastOperation)")
+                                .font(.caption)
+                                .foregroundColor(.gray)
+                                .italic()
                         }
                         
                         Button("Clear Results") {
@@ -126,13 +147,22 @@ struct TestRecommendationView: View {
                                 .padding()
                                 .background(Color(.systemGray6))
                                 .cornerRadius(12)
+                                .onTapGesture {
+                                    // Track interaction when user taps on recommended event
+                                    recommendationService.trackUserAction(
+                                        eventId: event.id ?? "unknown",
+                                        actionType: .clicked,
+                                        event: event
+                                    )
+                                    testResults.append("Tracked recommendation click: \(event.title)")
+                                }
                             }
                         }
                     }
                     
                     // Debug Information
                     VStack(alignment: .leading, spacing: 8) {
-                        Text("Debug Info")
+                        Text("🔍 Debug Info")
                             .font(.headline)
                             .fontWeight(.semibold)
                         

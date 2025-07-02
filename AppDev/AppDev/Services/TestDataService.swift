@@ -2,11 +2,19 @@ import FirebaseFirestore
 import FirebaseAuth
 import Foundation
 
-class TestDataService {
+class TestDataService: ObservableObject {
     private let db = Firestore.firestore()
+    
+    @Published var isCreatingTestData = false
+    @Published var lastOperation = ""
     
     // Create sample events for testing
     func createTestEvents() async {
+        await MainActor.run {
+            isCreatingTestData = true
+            lastOperation = "Creating test events..."
+        }
+        
         let testEvents = [
             Event(
                 title: "Electronic Music Festival",
@@ -98,15 +106,25 @@ class TestDataService {
         for event in testEvents {
             do {
                 try db.collection("events").addDocument(from: event)
-                print("✅ Created test event: \(event.title)")
+                print(" Created test event: \(event.title)")
             } catch {
-                print("❌ Failed to create event \(event.title): \(error)")
+                print("Failed to create event \(event.title): \(error)")
             }
+        }
+        
+        await MainActor.run {
+            isCreatingTestData = false
+            lastOperation = "Created \(testEvents.count) test events"
         }
     }
     
     // Simulate user behavior for testing recommendations
     func simulateUserBehavior(userId: String) async {
+        await MainActor.run {
+            isCreatingTestData = true
+            lastOperation = "Simulating user behavior..."
+        }
+        
         let behaviors = [
             // User likes Electronic music
             UserBehavior(userId: userId, eventId: "electronic-1", actionType: .clicked, timestamp: Date().addingTimeInterval(-86400 * 7), eventCategory: "Electronic", eventPrice: 25.0, eventLocation: "Amsterdam Central"),
@@ -127,10 +145,15 @@ class TestDataService {
         for behavior in behaviors {
             do {
                 try db.collection("userBehavior").addDocument(from: behavior)
-                print("✅ Created behavior: \(behavior.actionType) for \(behavior.eventCategory ?? "unknown")")
+                print("Created behavior: \(behavior.actionType) for \(behavior.eventCategory ?? "unknown")")
             } catch {
-                print("❌ Failed to create behavior: \(error)")
+                print("Failed to create behavior: \(error)")
             }
+        }
+        
+        await MainActor.run {
+            isCreatingTestData = false
+            lastOperation = "Simulated \(behaviors.count) user behaviors"
         }
     }
 }
