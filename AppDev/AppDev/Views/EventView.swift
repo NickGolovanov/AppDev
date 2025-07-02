@@ -1,3 +1,4 @@
+dober\Desktop\happyParty\AppDev\AppDev\AppDev\Views\EventView.swift
 import SwiftUI
 import FirebaseFirestore
 import FirebaseAuth
@@ -20,6 +21,9 @@ struct EventView: View {
     @State private var hasReviewed = false
     @State private var isCheckingReviewStatus = false
     @State private var isLoadingReviews = false
+    
+    // Recommendation service for tracking
+    @StateObject private var recommendationService = RecommendationService()
 
     var body: some View {
         VStack(spacing: 0) {
@@ -183,6 +187,8 @@ struct EventView: View {
                                 }
                                 Button(action: {
                                     showGetTicket = true
+                                    // Track ticket purchase intent
+                                    recommendationService.trackUserAction(eventId: eventId, actionType: .clicked, event: event)
                                 }) {
                                     Text("Get Ticket Now")
                                         .font(.headline)
@@ -225,6 +231,8 @@ struct EventView: View {
                 CreateReviewView(event: event, onReviewCreated: {
                     fetchReviews()
                     Task { await checkReviewStatus() }
+                    // Track review action
+                    recommendationService.trackUserAction(eventId: eventId, actionType: .rated, event: event)
                 })
             }
         }
@@ -358,6 +366,11 @@ struct EventView: View {
                 if let joinedEventIds = document.data()?["joinedEventIds"] as? [String] {
                     DispatchQueue.main.async {
                         self.hasJoinedEvent = joinedEventIds.contains(self.eventId)
+                        
+                        // Track attendance behavior if user has joined
+                        if self.hasJoinedEvent, let event = self.event {
+                            self.recommendationService.trackUserAction(eventId: self.eventId, actionType: .attended, event: event)
+                        }
                     }
                 }
             }
@@ -446,13 +459,11 @@ struct EventView: View {
     }
 }
 
-// MARK: - Review Row View (Updated for Multi-Rating System)
 struct ReviewRowView: View {
     let review: Review
     
     var body: some View {
         VStack(alignment: .leading, spacing: 12) {
-            // Header with user name and overall rating
             HStack {
                 Text(review.userName)
                     .font(.headline)

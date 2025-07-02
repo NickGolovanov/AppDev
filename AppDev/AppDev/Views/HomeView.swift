@@ -4,6 +4,7 @@ import FirebaseFirestore
 
 struct HomeView: View {
     @StateObject private var viewModel = HomeViewModel()
+    @StateObject private var recommendationService = RecommendationService()
     
     var body: some View {
         NavigationView {
@@ -13,6 +14,31 @@ struct HomeView: View {
                     HeaderView()
                         .padding(.horizontal)
                         .padding(.top, 8)
+
+                    // Recommended for You Section
+                    if !recommendationService.recommendedEvents.isEmpty {
+                        Text("✨ Recommended for You")
+                            .font(.headline)
+                            .padding(.horizontal)
+
+                        if recommendationService.isLoading {
+                            ProgressView()
+                                .frame(maxWidth: .infinity, alignment: .center)
+                                .frame(height: 130)
+                        } else {
+                            ScrollView(.horizontal, showsIndicators: false) {
+                                HStack(spacing: 16) {
+                                    ForEach(recommendationService.recommendedEvents) { event in
+                                        recommendedCard(event: event)
+                                    }
+                                    Spacer(minLength: 0)
+                                }
+                                .padding(.leading, 20)
+                            }
+                            .frame(height: 150)
+                        }
+                        Spacer(minLength: 20)
+                    }
 
                     // Trending Tonight
                     Text("🔥 Trending Tonight")
@@ -93,6 +119,112 @@ struct HomeView: View {
             }
             .onAppear {
                 viewModel.fetchEvents()
+                Task {
+                    await recommendationService.generateRecommendations()
+                }
+            }
+        }
+    }
+
+    func recommendedCard(event: Event) -> some View {
+        let cardWidth = UIScreen.main.bounds.width * 0.8
+        return NavigationLink(destination: EventView(eventId: event.id ?? "-1")) {
+            VStack(alignment: .leading, spacing: 0) {
+                ZStack(alignment: .topTrailing) {
+                    if let imageUrl = URL(string: event.imageUrl) {
+                        AsyncImage(url: imageUrl) { image in
+                            image
+                                .resizable()
+                                .aspectRatio(contentMode: .fill)
+                                .frame(width: cardWidth, height: 100)
+                                .clipped()
+                                .cornerRadius(10, corners: [.topLeft, .topRight])
+                        } placeholder: {
+                            Rectangle()
+                                .fill(
+                                    LinearGradient(
+                                        gradient: Gradient(colors: [Color.orange.opacity(0.7), Color.pink.opacity(0.5)]),
+                                        startPoint: .topLeading,
+                                        endPoint: .bottomTrailing
+                                    )
+                                )
+                                .frame(width: cardWidth, height: 100)
+                                .cornerRadius(10, corners: [.topLeft, .topRight])
+                        }
+                    } else {
+                        Rectangle()
+                            .fill(
+                                LinearGradient(
+                                    gradient: Gradient(colors: [Color.orange.opacity(0.7), Color.pink.opacity(0.5)]),
+                                    startPoint: .topLeading,
+                                    endPoint: .bottomTrailing
+                                )
+                            )
+                            .frame(width: cardWidth, height: 100)
+                            .cornerRadius(10, corners: [.topLeft, .topRight])
+                    }
+                    
+                    // "For You" badge
+                    Text("FOR YOU")
+                        .font(.caption2)
+                        .fontWeight(.bold)
+                        .padding(.horizontal, 8)
+                        .padding(.vertical, 4)
+                        .background(Color.white)
+                        .foregroundColor(.orange)
+                        .cornerRadius(8)
+                        .padding(8)
+                }
+
+                VStack(alignment: .leading, spacing: 6) {
+                    HStack {
+                        Text(event.category)
+                            .font(.caption2)
+                            .padding(.horizontal, 6)
+                            .padding(.vertical, 2)
+                            .background(Color.white.opacity(0.2))
+                            .foregroundColor(.white)
+                            .cornerRadius(5)
+                        
+                        if let rating = event.averageRating, rating > 0 {
+                            HStack(spacing: 2) {
+                                Image(systemName: "star.fill")
+                                    .foregroundColor(.yellow)
+                                    .font(.caption2)
+                                Text(String(format: "%.1f", rating))
+                                    .font(.caption2)
+                                    .foregroundColor(.white)
+                            }
+                        }
+                    }
+                    
+                    Text(event.title)
+                        .font(.headline)
+                        .foregroundColor(.white)
+                        .lineLimit(2)
+                    
+                    Text("\(event.formattedDate), \(event.formattedTime)")
+                        .font(.caption)
+                        .foregroundColor(.white.opacity(0.9))
+                }
+                .padding(12)
+                .frame(width: cardWidth, alignment: .leading)
+            }
+            .frame(width: cardWidth)
+            .background(
+                LinearGradient(
+                    gradient: Gradient(colors: [Color.orange.opacity(0.8), Color.pink.opacity(0.8)]),
+                    startPoint: .topLeading,
+                    endPoint: .bottomTrailing
+                )
+            )
+            .cornerRadius(12)
+            .shadow(color: Color.orange.opacity(0.3), radius: 5, x: 0, y: 2)
+        }
+        .onTapGesture {
+            // Track recommendation click
+            if let eventId = event.id {
+                recommendationService.trackUserAction(eventId: eventId, actionType: .clicked, event: event)
             }
         }
     }
@@ -164,6 +296,12 @@ struct HomeView: View {
             )
             .cornerRadius(12)
         }
+        .onTapGesture {
+            // Track click behavior
+            if let eventId = event.id {
+                recommendationService.trackUserAction(eventId: eventId, actionType: .clicked, event: event)
+            }
+        }
     }
 
     func eventCard(event: Event) -> some View {
@@ -200,6 +338,12 @@ struct HomeView: View {
         .padding()
         .background(Color(.systemGray6))
         .cornerRadius(12)
+        .onTapGesture {
+            // Track click behavior
+            if let eventId = event.id {
+                recommendationService.trackUserAction(eventId: eventId, actionType: .clicked, event: event)
+            }
+        }
     }
 }
 

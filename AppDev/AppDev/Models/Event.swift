@@ -20,6 +20,9 @@ struct Event: Identifiable, Codable {
     // New rating fields
     let averageRating: Double?
     let totalReviews: Int?
+    // Recommendation tracking
+    var recommendationScore: Double? = nil
+    var isRecommended: Bool = false
 
     
     var coordinate: CLLocationCoordinate2D? {
@@ -30,7 +33,7 @@ struct Event: Identifiable, Codable {
     }
     var distance: String? = nil
 
-    enum CodingKeys: String, CodingKey {
+    enum CodingKeys: String, CaseIterable {
         case id, title, date, endTime, startTime, location, imageUrl, attendees, category, price, maxCapacity, description, latitude, longitude, averageRating, totalReviews
     }
     
