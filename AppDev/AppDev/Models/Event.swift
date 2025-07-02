@@ -38,6 +38,48 @@ struct Event: Identifiable, Codable {
         // Note: recommendationScore and isRecommended are NOT included as they're runtime-only properties
     }
     
+    // Add memberwise initializer
+    init(
+        id: String? = nil,
+        title: String,
+        date: String,
+        endTime: String,
+        startTime: String,
+        location: String,
+        imageUrl: String,
+        attendees: Int,
+        category: String,
+        price: Double,
+        maxCapacity: Int,
+        description: String,
+        latitude: Double? = nil,
+        longitude: Double? = nil,
+        averageRating: Double? = nil,
+        totalReviews: Int? = nil
+    ) {
+        self.id = id
+        self.title = title
+        self.date = date
+        self.endTime = endTime
+        self.startTime = startTime
+        self.location = location
+        self.imageUrl = imageUrl
+        self.attendees = attendees
+        self.category = category
+        self.price = price
+        self.maxCapacity = maxCapacity
+        self.description = description
+        self.latitude = latitude
+        self.longitude = longitude
+        self.averageRating = averageRating
+        self.totalReviews = totalReviews
+        
+        // Initialize runtime properties with default values
+        self.recommendationScore = nil
+        self.isRecommended = false
+        self.distance = nil
+    }
+    
     // Custom initializer from decoder that handles missing recommendation fields
     init(from decoder: Decoder) throws {
         let container = try decoder.container(keyedBy: CodingKeys.self)
