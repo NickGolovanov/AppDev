@@ -17,9 +17,9 @@ struct Event: Identifiable, Codable {
     let description: String 
     let latitude: Double?
     let longitude: Double?
-    // New rating fields
     let averageRating: Double?
     let totalReviews: Int?
+    
     // Recommendation tracking - these are computed/runtime properties, not stored in Firestore
     var recommendationScore: Double? = nil
     var isRecommended: Bool = false
@@ -74,20 +74,17 @@ struct Event: Identifiable, Codable {
         self.averageRating = averageRating
         self.totalReviews = totalReviews
         
-        // Initialize runtime properties with default values
         self.recommendationScore = nil
         self.isRecommended = false
         self.distance = nil
     }
     
-    // Custom initializer from decoder that handles missing recommendation fields
     init(from decoder: Decoder) throws {
         let container = try decoder.container(keyedBy: CodingKeys.self)
         
         // Decode DocumentID
         _id = try container.decode(DocumentID<String>.self, forKey: .id)
         
-        // Decode required fields
         title = try container.decode(String.self, forKey: .title)
         date = try container.decode(String.self, forKey: .date)
         endTime = try container.decode(String.self, forKey: .endTime)

@@ -1,6 +1,7 @@
 import MapKit
 import SwiftUI
 import FirebaseFirestore
+import FirebaseAuth
 
 struct EventsView: View {
     @State private var selectedFilter = "All Events"
@@ -12,6 +13,7 @@ struct EventsView: View {
     
     let filters = [
         "All Events",
+        "For You", // New personalized tab
         "House Party",
         "Concert",
         "Meetup",
@@ -47,43 +49,6 @@ struct EventsView: View {
                             .padding(.horizontal)
                             .padding(.bottom, 8)
 
-                        // Recommended Events Section (only show if user has recommendations)
-                        if !recommendationService.recommendedEvents.isEmpty {
-                            VStack(alignment: .leading, spacing: 8) {
-                                Text("✨ Recommended for You")
-                                    .font(.headline)
-                                    .fontWeight(.semibold)
-                                    .padding(.horizontal)
-                                    .foregroundColor(.primary)
-                                
-                                if recommendationService.isLoading {
-                                    ProgressView("Loading recommendations...")
-                                        .frame(maxWidth: .infinity, alignment: .center)
-                                        .padding()
-                                } else {
-                                    ScrollView(.horizontal, showsIndicators: false) {
-                                        HStack(spacing: 12) {
-                                            ForEach(recommendationService.recommendedEvents.prefix(5)) { event in
-                                                RecommendedEventCard(event: event, recommendationService: recommendationService)
-                                            }
-                                        }
-                                        .padding(.horizontal)
-                                    }
-                                }
-                            }
-                            .padding(.top, 8)
-                        }
-
-                        // DEBUG: Test Link (Remove in production)
-                        #if DEBUG
-                        NavigationLink("🧪 Test Recommendations", destination: TestRecommendationView())
-                            .padding()
-                            .background(Color.orange.opacity(0.2))
-                            .cornerRadius(8)
-                            .padding(.horizontal)
-                            .padding(.top, 8)
-                        #endif
-
                         // Search Bar
                         HStack {
                             Image(systemName: "magnifyingglass")
@@ -103,49 +68,49 @@ struct EventsView: View {
                         ScrollView(.horizontal, showsIndicators: false) {
                             HStack(spacing: 12) {
                                 ForEach(filters, id: \.self) { filter in
-                                    Text(filter)
-                                        .padding(.horizontal, 16)
-                                        .padding(.vertical, 8)
-                                        .background(
-                                            selectedFilter == filter
-                                                ? Color.purple.opacity(0.2) : Color(.systemGray5)
-                                        )
-                                        .foregroundColor(selectedFilter == filter ? .purple : .black)
-                                        .font(.subheadline)
-                                        .fontWeight(selectedFilter == filter ? .semibold : .regular)
-                                        .cornerRadius(20)
-                                        .onTapGesture { 
-                                            selectedFilter = filter
-                                            filterEvents()
+                                    HStack(spacing: 4) {
+                                        // Add special icon for "For You" tab
+                                        if filter == "For You" {
+                                            Image(systemName: "sparkles")
+                                                .font(.caption)
+                                                .foregroundColor(selectedFilter == filter ? .purple : .black)
                                         }
+                                        
+                                        Text(filter)
+                                            .font(.subheadline)
+                                            .fontWeight(selectedFilter == filter ? .semibold : .regular)
+                                    }
+                                    .padding(.horizontal, 16)
+                                    .padding(.vertical, 8)
+                                    .background(
+                                        selectedFilter == filter
+                                            ? (filter == "For You" ? Color.orange.opacity(0.2) : Color.purple.opacity(0.2))
+                                            : Color(.systemGray5)
+                                    )
+                                    .foregroundColor(
+                                        selectedFilter == filter 
+                                            ? (filter == "For You" ? .orange : .purple) 
+                                            : .black
+                                    )
+                                    .cornerRadius(20)
+                                    .onTapGesture { 
+                                        selectedFilter = filter
+                                        filterEvents()
+                                    }
                                 }
                             }
                             .padding(.horizontal)
                         }
                         .padding(.top, 8)
 
-                        // Featured Event
-                        if let firstEvent = filteredEvents.first {
-                            FeaturedEventView(event: firstEvent, recommendationService: recommendationService)
+                        // Content based on selected filter
+                        if selectedFilter == "For You" {
+                            // Personalized recommendations view
+                            personalizedRecommendationsView
+                        } else {
+                            // Regular events view
+                            regularEventsView
                         }
-
-                        // Upcoming Events
-                        VStack(alignment: .leading, spacing: 8) {
-                            Text("Upcoming Events")
-                                .font(.headline)
-                                .fontWeight(.semibold)
-                                .padding(.horizontal)
-                            if isLoading {
-                                ProgressView().padding()
-                            } else if let errorMessage = errorMessage {
-                                Text(errorMessage).foregroundColor(.red).padding()
-                            } else {
-                                ForEach(filteredEvents) { event in
-                                    UpcomingEventView(event: event, recommendationService: recommendationService)
-                                }
-                            }
-                        }
-                        .padding(.top, 8)
 
                         Spacer()
                     }
@@ -176,6 +141,127 @@ struct EventsView: View {
             Task {
                 await recommendationService.generateRecommendations()
             }
+        }
+    }
+    
+    // MARK: - Personalized Recommendations View
+    var personalizedRecommendationsView: some View {
+        VStack(alignment: .leading, spacing: 16) {
+            if Auth.auth().currentUser == nil {
+                // Not logged in message
+                VStack(spacing: 16) {
+                    Image(systemName: "person.circle")
+                        .font(.system(size: 60))
+                        .foregroundColor(.gray)
+                    
+                    Text("Sign in to see personalized recommendations")
+                        .font(.headline)
+                        .multilineTextAlignment(.center)
+                    
+                    Text("We'll learn your preferences and suggest events you'll love!")
+                        .font(.subheadline)
+                        .foregroundColor(.gray)
+                        .multilineTextAlignment(.center)
+                }
+                .padding(40)
+                .frame(maxWidth: .infinity)
+            } else if recommendationService.isLoading {
+                // Loading state
+                VStack(spacing: 16) {
+                    ProgressView()
+                        .scaleEffect(1.2)
+                    Text("Finding events you'll love...")
+                        .font(.subheadline)
+                        .foregroundColor(.gray)
+                }
+                .padding(40)
+                .frame(maxWidth: .infinity)
+            } else if recommendationService.recommendedEvents.isEmpty {
+                // No recommendations yet
+                VStack(spacing: 16) {
+                    Image(systemName: "sparkles")
+                        .font(.system(size: 60))
+                        .foregroundColor(.orange)
+                    
+                    Text("Building your recommendations")
+                        .font(.headline)
+                        .multilineTextAlignment(.center)
+                    
+                    Text("Interact with events to help us learn your preferences!")
+                        .font(.subheadline)
+                        .foregroundColor(.gray)
+                        .multilineTextAlignment(.center)
+                    
+                    // Show some popular events as fallback
+                    Button("Show Popular Events") {
+                        selectedFilter = "All Events"
+                        filterEvents()
+                    }
+                    .padding()
+                    .background(Color.orange.opacity(0.2))
+                    .foregroundColor(.orange)
+                    .cornerRadius(8)
+                }
+                .padding(40)
+                .frame(maxWidth: .infinity)
+            } else {
+                // Show recommendations
+                VStack(alignment: .leading, spacing: 12) {
+                    HStack {
+                        Image(systemName: "sparkles")
+                            .foregroundColor(.orange)
+                        Text("Recommended for You")
+                            .font(.title2)
+                            .fontWeight(.bold)
+                            .foregroundColor(.primary)
+                    }
+                    .padding(.horizontal)
+                    
+                    Text("Based on your preferences and activity")
+                        .font(.subheadline)
+                        .foregroundColor(.gray)
+                        .padding(.horizontal)
+                    
+                    ForEach(recommendationService.recommendedEvents) { event in
+                        RecommendedEventView(event: event, recommendationService: recommendationService)
+                    }
+                }
+                .padding(.top, 8)
+            }
+            
+            if let error = recommendationService.errorMessage {
+                Text("Error: \(error)")
+                    .foregroundColor(.red)
+                    .padding(.horizontal)
+            }
+        }
+    }
+    
+    // MARK: - Regular Events View
+    var regularEventsView: some View {
+        VStack(spacing: 0) {
+            // Featured Event
+            if let firstEvent = filteredEvents.first {
+                FeaturedEventView(event: firstEvent, recommendationService: recommendationService)
+            }
+
+            // Upcoming Events
+            VStack(alignment: .leading, spacing: 8) {
+                Text("Upcoming Events")
+                    .font(.headline)
+                    .fontWeight(.semibold)
+                    .padding(.horizontal)
+                if isLoading {
+                    ProgressView().padding()
+                } else if let errorMessage = errorMessage {
+                    Text(errorMessage).foregroundColor(.red).padding()
+                } else {
+                    ForEach(filteredEvents) { event in
+                        UpcomingEventView(event: event, recommendationService: recommendationService)
+                    }
+                }
+            }
+            .padding(.top, 8)
         }
     }
 
@@ -240,6 +326,11 @@ struct EventsView: View {
     }
 
     private func filterEvents() {
+        // Skip filtering for "For You" tab as it uses recommendations
+        if selectedFilter == "For You" {
+            return
+        }
+        
         var filtered = events
         
         // Apply category filter
@@ -261,36 +352,23 @@ struct EventsView: View {
     }
 }
 
-// MARK: - Recommended Event Card Component
-struct RecommendedEventCard: View {
+// MARK: - Recommended Event View Component
+struct RecommendedEventView: View {
     let event: Event
     let recommendationService: RecommendationService
     
     var body: some View {
         NavigationLink(destination: EventView(eventId: event.id ?? "-1")) {
-            VStack(alignment: .leading, spacing: 8) {
-                ZStack(alignment: .topTrailing) {
-                    if let imageUrl = URL(string: event.imageUrl) {
-                        AsyncImage(url: imageUrl) { image in
-                            image
-                                .resizable()
-                                .aspectRatio(contentMode: .fill)
-                                .frame(width: 200, height: 120)
-                                .clipped()
-                                .cornerRadius(12)
-                        } placeholder: {
-                            Rectangle()
-                                .fill(
-                                    LinearGradient(
-                                        gradient: Gradient(colors: [Color.orange.opacity(0.7), Color.pink.opacity(0.5)]),
-                                        startPoint: .topLeading,
-                                        endPoint: .bottomTrailing
-                                    )
-                                )
-                                .frame(width: 200, height: 120)
-                                .cornerRadius(12)
-                        }
-                    } else {
+            HStack(spacing: 16) {
+                // Event Image
+                if let imageUrl = URL(string: event.imageUrl) {
+                    AsyncImage(url: imageUrl) { image in
+                        image
+                            .resizable()
+                            .aspectRatio(contentMode: .fill)
+                            .frame(width: 80, height: 80)
+                            .cornerRadius(12)
+                    } placeholder: {
                         Rectangle()
                             .fill(
                                 LinearGradient(
@@ -299,65 +377,122 @@ struct RecommendedEventCard: View {
                                     endPoint: .bottomTrailing
                                 )
                             )
-                            .frame(width: 200, height: 120)
+                            .frame(width: 80, height: 80)
                             .cornerRadius(12)
                     }
-                    
-                    // "FOR YOU" badge
-                    Text("FOR YOU")
-                        .font(.caption2)
-                        .fontWeight(.bold)
-                        .padding(.horizontal, 6)
-                        .padding(.vertical, 3)
-                        .background(Color.white)
-                        .foregroundColor(.orange)
-                        .cornerRadius(6)
-                        .padding(8)
+                } else {
+                    Rectangle()
+                        .fill(
+                            LinearGradient(
+                                gradient: Gradient(colors: [Color.orange.opacity(0.7), Color.pink.opacity(0.5)]),
+                                startPoint: .topLeading,
+                                endPoint: .bottomTrailing
+                            )
+                        )
+                        .frame(width: 80, height: 80)
+                        .cornerRadius(12)
                 }
                 
-                VStack(alignment: .leading, spacing: 4) {
-                    Text(event.title)
-                        .font(.headline)
-                        .fontWeight(.bold)
-                        .lineLimit(2)
-                        .foregroundColor(.primary)
-                    
-                    Text("\(event.formattedDate) • \(event.formattedTime)")
-                        .font(.caption)
-                        .foregroundColor(.gray)
-                    
+                VStack(alignment: .leading, spacing: 6) {
+                    // Event Title with "FOR YOU" badge
                     HStack {
-                        Text(event.category)
-                            .font(.caption2)
-                            .padding(.horizontal, 6)
-                            .padding(.vertical, 2)
-                            .background(Color.purple.opacity(0.2))
-                            .foregroundColor(.purple)
-                            .cornerRadius(4)
+                        Text(event.title)
+                            .font(.headline)
+                            .fontWeight(.bold)
+                            .foregroundColor(.black)
+                            .lineLimit(2)
                         
-                        Text("€\(String(format: "%.0f", event.price))")
-                            .font(.caption2)
-                            .padding(.horizontal, 6)
-                            .padding(.vertical, 2)
-                            .background(Color.green.opacity(0.2))
-                            .foregroundColor(.green)
-                            .cornerRadius(4)
+                        Spacer()
                         
+                        Text("FOR YOU")
+                            .font(.caption2)
+                            .fontWeight(.bold)
+                            .padding(.horizontal, 6)
+                            .padding(.vertical, 3)
+                            .background(Color.orange)
+                            .foregroundColor(.white)
+                            .cornerRadius(4)
+                    }
+                    
+                    HStack(spacing: 4) {
+                        Image(systemName: "calendar")
+                            .foregroundColor(.orange)
+                            .font(.caption)
+                        Text("\(event.formattedDate)")
+                            .font(.subheadline)
+                            .foregroundColor(.gray)
+                        Text("\(event.formattedTime)")
+                            .font(.subheadline)
+                            .foregroundColor(.gray)
+                    }
+                    
+                    HStack(spacing: 4) {
+                        Image(systemName: "mappin.circle.fill")
+                            .foregroundColor(.orange)
+                            .font(.caption)
+                        Text(event.location)
+                            .font(.subheadline)
+                            .foregroundColor(.gray)
+                            .lineLimit(1)
+                    }
+                    
+                    HStack(spacing: 8) {
+                        HStack(spacing: 4) {
+                            Text(event.category)
+                                .font(.caption2)
+                                .padding(.horizontal, 6)
+                                .padding(.vertical, 2)
+                                .background(Color.orange.opacity(0.2))
+                                .foregroundColor(.orange)
+                                .cornerRadius(4)
+                            
+                            Text("€\(String(format: "%.0f", event.price))")
+                                .font(.caption2)
+                                .padding(.horizontal, 6)
+                                .padding(.vertical, 2)
+                                .background(Color.green.opacity(0.2))
+                                .foregroundColor(.green)
+                                .cornerRadius(4)
+                        }
+                        
+                        // Display rating if available
                         if let rating = event.averageRating, rating > 0 {
                             HStack(spacing: 2) {
                                 Image(systemName: "star.fill")
                                     .foregroundColor(.yellow)
                                     .font(.caption2)
                                 Text(String(format: "%.1f", rating))
-                                    .font(.caption2)
+                                    .font(.caption)
                                     .foregroundColor(.gray)
                             }
                         }
                     }
                 }
-                .frame(width: 200, alignment: .leading)
+                
+                Spacer()
+                
+                Image(systemName: "chevron.right")
+                    .foregroundColor(.orange)
+                    .font(.system(size: 14, weight: .semibold))
+                    .padding(8)
+                    .background(Color.orange.opacity(0.1))
+                    .clipShape(Circle())
             }
         }
+        .padding(16)
+        .background(
+            LinearGradient(
+                gradient: Gradient(colors: [Color.orange.opacity(0.05), Color.pink.opacity(0.02)]),
+                startPoint: .leading,
+                endPoint: .trailing
+            )
+        )
+        .cornerRadius(16)
+        .overlay(
+            RoundedRectangle(cornerRadius: 16)
+                .stroke(Color.orange.opacity(0.3), lineWidth: 1)
+        )
+        .padding(.horizontal)
         .onTapGesture {
             // Track recommendation click
             if let eventId = event.id {
@@ -458,15 +593,28 @@ struct UpcomingEventView: View {
     let recommendationService: RecommendationService
     
     var body: some View {
-        HStack(spacing: 16) {
-            if let imageUrl = URL(string: event.imageUrl) {
-                AsyncImage(url: imageUrl) { image in
-                image
-                    .resizable()
-                    .aspectRatio(contentMode: .fill)
-                        .frame(width: 80, height: 80)
-                    .cornerRadius(12)
-            } placeholder: {
+        NavigationLink(destination: EventView(eventId: event.id ?? "-1")) {
+            HStack(spacing: 16) {
+                if let imageUrl = URL(string: event.imageUrl) {
+                    AsyncImage(url: imageUrl) { image in
+                    image
+                        .resizable()
+                        .aspectRatio(contentMode: .fill)
+                            .frame(width: 80, height: 80)
+                        .cornerRadius(12)
+                } placeholder: {
+                        Rectangle()
+                            .fill(
+                                LinearGradient(
+                                    gradient: Gradient(colors: [Color.purple.opacity(0.7), Color.blue.opacity(0.5)]),
+                                    startPoint: .topLeading,
+                                    endPoint: .bottomTrailing
+                                )
+                            )
+                            .frame(width: 80, height: 80)
+                            .cornerRadius(12)
+                    }
+                } else {
                     Rectangle()
                         .fill(
                             LinearGradient(
@@ -478,78 +626,65 @@ struct UpcomingEventView: View {
                         .frame(width: 80, height: 80)
                         .cornerRadius(12)
                 }
-            } else {
-                Rectangle()
-                    .fill(
-                        LinearGradient(
-                            gradient: Gradient(colors: [Color.purple.opacity(0.7), Color.blue.opacity(0.5)]),
-                            startPoint: .topLeading,
-                            endPoint: .bottomTrailing
-                        )
-                    )
-                    .frame(width: 80, height: 80)
-                    .cornerRadius(12)
-            }
-            
-            VStack(alignment: .leading, spacing: 6) {
-                Text(event.title)
-                    .font(.headline)
-                    .fontWeight(.bold)
-                    .foregroundColor(.black)
-                    .lineLimit(2)
                 
-                HStack(spacing: 4) {
-                    Image(systemName: "calendar")
-                        .foregroundColor(.purple)
-                        .font(.caption)
-                    Text("\(event.formattedDate)")
-                        .font(.subheadline)
-                        .foregroundColor(.gray)
-                    Text("\(event.formattedTime)")
-                        .font(.subheadline)
-                        .foregroundColor(.gray)
-                }
-                
-                HStack(spacing: 4) {
-                    Image(systemName: "mappin.circle.fill")
-                        .foregroundColor(.purple)
-                        .font(.caption)
-                    Text(event.location)
-                        .font(.subheadline)
-                        .foregroundColor(.gray)
-                        .lineLimit(1)
-                }
-                
-                HStack(spacing: 8) {
+                VStack(alignment: .leading, spacing: 6) {
+                    Text(event.title)
+                        .font(.headline)
+                        .fontWeight(.bold)
+                        .foregroundColor(.black)
+                        .lineLimit(2)
+                    
                     HStack(spacing: 4) {
-                        Image(systemName: "person.2.fill")
+                        Image(systemName: "calendar")
                             .foregroundColor(.purple)
                             .font(.caption)
-                        Text("\(event.attendees) going")
-                            .font(.caption)
-                            .foregroundColor(.purple)
+                        Text("\(event.formattedDate)")
+                            .font(.subheadline)
+                            .foregroundColor(.gray)
+                        Text("\(event.formattedTime)")
+                            .font(.subheadline)
+                            .foregroundColor(.gray)
                     }
                     
-                    // Display rating if available
-                    if let rating = event.averageRating, rating > 0 {
-                        HStack(spacing: 2) {
-                            Image(systemName: "star.fill")
-                                .foregroundColor(.yellow)
-                                .font(.caption2)
-                            Text(String(format: "%.1f", rating))
+                    HStack(spacing: 4) {
+                        Image(systemName: "mappin.circle.fill")
+                            .foregroundColor(.purple)
+                            .font(.caption)
+                        Text(event.location)
+                            .font(.subheadline)
+                            .foregroundColor(.gray)
+                            .lineLimit(1)
+                    }
+                    
+                    HStack(spacing: 8) {
+                        HStack(spacing: 4) {
+                            Image(systemName: "person.2.fill")
+                                .foregroundColor(.purple)
                                 .font(.caption)
-                                .foregroundColor(.gray)
-                            Text("(\(event.totalReviews ?? 0))")
+                            Text("\(event.attendees) going")
                                 .font(.caption)
-                                .foregroundColor(.gray)
+                                .foregroundColor(.purple)
+                        }
+                        
+                        // Display rating if available
+                        if let rating = event.averageRating, rating > 0 {
+                            HStack(spacing: 2) {
+                                Image(systemName: "star.fill")
+                                    .foregroundColor(.yellow)
+                                    .font(.caption2)
+                                Text(String(format: "%.1f", rating))
+                                    .font(.caption)
+                                    .foregroundColor(.gray)
+                                Text("(\(event.totalReviews ?? 0))")
+                                    .font(.caption)
+                                    .foregroundColor(.gray)
+                            }
                         }
                     }
                 }
-            }
-            
-            Spacer()
-            
-            NavigationLink(destination: EventView(eventId: event.id ?? "-1")) {
+                
+                Spacer()
+                
                 Image(systemName: "chevron.right")
                     .foregroundColor(.purple)
                     .font(.system(size: 14, weight: .semibold))
