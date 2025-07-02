@@ -61,7 +61,7 @@
 /* End PBXFileReference section */
 
 /* Begin PBXFileSystemSynchronizedBuildFileExceptionSet section */
-		135F70CC2E1406B4008435D6 /* Exceptions for "AppDev" folder in "AppDev" target */ = {
+		135F72362E15200D008435D6 /* Exceptions for "AppDev" folder in "AppDev" target */ = {
 			isa = PBXFileSystemSynchronizedBuildFileExceptionSet;
 			membershipExceptions = (
 				Info.plist,
@@ -74,7 +74,7 @@
 		F7C686262DCD45E2006F3CE2 /* AppDev */ = {
 			isa = PBXFileSystemSynchronizedRootGroup;
 			exceptions = (
-				135F70CC2E1406B4008435D6 /* Exceptions for "AppDev" folder in "AppDev" target */,
+				135F72362E15200D008435D6 /* Exceptions for "AppDev" folder in "AppDev" target */,
 			);
 			path = AppDev;
 			sourceTree = "<group>";
@@ -514,7 +514,6 @@
 				INFOPLIST_FILE = AppDev/Info.plist;
 				INFOPLIST_KEY_NSCameraUsageDescription = "This app needs camera access to scan QR codes for event ticket validation";
 				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
-				INFOPLIST_KEY_UILaunchScreen_Generation = YES;
 				INFOPLIST_KEY_UIRequiresFullScreen = NO;
 				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPad = "UIInterfaceOrientationPortrait UIInterfaceOrientationPortraitUpsideDown UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
 				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPhone = "UIInterfaceOrientationPortrait UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
@@ -550,7 +549,6 @@
 				INFOPLIST_FILE = AppDev/Info.plist;
 				INFOPLIST_KEY_NSCameraUsageDescription = "This app needs camera access to scan QR codes for event ticket validation";
 				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
-				INFOPLIST_KEY_UILaunchScreen_Generation = YES;
 				INFOPLIST_KEY_UIRequiresFullScreen = NO;
 				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPad = "UIInterfaceOrientationPortrait UIInterfaceOrientationPortraitUpsideDown UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
 				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPhone = "UIInterfaceOrientationPortrait UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
