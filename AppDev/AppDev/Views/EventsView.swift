@@ -6,6 +6,10 @@ struct EventsView: View {
     @State private var selectedFilter = "All Events"
     @State private var showCreateEvent = false
     @State private var searchText = ""
+    
+    // Add recommendation service
+    @StateObject private var recommendationService = RecommendationService()
+    
     let filters = [
         "All Events",
         "House Party",
@@ -42,6 +46,43 @@ struct EventsView: View {
                         HeaderView()
                             .padding(.horizontal)
                             .padding(.bottom, 8)
+
+                        // Recommended Events Section (only show if user has recommendations)
+                        if !recommendationService.recommendedEvents.isEmpty {
+                            VStack(alignment: .leading, spacing: 8) {
+                                Text("✨ Recommended for You")
+                                    .font(.headline)
+                                    .fontWeight(.semibold)
+                                    .padding(.horizontal)
+                                    .foregroundColor(.primary)
+                                
+                                if recommendationService.isLoading {
+                                    ProgressView("Loading recommendations...")
+                                        .frame(maxWidth: .infinity, alignment: .center)
+                                        .padding()
+                                } else {
+                                    ScrollView(.horizontal, showsIndicators: false) {
+                                        HStack(spacing: 12) {
+                                            ForEach(recommendationService.recommendedEvents.prefix(5)) { event in
+                                                RecommendedEventCard(event: event, recommendationService: recommendationService)
+                                            }
+                                        }
+                                        .padding(.horizontal)
+                                    }
+                                }
+                            }
+                            .padding(.top, 8)
+                        }
+
+                        // DEBUG: Test Link (Remove in production)
+                        #if DEBUG
+                        NavigationLink("🧪 Test Recommendations", destination: TestRecommendationView())
+                            .padding()
+                            .background(Color.orange.opacity(0.2))
+                            .cornerRadius(8)
+                            .padding(.horizontal)
+                            .padding(.top, 8)
+                        #endif
 
                         // Search Bar
                         HStack {
@@ -85,7 +126,7 @@ struct EventsView: View {
 
                         // Featured Event
                         if let firstEvent = filteredEvents.first {
-                            FeaturedEventView(event: firstEvent)
+                            FeaturedEventView(event: firstEvent, recommendationService: recommendationService)
                         }
 
                         // Upcoming Events
@@ -100,7 +141,7 @@ struct EventsView: View {
                                 Text(errorMessage).foregroundColor(.red).padding()
                             } else {
                                 ForEach(filteredEvents) { event in
-                                    UpcomingEventView(event: event)
+                                    UpcomingEventView(event: event, recommendationService: recommendationService)
                                 }
                             }
                         }
@@ -129,7 +170,13 @@ struct EventsView: View {
                 CreateEventView()
             }
         }
-        .onAppear(perform: fetchEvents)
+        .onAppear {
+            fetchEvents()
+            // Generate recommendations when view appears
+            Task {
+                await recommendationService.generateRecommendations()
+            }
+        }
     }
 
     func fetchEvents() {
@@ -214,8 +261,115 @@ struct EventsView: View {
     }
 }
 
+// MARK: - Recommended Event Card Component
+struct RecommendedEventCard: View {
+    let event: Event
+    let recommendationService: RecommendationService
+    
+    var body: some View {
+        NavigationLink(destination: EventView(eventId: event.id ?? "-1")) {
+            VStack(alignment: .leading, spacing: 8) {
+                ZStack(alignment: .topTrailing) {
+                    if let imageUrl = URL(string: event.imageUrl) {
+                        AsyncImage(url: imageUrl) { image in
+                            image
+                                .resizable()
+                                .aspectRatio(contentMode: .fill)
+                                .frame(width: 200, height: 120)
+                                .clipped()
+                                .cornerRadius(12)
+                        } placeholder: {
+                            Rectangle()
+                                .fill(
+                                    LinearGradient(
+                                        gradient: Gradient(colors: [Color.orange.opacity(0.7), Color.pink.opacity(0.5)]),
+                                        startPoint: .topLeading,
+                                        endPoint: .bottomTrailing
+                                    )
+                                )
+                                .frame(width: 200, height: 120)
+                                .cornerRadius(12)
+                        }
+                    } else {
+                        Rectangle()
+                            .fill(
+                                LinearGradient(
+                                    gradient: Gradient(colors: [Color.orange.opacity(0.7), Color.pink.opacity(0.5)]),
+                                    startPoint: .topLeading,
+                                    endPoint: .bottomTrailing
+                                )
+                            )
+                            .frame(width: 200, height: 120)
+                            .cornerRadius(12)
+                    }
+                    
+                    // "FOR YOU" badge
+                    Text("FOR YOU")
+                        .font(.caption2)
+                        .fontWeight(.bold)
+                        .padding(.horizontal, 6)
+                        .padding(.vertical, 3)
+                        .background(Color.white)
+                        .foregroundColor(.orange)
+                        .cornerRadius(6)
+                        .padding(8)
+                }
+                
+                VStack(alignment: .leading, spacing: 4) {
+                    Text(event.title)
+                        .font(.headline)
+                        .fontWeight(.bold)
+                        .lineLimit(2)
+                        .foregroundColor(.primary)
+                    
+                    Text("\(event.formattedDate) • \(event.formattedTime)")
+                        .font(.caption)
+                        .foregroundColor(.gray)
+                    
+                    HStack {
+                        Text(event.category)
+                            .font(.caption2)
+                            .padding(.horizontal, 6)
+                            .padding(.vertical, 2)
+                            .background(Color.purple.opacity(0.2))
+                            .foregroundColor(.purple)
+                            .cornerRadius(4)
+                        
+                        Text("€\(String(format: "%.0f", event.price))")
+                            .font(.caption2)
+                            .padding(.horizontal, 6)
+                            .padding(.vertical, 2)
+                            .background(Color.green.opacity(0.2))
+                            .foregroundColor(.green)
+                            .cornerRadius(4)
+                        
+                        if let rating = event.averageRating, rating > 0 {
+                            HStack(spacing: 2) {
+                                Image(systemName: "star.fill")
+                                    .foregroundColor(.yellow)
+                                    .font(.caption2)
+                                Text(String(format: "%.1f", rating))
+                                    .font(.caption2)
+                                    .foregroundColor(.gray)
+                            }
+                        }
+                    }
+                }
+                .frame(width: 200, alignment: .leading)
+            }
+        }
+        .onTapGesture {
+            // Track recommendation click
+            if let eventId = event.id {
+                recommendationService.trackUserAction(eventId: eventId, actionType: .clicked, event: event)
+            }
+        }
+    }
+}
+
 struct FeaturedEventView: View {
     let event: Event
+    let recommendationService: RecommendationService
 
     var body: some View {
         NavigationLink(destination: EventView(eventId: event.id ?? "-1")) {
@@ -290,11 +444,18 @@ struct FeaturedEventView: View {
             }
             .padding(.top, 8)
         }
+        .onTapGesture {
+            // Track featured event click
+            if let eventId = event.id {
+                recommendationService.trackUserAction(eventId: eventId, actionType: .clicked, event: event)
+            }
+        }
     }
 }
 
 struct UpcomingEventView: View {
     let event: Event
+    let recommendationService: RecommendationService
     
     var body: some View {
         HStack(spacing: 16) {
@@ -402,6 +563,12 @@ struct UpcomingEventView: View {
         .cornerRadius(16)
         .shadow(color: Color.black.opacity(0.05), radius: 8, x: 0, y: 2)
         .padding(.horizontal)
+        .onTapGesture {
+            // Track upcoming event click
+            if let eventId = event.id {
+                recommendationService.trackUserAction(eventId: eventId, actionType: .clicked, event: event)
+            }
+        }
     }
 }
 
