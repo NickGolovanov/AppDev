@@ -1,4 +1,3 @@
-dober\Desktop\happyParty\AppDev\AppDev\AppDev\Views\EventView.swift
 import SwiftUI
 import FirebaseFirestore
 import FirebaseAuth

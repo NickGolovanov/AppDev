@@ -60,9 +60,22 @@
 		F7C6863E2DCD45E4006F3CE2 /* AppDevUITests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = AppDevUITests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
 /* End PBXFileReference section */
 
+/* Begin PBXFileSystemSynchronizedBuildFileExceptionSet section */
+		135F72D52E152D6A008435D6 /* Exceptions for "AppDev" folder in "AppDev" target */ = {
+			isa = PBXFileSystemSynchronizedBuildFileExceptionSet;
+			membershipExceptions = (
+				Info.plist,
+			);
+			target = F7C686232DCD45E2006F3CE2 /* AppDev */;
+		};
+/* End PBXFileSystemSynchronizedBuildFileExceptionSet section */
+
 /* Begin PBXFileSystemSynchronizedRootGroup section */
 		F7C686262DCD45E2006F3CE2 /* AppDev */ = {
 			isa = PBXFileSystemSynchronizedRootGroup;
+			exceptions = (
+				135F72D52E152D6A008435D6 /* Exceptions for "AppDev" folder in "AppDev" target */,
+			);
 			path = AppDev;
 			sourceTree = "<group>";
 		};
