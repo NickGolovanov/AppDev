@@ -125,61 +125,55 @@ class RecommendationService: ObservableObject {
             print("❌ No user ID for recommendations")
             return 
         }
-    
-        print(" Starting recommendation generation for user: \(userId)")
-    
+
+        print("🔄 Starting recommendation generation for user: \(userId)")
+
         DispatchQueue.main.async {
             self.isLoading = true
             self.errorMessage = nil
         }
-    
+
         do {
             // Get user preferences
             let preferences = try await getUserPreferences(userId: userId)
-            print("User preferences: \(preferences.preferredCategories)")
-        
+            print("📊 User preferences: \(preferences.preferredCategories)")
+    
             // Get all available events
             let allEvents = try await getAllEvents()
-            print("Found \(allEvents.count) total events")
-        
-            // Filter out events user has already attended/purchased
+            print("📅 Found \(allEvents.count) total events")
+    
+            // Filter out events user has already attended/purchased/joined
             let availableEvents = try await filterUserEvents(allEvents, userId: userId)
-            print("Available events after filtering: \(availableEvents.count)")
-        
-            // TEMPORARY: If no events available after filtering, use some recent events for testing
-            let eventsToScore: [Event]
+            print("✅ Available events after filtering: \(availableEvents.count)")
+    
+            // Check if we have any events to recommend
             if availableEvents.isEmpty {
-                print("⚠️ No events available after filtering. Using recent events for recommendations...")
-                // Use the most recent future events regardless of user history for now
-                eventsToScore = allEvents.filter { event in
-                    let isoFormatter = ISO8601DateFormatter()
-                    if let eventDate = isoFormatter.date(from: event.date) {
-                        return eventDate > Date()
-                    }
-                    return false
+                print("❌ No events available for recommendations after filtering")
+                DispatchQueue.main.async {
+                    self.recommendedEvents = []
+                    self.isLoading = false
+                    print("✅ Generated 0 recommendations - no suitable events")
                 }
-                print("Using \(eventsToScore.count) recent events for scoring")
-            } else {
-                eventsToScore = availableEvents
+                return
             }
-        
-            // Score and rank events
-            let scoredEvents = scoreEvents(eventsToScore, preferences: preferences, userId: userId)
-            print(" Top 5 scored events:")
+    
+            // Score and rank the available events
+            let scoredEvents = scoreEvents(availableEvents, preferences: preferences, userId: userId)
+            print("🏆 Top 5 scored events:")
             for (index, event) in scoredEvents.prefix(5).enumerated() {
                 let score = calculateEventScore(event, preferences: preferences, userId: userId)
                 print("  \(index + 1). \(event.title) (\(event.category)) - Score: \(score)")
             }
-        
-            // Get top recommendations
+    
+            // Get top recommendations (limit to 10)
             let recommendations = Array(scoredEvents.prefix(10))
-        
+    
             DispatchQueue.main.async {
                 self.recommendedEvents = recommendations
                 self.isLoading = false
                 print("✅ Generated \(recommendations.count) recommendations")
             }
-        
+    
         } catch {
             print("❌ Error generating recommendations: \(error)")
             DispatchQueue.main.async {
