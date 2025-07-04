@@ -234,6 +234,19 @@ struct EventsView: View {
                     .foregroundColor(.red)
                     .padding(.horizontal)
             }
+
+            if Auth.auth().currentUser != nil {
+                Button("🔍 Debug Recommendations") {
+                    Task {
+                        await recommendationService.debugUserPreferences()
+                        await recommendationService.generateRecommendations()
+                    }
+                }
+                .padding()
+                .background(Color.blue.opacity(0.2))
+                .cornerRadius(8)
+                .padding(.horizontal)
+            }
         }
     }
     
