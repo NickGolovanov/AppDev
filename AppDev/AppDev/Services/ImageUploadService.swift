@@ -4,7 +4,7 @@ import UIKit
 class ImageUploadService: ObservableObject {
     static let shared = ImageUploadService()
     
-    // Replace with your actual ImgBB API key
+    // Your ImgBB API key
     private let apiKey = "be5db19812c55baa1f51a989b68fa51f"
     
     @Published var isUploading = false
@@ -13,14 +13,21 @@ class ImageUploadService: ObservableObject {
     private init() {}
     
     func uploadImage(_ image: UIImage, completion: @escaping (Result<String, ImageUploadError>) -> Void) {
-        // Compress image to reduce upload time and ensure compatibility
-        guard let imageData = image.jpegData(compressionQuality: 0.8) else {
+        // Compress image more aggressively for better compatibility
+        guard let imageData = image.jpegData(compressionQuality: 0.6) else {
             completion(.failure(.invalidImage))
             return
         }
         
-        // Convert to base64 and ensure it's properly encoded
-        let base64String = imageData.base64EncodedString(options: [])
+        // Check file size (ImgBB free tier has 32MB limit)
+        let maxSize = 16 * 1024 * 1024 // 16MB to be safe
+        if imageData.count > maxSize {
+            completion(.failure(.uploadFailed("Image too large. Please select a smaller image.")))
+            return
+        }
+        
+        // Convert to base64
+        let base64String = imageData.base64EncodedString()
         
         // Validate base64 string
         guard !base64String.isEmpty else {
@@ -40,44 +47,54 @@ class ImageUploadService: ObservableObject {
             self.uploadProgress = 0.1
         }
         
-        // Create request
+        // Create multipart form data manually (more reliable)
+        let boundary = "Boundary-\(UUID().uuidString)"
         var request = URLRequest(url: url)
         request.httpMethod = "POST"
-        request.setValue("application/x-www-form-urlencoded", forHTTPHeaderField: "Content-Type")
+        request.setValue("multipart/form-data; boundary=\(boundary)", forHTTPHeaderField: "Content-Type")
         
-        // Create form data with proper URL encoding
-        var components = URLComponents()
-        components.queryItems = [
-            URLQueryItem(name: "key", value: apiKey),
-            URLQueryItem(name: "image", value: base64String),
-            URLQueryItem(name: "name", value: "profile_image_\(Int(Date().timeIntervalSince1970))")
-        ]
+        // Build form data
+        var formData = Data()
         
-        // Get the properly encoded query string
-        guard let queryString = components.percentEncodedQuery else {
-            DispatchQueue.main.async {
-                self.isUploading = false
-                self.uploadProgress = 0.0
-            }
-            completion(.failure(.invalidURL))
-            return
-        }
+        // Add API key
+        formData.append("--\(boundary)\r\n".data(using: .utf8)!)
+        formData.append("Content-Disposition: form-data; name=\"key\"\r\n\r\n".data(using: .utf8)!)
+        formData.append("\(apiKey)\r\n".data(using: .utf8)!)
         
-        request.httpBody = queryString.data(using: .utf8)
+        // Add image data
+        formData.append("--\(boundary)\r\n".data(using: .utf8)!)
+        formData.append("Content-Disposition: form-data; name=\"image\"\r\n\r\n".data(using: .utf8)!)
+        formData.append("\(base64String)\r\n".data(using: .utf8)!)
+        
+        // Add optional name
+        formData.append("--\(boundary)\r\n".data(using: .utf8)!)
+        formData.append("Content-Disposition: form-data; name=\"name\"\r\n\r\n".data(using: .utf8)!)
+        formData.append("profile_image_\(Int(Date().timeIntervalSince1970))\r\n".data(using: .utf8)!)
+        
+        // End boundary
+        formData.append("--\(boundary)--\r\n".data(using: .utf8)!)
+        
+        request.httpBody = formData
         
         // Update progress
         DispatchQueue.main.async {
-            self.uploadProgress = 0.5
+            self.uploadProgress = 0.3
         }
         
-        // Make request
-        URLSession.shared.dataTask(with: request) { [weak self] data, response, error in
+        // Make request with timeout
+        let config = URLSessionConfiguration.default
+        config.timeoutIntervalForRequest = 60
+        config.timeoutIntervalForResource = 120
+        let session = URLSession(configuration: config)
+        
+        session.dataTask(with: request) { [weak self] data, response, error in
             DispatchQueue.main.async {
-                self?.uploadProgress = 0.9
+                self?.uploadProgress = 0.8
             }
             
             // Check for network errors
             if let error = error {
+                print("❌ Network error: \(error.localizedDescription)")
                 DispatchQueue.main.async {
                     self?.isUploading = false
                     self?.uploadProgress = 0.0
@@ -89,17 +106,19 @@ class ImageUploadService: ObservableObject {
             // Check response status
             if let httpResponse = response as? HTTPURLResponse {
                 print("📡 HTTP Status Code: \(httpResponse.statusCode)")
+                
                 if httpResponse.statusCode != 200 {
                     DispatchQueue.main.async {
                         self?.isUploading = false
                         self?.uploadProgress = 0.0
                     }
-                    completion(.failure(.uploadFailed("HTTP \(httpResponse.statusCode)")))
+                    completion(.failure(.uploadFailed("Server returned status \(httpResponse.statusCode)")))
                     return
                 }
             }
             
             guard let data = data else {
+                print("❌ No data received")
                 DispatchQueue.main.async {
                     self?.isUploading = false
                     self?.uploadProgress = 0.0
@@ -113,6 +132,7 @@ class ImageUploadService: ObservableObject {
                 print("📄 Raw response: \(responseString)")
             }
             
+            // Parse JSON response
             do {
                 if let json = try JSONSerialization.jsonObject(with: data) as? [String: Any] {
                     print("📋 Parsed JSON: \(json)")
@@ -121,33 +141,38 @@ class ImageUploadService: ObservableObject {
                        let dataDict = json["data"] as? [String: Any],
                        let imageURL = dataDict["url"] as? String {
                         
+                        print("✅ Upload successful: \(imageURL)")
                         DispatchQueue.main.async {
                             self?.isUploading = false
                             self?.uploadProgress = 1.0
-                            // Reset progress after a delay
+                            // Reset progress after delay
                             DispatchQueue.main.asyncAfter(deadline: .now() + 2) {
                                 self?.uploadProgress = 0.0
                             }
                         }
                         completion(.success(imageURL))
+                        
                     } else {
                         // Handle API errors
+                        let errorMessage: String
                         if let error = json["error"] as? [String: Any],
                            let message = error["message"] as? String {
-                            DispatchQueue.main.async {
-                                self?.isUploading = false
-                                self?.uploadProgress = 0.0
-                            }
-                            completion(.failure(.uploadFailed(message)))
+                            errorMessage = message
+                        } else if let statusCode = json["status"] as? Int {
+                            errorMessage = "API error with status \(statusCode)"
                         } else {
-                            DispatchQueue.main.async {
-                                self?.isUploading = false
-                                self?.uploadProgress = 0.0
-                            }
-                            completion(.failure(.uploadFailed("Unknown API error")))
+                            errorMessage = "Unknown API error"
                         }
+                        
+                        print("❌ API error: \(errorMessage)")
+                        DispatchQueue.main.async {
+                            self?.isUploading = false
+                            self?.uploadProgress = 0.0
+                        }
+                        completion(.failure(.uploadFailed(errorMessage)))
                     }
                 } else {
+                    print("❌ Invalid JSON response")
                     DispatchQueue.main.async {
                         self?.isUploading = false
                         self?.uploadProgress = 0.0
@@ -155,6 +180,7 @@ class ImageUploadService: ObservableObject {
                     completion(.failure(.invalidResponse))
                 }
             } catch {
+                print("❌ JSON parsing error: \(error)")
                 DispatchQueue.main.async {
                     self?.isUploading = false
                     self?.uploadProgress = 0.0
