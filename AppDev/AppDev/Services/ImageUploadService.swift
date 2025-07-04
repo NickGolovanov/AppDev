@@ -13,18 +13,20 @@ class ImageUploadService: ObservableObject {
     private init() {}
     
     func uploadImage(_ image: UIImage, completion: @escaping (Result<String, ImageUploadError>) -> Void) {
-        // Compress image more aggressively for better compatibility
-        guard let imageData = image.jpegData(compressionQuality: 0.6) else {
+        // Compress image aggressively to reduce size and potential network issues
+        guard let imageData = image.jpegData(compressionQuality: 0.3) else {
             completion(.failure(.invalidImage))
             return
         }
         
-        // Check file size (ImgBB free tier has 32MB limit)
-        let maxSize = 16 * 1024 * 1024 // 16MB to be safe
+        // Much smaller size limit to avoid network timeouts
+        let maxSize = 5 * 1024 * 1024 // 5MB limit
         if imageData.count > maxSize {
             completion(.failure(.uploadFailed("Image too large. Please select a smaller image.")))
             return
         }
+        
+        print("📸 Image size: \(imageData.count) bytes")
         
         // Convert to base64
         let base64String = imageData.base64EncodedString()
@@ -47,44 +49,43 @@ class ImageUploadService: ObservableObject {
             self.uploadProgress = 0.1
         }
         
-        // Create multipart form data manually (more reliable)
-        let boundary = "Boundary-\(UUID().uuidString)"
+        // Use simple URL-encoded form data instead of multipart
         var request = URLRequest(url: url)
         request.httpMethod = "POST"
-        request.setValue("multipart/form-data; boundary=\(boundary)", forHTTPHeaderField: "Content-Type")
+        request.setValue("application/x-www-form-urlencoded", forHTTPHeaderField: "Content-Type")
         
-        // Build form data
-        var formData = Data()
+        // Encode parameters properly
+        let parameters = [
+            "key": apiKey,
+            "image": base64String,
+            "name": "profile_image_\(Int(Date().timeIntervalSince1970))"
+        ]
         
-        // Add API key
-        formData.append("--\(boundary)\r\n".data(using: .utf8)!)
-        formData.append("Content-Disposition: form-data; name=\"key\"\r\n\r\n".data(using: .utf8)!)
-        formData.append("\(apiKey)\r\n".data(using: .utf8)!)
+        // Create form-encoded body
+        let formData = parameters.compactMap { key, value in
+            guard let encodedKey = key.addingPercentEncoding(withAllowedCharacters: .urlQueryAllowed),
+                  let encodedValue = value.addingPercentEncoding(withAllowedCharacters: .urlQueryAllowed) else {
+                return nil
+            }
+            return "\(encodedKey)=\(encodedValue)"
+        }.joined(separator: "&")
         
-        // Add image data
-        formData.append("--\(boundary)\r\n".data(using: .utf8)!)
-        formData.append("Content-Disposition: form-data; name=\"image\"\r\n\r\n".data(using: .utf8)!)
-        formData.append("\(base64String)\r\n".data(using: .utf8)!)
+        request.httpBody = formData.data(using: .utf8)
         
-        // Add optional name
-        formData.append("--\(boundary)\r\n".data(using: .utf8)!)
-        formData.append("Content-Disposition: form-data; name=\"name\"\r\n\r\n".data(using: .utf8)!)
-        formData.append("profile_image_\(Int(Date().timeIntervalSince1970))\r\n".data(using: .utf8)!)
-        
-        // End boundary
-        formData.append("--\(boundary)--\r\n".data(using: .utf8)!)
-        
-        request.httpBody = formData
+        print("📤 Making request to ImgBB...")
         
         // Update progress
         DispatchQueue.main.async {
             self.uploadProgress = 0.3
         }
         
-        // Make request with timeout
+        // Create session with shorter timeout to fail fast if there are issues
         let config = URLSessionConfiguration.default
-        config.timeoutIntervalForRequest = 60
-        config.timeoutIntervalForResource = 120
+        config.timeoutIntervalForRequest = 30 // Shorter timeout
+        config.timeoutIntervalForResource = 60
+        config.allowsCellularAccess = true
+        config.waitsForConnectivity = false
+        
         let session = URLSession(configuration: config)
         
         session.dataTask(with: request) { [weak self] data, response, error in
@@ -94,12 +95,23 @@ class ImageUploadService: ObservableObject {
             
             // Check for network errors
             if let error = error {
-                print("❌ Network error: \(error.localizedDescription)")
+                print("❌ Network error: \(error)")
+                print("❌ Error code: \((error as NSError).code)")
+                print("❌ Error domain: \((error as NSError).domain)")
+                
                 DispatchQueue.main.async {
                     self?.isUploading = false
                     self?.uploadProgress = 0.0
                 }
-                completion(.failure(.networkError(error.localizedDescription)))
+                
+                // Provide more specific error messages
+                if (error as NSError).code == -1005 {
+                    completion(.failure(.networkError("Network connection lost. Please check your internet and try again.")))
+                } else if (error as NSError).code == -1001 {
+                    completion(.failure(.networkError("Upload timed out. Please try with a smaller image.")))
+                } else {
+                    completion(.failure(.networkError("Network error: \(error.localizedDescription)")))
+                }
                 return
             }
             
@@ -112,7 +124,7 @@ class ImageUploadService: ObservableObject {
                         self?.isUploading = false
                         self?.uploadProgress = 0.0
                     }
-                    completion(.failure(.uploadFailed("Server returned status \(httpResponse.statusCode)")))
+                    completion(.failure(.uploadFailed("Server error: HTTP \(httpResponse.statusCode)")))
                     return
                 }
             }
@@ -127,15 +139,16 @@ class ImageUploadService: ObservableObject {
                 return
             }
             
-            // Debug: Print raw response
+            // Debug: Print raw response (truncated for large responses)
             if let responseString = String(data: data, encoding: .utf8) {
-                print("📄 Raw response: \(responseString)")
+                let truncated = responseString.count > 500 ? String(responseString.prefix(500)) + "..." : responseString
+                print("📄 Raw response: \(truncated)")
             }
             
             // Parse JSON response
             do {
                 if let json = try JSONSerialization.jsonObject(with: data) as? [String: Any] {
-                    print("📋 Parsed JSON: \(json)")
+                    print("📋 Parsed JSON keys: \(json.keys)")
                     
                     if let success = json["success"] as? Bool, success == true,
                        let dataDict = json["data"] as? [String: Any],
@@ -155,13 +168,16 @@ class ImageUploadService: ObservableObject {
                     } else {
                         // Handle API errors
                         let errorMessage: String
-                        if let error = json["error"] as? [String: Any],
-                           let message = error["message"] as? String {
-                            errorMessage = message
+                        if let error = json["error"] as? [String: Any] {
+                            if let message = error["message"] as? String {
+                                errorMessage = message
+                            } else {
+                                errorMessage = "API error: \(error)"
+                            }
                         } else if let statusCode = json["status"] as? Int {
                             errorMessage = "API error with status \(statusCode)"
                         } else {
-                            errorMessage = "Unknown API error"
+                            errorMessage = "Unknown API error - Response: \(json)"
                         }
                         
                         print("❌ API error: \(errorMessage)")
@@ -211,9 +227,9 @@ enum ImageUploadError: Error, LocalizedError {
         case .invalidResponse:
             return "Invalid server response format"
         case .networkError(let message):
-            return "Network error: \(message)"
+            return message
         case .uploadFailed(let message):
-            return "Upload failed: \(message)"
+            return message
         case .parsingError(let message):
             return "Response parsing error: \(message)"
         }
