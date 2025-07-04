@@ -281,6 +281,7 @@ struct EventsView: View {
                 return
             }
         
+            // Replace the Event initialization part in fetchEvents():
             let allEvents = documents.compactMap { doc in
                 let data = doc.data()
                 let id = doc.documentID
@@ -302,7 +303,7 @@ struct EventsView: View {
                 let price = data["price"] as? Double ?? 0.0
                 let averageRating = data["averageRating"] as? Double
                 let totalReviews = data["totalReviews"] as? Int
-            
+    
                 return Event(
                     id: id,
                     title: title,

@@ -73,10 +73,6 @@ struct Event: Identifiable, Codable {
         self.longitude = longitude
         self.averageRating = averageRating
         self.totalReviews = totalReviews
-        
-        self.recommendationScore = nil
-        self.isRecommended = false
-        self.distance = nil
     }
     
     init(from decoder: Decoder) throws {
