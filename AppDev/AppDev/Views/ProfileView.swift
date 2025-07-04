@@ -19,7 +19,6 @@ struct ProfileView: View {
     var body: some View {
         NavigationStack {
             VStack(spacing: 0) {
-                // Fixed top section - made more compact
                 VStack(spacing: 12) {
                     HeaderView(showProfileLink: false)
                     profileInfoSection
@@ -29,9 +28,8 @@ struct ProfileView: View {
                 .padding()
                 .background(Color.white)
 
-                // Expanded scrollable events section
                 VStack(alignment: .leading, spacing: 16) {
-                    Text("Recent Events")
+                    Text("Event History")
                         .font(.title2)
                         .fontWeight(.bold)
                         .padding(.horizontal)
@@ -73,7 +71,7 @@ struct ProfileView: View {
                             }
                         }
                         .padding(.horizontal)
-                        .padding(.bottom, 20) // Extra padding at bottom
+                        .padding(.bottom, 20)
                     }
                     .frame(maxHeight: UIScreen.main.bounds.height * 0.5) // Increased from 0.4 to 0.5
                 }
@@ -283,10 +281,10 @@ struct ProfileView: View {
                 }
             }
         }
-        .padding(16) // Increased padding
+        .padding(16)
         .background(Color.white)
-        .cornerRadius(16) // Larger corner radius
-        .shadow(color: Color.black.opacity(0.08), radius: 6, x: 0, y: 3) // Enhanced shadow
+        .cornerRadius(16) 
+        .shadow(color: Color.black.opacity(0.08), radius: 6, x: 0, y: 3) 
     }
 
     func fetchRecentEvents() {
