@@ -14,26 +14,23 @@ class ImageUploadService: ObservableObject {
     
     func uploadImage(_ image: UIImage, completion: @escaping (Result<String, ImageUploadError>) -> Void) {
         // Resize image to smaller dimensions first
-        let targetSize = CGSize(width: 600, height: 600)
+        let targetSize = CGSize(width: 400, height: 400)
         let resizedImage = image.resized(to: targetSize)
         
-        // Compress image
-        guard let imageData = resizedImage.jpegData(compressionQuality: 0.5) else {
+        // Compress image more aggressively
+        guard let imageData = resizedImage.jpegData(compressionQuality: 0.3) else {
             completion(.failure(.invalidImage))
             return
         }
         
-        // Check size limit (much smaller for better reliability)
-        let maxSize = 2 * 1024 * 1024 // 2MB limit
+        // Check size limit (smaller for better reliability)
+        let maxSize = 1 * 1024 * 1024 // 1MB limit
         if imageData.count > maxSize {
             completion(.failure(.uploadFailed("Image too large. Please select a smaller image.")))
             return
         }
         
         print("📸 Resized image size: \(imageData.count) bytes")
-        
-        // Convert to base64
-        let base64String = imageData.base64EncodedString()
         
         // Create URL for Imgur
         guard let url = URL(string: "https://api.imgur.com/3/image") else {
@@ -47,17 +44,39 @@ class ImageUploadService: ObservableObject {
             self.uploadProgress = 0.1
         }
         
-        // Create request for Imgur
+        // Create multipart form data (what Imgur expects)
+        let boundary = "Boundary-\(UUID().uuidString)"
         var request = URLRequest(url: url)
         request.httpMethod = "POST"
         request.setValue("Client-ID \(clientId)", forHTTPHeaderField: "Authorization")
-        request.setValue("application/x-www-form-urlencoded", forHTTPHeaderField: "Content-Type")
+        request.setValue("multipart/form-data; boundary=\(boundary)", forHTTPHeaderField: "Content-Type")
         
-        // Simple form data for Imgur
-        let formData = "image=\(base64String)&type=base64&title=ProfileImage"
-        request.httpBody = formData.data(using: .utf8)
+        // Build multipart form data
+        var formData = Data()
         
-        print("📤 Making request to Imgur...")
+        // Add image field
+        formData.append("--\(boundary)\r\n".data(using: .utf8)!)
+        formData.append("Content-Disposition: form-data; name=\"image\"; filename=\"profile.jpg\"\r\n".data(using: .utf8)!)
+        formData.append("Content-Type: image/jpeg\r\n\r\n".data(using: .utf8)!)
+        formData.append(imageData)
+        formData.append("\r\n".data(using: .utf8)!)
+        
+        // Add type field
+        formData.append("--\(boundary)\r\n".data(using: .utf8)!)
+        formData.append("Content-Disposition: form-data; name=\"type\"\r\n\r\n".data(using: .utf8)!)
+        formData.append("file\r\n".data(using: .utf8)!)
+        
+        // Add title field
+        formData.append("--\(boundary)\r\n".data(using: .utf8)!)
+        formData.append("Content-Disposition: form-data; name=\"title\"\r\n\r\n".data(using: .utf8)!)
+        formData.append("Profile Image\r\n".data(using: .utf8)!)
+        
+        // Close boundary
+        formData.append("--\(boundary)--\r\n".data(using: .utf8)!)
+        
+        request.httpBody = formData
+        
+        print("📤 Making multipart request to Imgur...")
         
         // Update progress
         DispatchQueue.main.async {
@@ -66,8 +85,8 @@ class ImageUploadService: ObservableObject {
         
         // Create session with reasonable timeout
         let config = URLSessionConfiguration.default
-        config.timeoutIntervalForRequest = 25
-        config.timeoutIntervalForResource = 50
+        config.timeoutIntervalForRequest = 30
+        config.timeoutIntervalForResource = 60
         config.allowsCellularAccess = true
         
         let session = URLSession(configuration: config)
@@ -87,11 +106,7 @@ class ImageUploadService: ObservableObject {
                     self?.uploadProgress = 0.0
                 }
                 
-                if (error as NSError).code == -1005 {
-                    completion(.failure(.networkError("Connection lost. Please try again with a smaller image.")))
-                } else {
-                    completion(.failure(.networkError("Upload failed. Please check your internet connection.")))
-                }
+                completion(.failure(.networkError("Upload failed. Please check your internet connection.")))
                 return
             }
             
@@ -99,7 +114,21 @@ class ImageUploadService: ObservableObject {
             if let httpResponse = response as? HTTPURLResponse {
                 print("📡 HTTP Status Code: \(httpResponse.statusCode)")
                 
-                if httpResponse.statusCode != 200 {
+                if httpResponse.statusCode == 400 {
+                    DispatchQueue.main.async {
+                        self?.isUploading = false
+                        self?.uploadProgress = 0.0
+                    }
+                    completion(.failure(.uploadFailed("Bad request - Image format or size may be invalid")))
+                    return
+                } else if httpResponse.statusCode == 429 {
+                    DispatchQueue.main.async {
+                        self?.isUploading = false
+                        self?.uploadProgress = 0.0
+                    }
+                    completion(.failure(.uploadFailed("Rate limit exceeded. Please try again later.")))
+                    return
+                } else if httpResponse.statusCode != 200 {
                     DispatchQueue.main.async {
                         self?.isUploading = false
                         self?.uploadProgress = 0.0
@@ -121,7 +150,7 @@ class ImageUploadService: ObservableObject {
             
             // Debug: Print response
             if let responseString = String(data: data, encoding: .utf8) {
-                let truncated = responseString.count > 300 ? String(responseString.prefix(300)) + "..." : responseString
+                let truncated = responseString.count > 500 ? String(responseString.prefix(500)) + "..." : responseString
                 print("📄 Imgur response: \(truncated)")
             }
             
@@ -152,8 +181,11 @@ class ImageUploadService: ObservableObject {
                         if let dataDict = json["data"] as? [String: Any],
                            let error = dataDict["error"] as? String {
                             errorMessage = "Imgur error: \(error)"
+                        } else if let errorDict = json["error"] as? [String: Any],
+                                  let message = errorDict["message"] as? String {
+                            errorMessage = "Imgur error: \(message)"
                         } else {
-                            errorMessage = "Imgur upload failed - Invalid response format"
+                            errorMessage = "Imgur upload failed - Response: \(json)"
                         }
                         
                         print("❌ Imgur API error: \(errorMessage)")
