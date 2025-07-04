@@ -234,95 +234,113 @@ class RecommendationService: ObservableObject {
     
     private func getAllEvents() async throws -> [Event] {
         print("🔍 Fetching all events...")
-    
-        // First, try to get all events without date filtering to see what's available
+
+        // Get ALL events from database (remove limit)
         let allSnapshot = try await db.collection("events")
             .order(by: "createdAt", descending: true)
-            .limit(to: 100)
-            .getDocuments()
-    
+            .getDocuments() // Remove .limit(to: 100)
+
         let allEvents = allSnapshot.documents.compactMap { doc in
             var event = try? doc.data(as: Event.self)
             event?.id = doc.documentID
             return event
         }
-    
+
         print("📊 Found \(allEvents.count) total events in database")
-    
-        // Now filter for future events manually (since date format might be causing issues)
+
+        // Now filter for future events manually
         let currentDate = Date()
         let isoFormatter = ISO8601DateFormatter()
-    
+
         let futureEvents = allEvents.filter { event in
-            // Try to parse the event date
             if let eventDate = isoFormatter.date(from: event.date) {
-                return eventDate > currentDate
+                let isFuture = eventDate > currentDate
+                print("📅 Event: \(event.title) - Date: \(event.date) - Future: \(isFuture)")
+                return isFuture
             } else {
-                // If parsing fails, include the event for now (we'll debug this separately)
                 print("⚠️ Could not parse date for event: \(event.title) - Date: \(event.date)")
-                return true
+                return false // Don't include unparseable dates
             }
         }
-    
+
         print("📅 Found \(futureEvents.count) future events")
         print("📅 Events by category:")
         let eventsByCategory = Dictionary(grouping: futureEvents, by: { $0.category })
         for (category, categoryEvents) in eventsByCategory {
             print("  - \(category): \(categoryEvents.count) events")
         }
-    
-        // Debug: Print first few events
-        print("🔍 Sample events:")
-        for event in futureEvents.prefix(3) {
-            print("  - \(event.title) (\(event.category)) - Date: \(event.date)")
+
+        // Debug: Print ALL future events
+        print("🔍 All future events:")
+        for event in futureEvents {
+            print("  - \(event.title) (\(event.category)) - ID: \(event.id ?? "no-id") - Date: \(event.date)")
         }
-    
+
         return futureEvents
     }
     
     private func filterUserEvents(_ events: [Event], userId: String) async throws -> [Event] {
-        print(" DEBUG: Starting to filter events for user: \(userId)")
-    
+        print("🔍 DEBUG: Starting to filter events for user: \(userId)")
+
+        // Get user's tickets (attended events)
         let ticketsSnapshot = try await db.collection("tickets")
             .whereField("userId", isEqualTo: userId)
             .getDocuments()
-    
+
         let attendedEventIds = Set(ticketsSnapshot.documents.compactMap { doc in
             let eventId = doc.data()["eventId"] as? String
-            print(" Found ticket for event: \(eventId ?? "unknown")")
+            print("🎫 Found ticket for event: \(eventId ?? "unknown")")
             return eventId
         })
-    
+
+        // Get user's saved events
         let userDoc = try await db.collection("users").document(userId).getDocument()
         let savedEventIds = Set(userDoc.data()?["savedEventIds"] as? [String] ?? [])
-    
         let joinedEventIds = Set(userDoc.data()?["joinedEventIds"] as? [String] ?? [])
-    
-        print(" User has attended: \(attendedEventIds)")
-        print(" User has saved: \(savedEventIds)")
-        print(" User has joined: \(joinedEventIds)")
-    
-        print("Filtering out \(attendedEventIds.count) attended, \(savedEventIds.count) saved, and \(joinedEventIds.count) joined events")
-    
-        // NEW: Be more lenient - only filter out events if user has actually purchased tickets
-        // Don't filter based on "joinedEventIds" for recommendations
+
+        print("🚫 User has attended (tickets): \(attendedEventIds)")
+        print("💾 User has saved: \(savedEventIds)")
+        print("🎯 User has joined: \(joinedEventIds)")
+
+        print("📊 Total events to filter: \(events.count)")
+
+        // Filter out events user has tickets for OR has joined
         let filteredEvents = events.filter { event in
-            guard let eventId = event.id else { return false }
-        
-            // Only filter out if user has actual tickets (not just joined)
-            let shouldFilter = attendedEventIds.contains(eventId) || savedEventIds.contains(eventId)
-        
-            if shouldFilter {
-                print(" Filtering out: \(event.title) (ID: \(eventId))")
-            } else {
-                print(" Keeping: \(event.title) (ID: \(eventId))")
+            guard let eventId = event.id else { 
+                print("❌ Event has no ID: \(event.title)")
+                return false 
             }
+
+            // Filter out if user has tickets OR has joined
+            let hasTicket = attendedEventIds.contains(eventId)
+            let hasJoined = joinedEventIds.contains(eventId)
+            let hasSaved = savedEventIds.contains(eventId)
         
+            let shouldFilter = hasTicket || hasJoined || hasSaved
+
+            if shouldFilter {
+                let reasons = [
+                    hasTicket ? "has ticket" : nil,
+                    hasJoined ? "has joined" : nil,
+                    hasSaved ? "has saved" : nil
+                ].compactMap { $0 }.joined(separator: ", ")
+            
+                print("🚫 Filtering out: \(event.title) (ID: \(eventId)) - Reason: \(reasons)")
+            } else {
+                print("✅ Keeping: \(event.title) (ID: \(eventId)) - Available for recommendation")
+            }
+
             return !shouldFilter
         }
+
+        print("📈 Final result: \(filteredEvents.count) events available for recommendations")
     
-        print(" Final result: \(filteredEvents.count) events available for recommendations")
-    
+        // List the final filtered events
+        print("🎯 Available events for recommendations:")
+        for event in filteredEvents {
+            print("  - \(event.title) (\(event.category)) - ID: \(event.id ?? "no-id")")
+        }
+
         return filteredEvents
     }
     
@@ -450,13 +468,13 @@ class RecommendationService: ObservableObject {
         }
     }
 
-    // Add this function to your RecommendationService class
     func debugEventData() async {
         do {
             print("🔍 DEBUG: Checking event data format...")
         
+            // Get ALL events (not just 5)
             let snapshot = try await db.collection("events")
-                .limit(to: 5)
+                .order(by: "createdAt", descending: true)
                 .getDocuments()
         
             print("📊 Found \(snapshot.documents.count) events in collection")
@@ -467,7 +485,6 @@ class RecommendationService: ObservableObject {
                 print("  - Title: \(data["title"] as? String ?? "N/A")")
                 print("  - Category: \(data["category"] as? String ?? "N/A")")
                 print("  - Date: \(data["date"] as? String ?? "N/A")")
-                print("  - Date type: \(type(of: data["date"]))")
             
                 // Try to parse date
                 if let dateString = data["date"] as? String {
