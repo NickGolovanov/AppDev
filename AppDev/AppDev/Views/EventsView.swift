@@ -269,7 +269,7 @@ struct EventsView: View {
         isLoading = true
         errorMessage = nil
         let db = Firestore.firestore()
-    
+
         db.collection("events").order(by: "createdAt", descending: true).getDocuments { snapshot, error in
             isLoading = false
             if let error = error {
@@ -280,9 +280,8 @@ struct EventsView: View {
                 errorMessage = "No events found."
                 return
             }
-        
-            // Replace the Event initialization part in fetchEvents():
-            let allEvents = documents.compactMap { doc in
+    
+            let allEvents = documents.compactMap { doc -> Event? in
                 let data = doc.data()
                 let id = doc.documentID
                 guard let title = data["title"] as? String,
@@ -303,7 +302,7 @@ struct EventsView: View {
                 let price = data["price"] as? Double ?? 0.0
                 let averageRating = data["averageRating"] as? Double
                 let totalReviews = data["totalReviews"] as? Int
-    
+
                 return Event(
                     id: id,
                     title: title,
@@ -323,28 +322,28 @@ struct EventsView: View {
                     totalReviews: totalReviews
                 )
             }
-        
-            // Filter events: keep future events + events ended within last 5 days
+    
+            // tryna keep future events + events ended within last 5 days
             let currentDate = Date()
             let fiveDaysAgo = currentDate.addingTimeInterval(-5 * 24 * 60 * 60)
             let isoFormatter = ISO8601DateFormatter()
-        
-            let filteredEvents = allEvents.filter { event in
-                // Check end time first (more accurate)
+    
+            let recentEvents = allEvents.filter { event in
+                // Check end time first (I think its more accurate)
                 if let eventEndDate = isoFormatter.date(from: event.endTime) {
                     return eventEndDate >= fiveDaysAgo
                 }
                 else if let eventDate = isoFormatter.date(from: event.date) {
                     return eventDate >= fiveDaysAgo
                 }
-                return false // Exclude events with unparseable dates
+                return false
             }
-        
+    
             print("Total events from DB: \(allEvents.count)")
-            print("Events after 5-day filter: \(filteredEvents.count)")
-        
-            events = filteredEvents
-            filterEvents()
+            print("Events after 5-day filter: \(recentEvents.count)")
+    
+            self.events = recentEvents
+            self.filterEvents()
         }
     }
 
