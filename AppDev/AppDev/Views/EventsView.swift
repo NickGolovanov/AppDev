@@ -269,6 +269,7 @@ struct EventsView: View {
         isLoading = true
         errorMessage = nil
         let db = Firestore.firestore()
+    
         db.collection("events").order(by: "createdAt", descending: true).getDocuments { snapshot, error in
             isLoading = false
             if let error = error {
@@ -279,10 +280,10 @@ struct EventsView: View {
                 errorMessage = "No events found."
                 return
             }
-            events = documents.compactMap { doc in
+        
+            let allEvents = documents.compactMap { doc in
                 let data = doc.data()
                 let id = doc.documentID
-                // Map Firestore data to Event model
                 guard let title = data["title"] as? String,
                       let date = data["date"] as? String,
                       let endTime = data["endTime"] as? String,
@@ -301,7 +302,7 @@ struct EventsView: View {
                 let price = data["price"] as? Double ?? 0.0
                 let averageRating = data["averageRating"] as? Double
                 let totalReviews = data["totalReviews"] as? Int
-                
+            
                 return Event(
                     id: id,
                     title: title,
@@ -321,23 +322,44 @@ struct EventsView: View {
                     totalReviews: totalReviews
                 )
             }
+        
+            // Filter events: keep future events + events ended within last 5 days
+            let currentDate = Date()
+            let fiveDaysAgo = currentDate.addingTimeInterval(-5 * 24 * 60 * 60)
+            let isoFormatter = ISO8601DateFormatter()
+        
+            let filteredEvents = allEvents.filter { event in
+                // Check end time first (more accurate)
+                if let eventEndDate = isoFormatter.date(from: event.endTime) {
+                    return eventEndDate >= fiveDaysAgo
+                }
+                else if let eventDate = isoFormatter.date(from: event.date) {
+                    return eventDate >= fiveDaysAgo
+                }
+                return false // Exclude events with unparseable dates
+            }
+        
+            print("Total events from DB: \(allEvents.count)")
+            print("Events after 5-day filter: \(filteredEvents.count)")
+        
+            events = filteredEvents
             filterEvents()
         }
     }
 
+    // Update the filterEvents function to handle past/future event categorization:
     private func filterEvents() {
-        // Skip filtering for "For You" tab as it uses recommendations
         if selectedFilter == "For You" {
             return
         }
-        
+    
         var filtered = events
-        
+    
         // Apply category filter
         if selectedFilter != "All Events" {
             filtered = filtered.filter { $0.category == selectedFilter }
         }
-        
+    
         // Apply search filter if search text is not empty
         if !searchText.isEmpty {
             filtered = filtered.filter { event in
@@ -347,7 +369,33 @@ struct EventsView: View {
                 event.category.localizedCaseInsensitiveContains(searchText)
             }
         }
+    
+        // Sort events: future events first, then recent past events
+        let isoFormatter = ISO8601DateFormatter()
+        filtered.sort { event1, event2 in
+            guard let date1 = isoFormatter.date(from: event1.date),
+                  let date2 = isoFormatter.date(from: event2.date) else {
+                return false
+            }
         
+            let currentDate = Date()
+            let isFuture1 = date1 > currentDate
+            let isFuture2 = date2 > currentDate
+        
+            // Future events come first, sorted by date ascending (soonest first)
+            if isFuture1 && isFuture2 {
+                return date1 < date2
+            }
+            // Past events come after future events, sorted by date descending (most recent first)
+            else if !isFuture1 && !isFuture2 {
+                return date1 > date2
+            }
+            // Future events always come before past events
+            else {
+                return isFuture1
+            }
+        }
+    
         filteredEvents = filtered
     }
 }

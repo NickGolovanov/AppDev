@@ -196,12 +196,11 @@ class RecommendationService: ObservableObject {
     }
     
     private func getAllEvents() async throws -> [Event] {
-        print("🔍 Fetching all events...")
+        print("Fetching all events...")
 
-        // Get ALL events from database (remove limit)
         let allSnapshot = try await db.collection("events")
             .order(by: "createdAt", descending: true)
-            .getDocuments() // Remove .limit(to: 100)
+            .getDocuments()
 
         let allEvents = allSnapshot.documents.compactMap { doc in
             var event = try? doc.data(as: Event.self)
@@ -209,37 +208,58 @@ class RecommendationService: ObservableObject {
             return event
         }
 
-        print("📊 Found \(allEvents.count) total events in database")
+        print("Found \(allEvents.count) total events in database")
 
-        // Now filter for future events manually
+        // Filter for relevant events: future events + events ended within last 5 days
         let currentDate = Date()
+        let fiveDaysAgo = currentDate.addingTimeInterval(-5 * 24 * 60 * 60) // 5 days ago
         let isoFormatter = ISO8601DateFormatter()
 
-        let futureEvents = allEvents.filter { event in
-            if let eventDate = isoFormatter.date(from: event.date) {
-                let isFuture = eventDate > currentDate
-                print("📅 Event: \(event.title) - Date: \(event.date) - Future: \(isFuture)")
-                return isFuture
+        let relevantEvents = allEvents.filter { event in
+            // Try parsing the end time first (more accurate for when event actually ended)
+            if let eventEndDate = isoFormatter.date(from: event.endTime) {
+                let isRelevant = eventEndDate >= fiveDaysAgo // Keep if ended within last 5 days OR is future
+                print("Event: \(event.title) - End: \(event.endTime) - Relevant: \(isRelevant)")
+                return isRelevant
+            }
+            // Fallback to start date if end time parsing fails
+            else if let eventDate = isoFormatter.date(from: event.date) {
+                let isRelevant = eventDate >= fiveDaysAgo
+                print("Event: \(event.title) - Date: \(event.date) - Relevant: \(isRelevant)")
+                return isRelevant
             } else {
-                print("⚠️ Could not parse date for event: \(event.title) - Date: \(event.date)")
-                return false // Don't include unparseable dates
+                print("⚠️ Could not parse date for event: \(event.title)")
+                return false
             }
         }
 
-        print("📅 Found \(futureEvents.count) future events")
-        print("📅 Events by category:")
-        let eventsByCategory = Dictionary(grouping: futureEvents, by: { $0.category })
+        print("📅 Found \(relevantEvents.count) relevant events (future + last 5 days)")
+    
+        // Separate into future and past for better debugging
+        let futureEvents = relevantEvents.filter { event in
+            if let eventDate = isoFormatter.date(from: event.date) {
+                return eventDate > currentDate
+            }
+            return false
+        }
+    
+        let recentPastEvents = relevantEvents.filter { event in
+            if let eventEndDate = isoFormatter.date(from: event.endTime) {
+                return eventEndDate <= currentDate && eventEndDate >= fiveDaysAgo
+            }
+            return false
+        }
+    
+        print("Future events: \(futureEvents.count)")
+        print("Recent past events (for reviews): \(recentPastEvents.count)")
+    
+        print("Events by category:")
+        let eventsByCategory = Dictionary(grouping: relevantEvents, by: { $0.category })
         for (category, categoryEvents) in eventsByCategory {
             print("  - \(category): \(categoryEvents.count) events")
         }
 
-        // Debug: Print ALL future events
-        print("🔍 All future events:")
-        for event in futureEvents {
-            print("  - \(event.title) (\(event.category)) - ID: \(event.id ?? "no-id") - Date: \(event.date)")
-        }
-
-        return futureEvents
+        return relevantEvents
     }
     
     private func filterUserEvents(_ events: [Event], userId: String) async throws -> [Event] {
