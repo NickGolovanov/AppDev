@@ -235,17 +235,30 @@ struct EventsView: View {
                     .padding(.horizontal)
             }
 
+            // In your EventsView.swift, update the debug button:
             if Auth.auth().currentUser != nil {
-                Button("🔍 Debug Recommendations") {
-                    Task {
-                        await recommendationService.debugUserPreferences()
-                        await recommendationService.generateRecommendations()
+                VStack(spacing: 8) {
+                    Button("🔍 Debug Recommendations") {
+                        Task {
+                            await recommendationService.debugUserPreferences()
+                            await recommendationService.generateRecommendations()
+                        }
                     }
-                }
-                .padding()
-                .background(Color.blue.opacity(0.2))
-                .cornerRadius(8)
-                .padding(.horizontal)
+                    .padding()
+                    .background(Color.blue.opacity(0.2))
+                    .cornerRadius(8)
+                    .padding(.horizontal)
+        
+                    Button("📊 Debug Event Data") {
+                        Task {
+                            await recommendationService.debugEventData()
+                        }
+                    }
+                    .padding()
+                    .background(Color.green.opacity(0.2))
+                    .cornerRadius(8)
+                    .padding(.horizontal)
+                }     
             }
         }
     }
