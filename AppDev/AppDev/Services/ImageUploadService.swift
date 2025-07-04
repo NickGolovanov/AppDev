@@ -4,8 +4,8 @@ import UIKit
 class ImageUploadService: ObservableObject {
     static let shared = ImageUploadService()
     
-    // Your ImgBB API key
-    private let apiKey = "be5db19812c55baa1f51a989b68fa51f"
+    // Public demo Client ID (works for testing)
+    private let clientId = "546c25a59c58ad7"
     
     @Published var isUploading = false
     @Published var uploadProgress: Double = 0.0
@@ -13,32 +13,30 @@ class ImageUploadService: ObservableObject {
     private init() {}
     
     func uploadImage(_ image: UIImage, completion: @escaping (Result<String, ImageUploadError>) -> Void) {
-        // Compress image aggressively to reduce size and potential network issues
-        guard let imageData = image.jpegData(compressionQuality: 0.3) else {
+        // Resize image to smaller dimensions first
+        let targetSize = CGSize(width: 600, height: 600)
+        let resizedImage = image.resized(to: targetSize)
+        
+        // Compress image
+        guard let imageData = resizedImage.jpegData(compressionQuality: 0.5) else {
             completion(.failure(.invalidImage))
             return
         }
         
-        // Much smaller size limit to avoid network timeouts
-        let maxSize = 5 * 1024 * 1024 // 5MB limit
+        // Check size limit (much smaller for better reliability)
+        let maxSize = 2 * 1024 * 1024 // 2MB limit
         if imageData.count > maxSize {
             completion(.failure(.uploadFailed("Image too large. Please select a smaller image.")))
             return
         }
         
-        print("📸 Image size: \(imageData.count) bytes")
+        print("📸 Resized image size: \(imageData.count) bytes")
         
         // Convert to base64
         let base64String = imageData.base64EncodedString()
         
-        // Validate base64 string
-        guard !base64String.isEmpty else {
-            completion(.failure(.invalidImage))
-            return
-        }
-        
-        // Create URL
-        guard let url = URL(string: "https://api.imgbb.com/1/upload") else {
+        // Create URL for Imgur
+        guard let url = URL(string: "https://api.imgur.com/3/image") else {
             completion(.failure(.invalidURL))
             return
         }
@@ -49,42 +47,28 @@ class ImageUploadService: ObservableObject {
             self.uploadProgress = 0.1
         }
         
-        // Use simple URL-encoded form data instead of multipart
+        // Create request for Imgur
         var request = URLRequest(url: url)
         request.httpMethod = "POST"
+        request.setValue("Client-ID \(clientId)", forHTTPHeaderField: "Authorization")
         request.setValue("application/x-www-form-urlencoded", forHTTPHeaderField: "Content-Type")
         
-        // Encode parameters properly
-        let parameters = [
-            "key": apiKey,
-            "image": base64String,
-            "name": "profile_image_\(Int(Date().timeIntervalSince1970))"
-        ]
-        
-        // Create form-encoded body
-        let formData = parameters.compactMap { key, value in
-            guard let encodedKey = key.addingPercentEncoding(withAllowedCharacters: .urlQueryAllowed),
-                  let encodedValue = value.addingPercentEncoding(withAllowedCharacters: .urlQueryAllowed) else {
-                return nil
-            }
-            return "\(encodedKey)=\(encodedValue)"
-        }.joined(separator: "&")
-        
+        // Simple form data for Imgur
+        let formData = "image=\(base64String)&type=base64&title=ProfileImage"
         request.httpBody = formData.data(using: .utf8)
         
-        print("📤 Making request to ImgBB...")
+        print("📤 Making request to Imgur...")
         
         // Update progress
         DispatchQueue.main.async {
             self.uploadProgress = 0.3
         }
         
-        // Create session with shorter timeout to fail fast if there are issues
+        // Create session with reasonable timeout
         let config = URLSessionConfiguration.default
-        config.timeoutIntervalForRequest = 30 // Shorter timeout
-        config.timeoutIntervalForResource = 60
+        config.timeoutIntervalForRequest = 25
+        config.timeoutIntervalForResource = 50
         config.allowsCellularAccess = true
-        config.waitsForConnectivity = false
         
         let session = URLSession(configuration: config)
         
@@ -97,20 +81,16 @@ class ImageUploadService: ObservableObject {
             if let error = error {
                 print("❌ Network error: \(error)")
                 print("❌ Error code: \((error as NSError).code)")
-                print("❌ Error domain: \((error as NSError).domain)")
                 
                 DispatchQueue.main.async {
                     self?.isUploading = false
                     self?.uploadProgress = 0.0
                 }
                 
-                // Provide more specific error messages
                 if (error as NSError).code == -1005 {
-                    completion(.failure(.networkError("Network connection lost. Please check your internet and try again.")))
-                } else if (error as NSError).code == -1001 {
-                    completion(.failure(.networkError("Upload timed out. Please try with a smaller image.")))
+                    completion(.failure(.networkError("Connection lost. Please try again with a smaller image.")))
                 } else {
-                    completion(.failure(.networkError("Network error: \(error.localizedDescription)")))
+                    completion(.failure(.networkError("Upload failed. Please check your internet connection.")))
                 }
                 return
             }
@@ -139,26 +119,27 @@ class ImageUploadService: ObservableObject {
                 return
             }
             
-            // Debug: Print raw response (truncated for large responses)
+            // Debug: Print response
             if let responseString = String(data: data, encoding: .utf8) {
-                let truncated = responseString.count > 500 ? String(responseString.prefix(500)) + "..." : responseString
-                print("📄 Raw response: \(truncated)")
+                let truncated = responseString.count > 300 ? String(responseString.prefix(300)) + "..." : responseString
+                print("📄 Imgur response: \(truncated)")
             }
             
-            // Parse JSON response
+            // Parse Imgur JSON response
             do {
                 if let json = try JSONSerialization.jsonObject(with: data) as? [String: Any] {
-                    print("📋 Parsed JSON keys: \(json.keys)")
+                    print("📋 Imgur JSON keys: \(json.keys)")
                     
+                    // Imgur response structure: {"data": {"link": "url"}, "success": true}
                     if let success = json["success"] as? Bool, success == true,
                        let dataDict = json["data"] as? [String: Any],
-                       let imageURL = dataDict["url"] as? String {
+                       let imageURL = dataDict["link"] as? String {
                         
-                        print("✅ Upload successful: \(imageURL)")
+                        print("✅ Imgur upload successful: \(imageURL)")
                         DispatchQueue.main.async {
                             self?.isUploading = false
                             self?.uploadProgress = 1.0
-                            // Reset progress after delay
+                            
                             DispatchQueue.main.asyncAfter(deadline: .now() + 2) {
                                 self?.uploadProgress = 0.0
                             }
@@ -166,21 +147,16 @@ class ImageUploadService: ObservableObject {
                         completion(.success(imageURL))
                         
                     } else {
-                        // Handle API errors
+                        // Handle Imgur API errors
                         let errorMessage: String
-                        if let error = json["error"] as? [String: Any] {
-                            if let message = error["message"] as? String {
-                                errorMessage = message
-                            } else {
-                                errorMessage = "API error: \(error)"
-                            }
-                        } else if let statusCode = json["status"] as? Int {
-                            errorMessage = "API error with status \(statusCode)"
+                        if let dataDict = json["data"] as? [String: Any],
+                           let error = dataDict["error"] as? String {
+                            errorMessage = "Imgur error: \(error)"
                         } else {
-                            errorMessage = "Unknown API error - Response: \(json)"
+                            errorMessage = "Imgur upload failed - Invalid response format"
                         }
                         
-                        print("❌ API error: \(errorMessage)")
+                        print("❌ Imgur API error: \(errorMessage)")
                         DispatchQueue.main.async {
                             self?.isUploading = false
                             self?.uploadProgress = 0.0
@@ -188,7 +164,7 @@ class ImageUploadService: ObservableObject {
                         completion(.failure(.uploadFailed(errorMessage)))
                     }
                 } else {
-                    print("❌ Invalid JSON response")
+                    print("❌ Invalid JSON response from Imgur")
                     DispatchQueue.main.async {
                         self?.isUploading = false
                         self?.uploadProgress = 0.0
@@ -204,6 +180,20 @@ class ImageUploadService: ObservableObject {
                 completion(.failure(.parsingError(error.localizedDescription)))
             }
         }.resume()
+    }
+}
+
+// Add this extension for image resizing
+extension UIImage {
+    func resized(to size: CGSize) -> UIImage {
+        let format = UIGraphicsImageRendererFormat()
+        format.scale = 1
+        format.opaque = false
+        
+        let renderer = UIGraphicsImageRenderer(size: size, format: format)
+        return renderer.image { _ in
+            draw(in: CGRect(origin: .zero, size: size))
+        }
     }
 }
 
