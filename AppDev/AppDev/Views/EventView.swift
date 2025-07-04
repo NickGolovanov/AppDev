@@ -41,12 +41,12 @@ struct EventView: View {
                             // Event Image
                             if let imageUrl = URL(string: event.imageUrl) {
                                 AsyncImage(url: imageUrl) { image in
-                                image
-                                    .resizable()
-                                    .aspectRatio(contentMode: .fill)
+                                    image
+                                        .resizable()
+                                        .aspectRatio(contentMode: .fill)
                                         .frame(height: 240)
-                                    .clipped()
-                            } placeholder: {
+                                        .clipped()
+                                } placeholder: {
                                     Rectangle()
                                         .fill(
                                             LinearGradient(
@@ -137,9 +137,9 @@ struct EventView: View {
                                     Image(systemName: "person.2.fill")
                                         .foregroundColor(.purple)
                                         .font(.system(size: 16))
-                                Text("\(event.attendees) going")
-                                    .font(.subheadline)
-                                    .foregroundColor(.purple)
+                                    Text("\(event.attendees) going")
+                                        .font(.subheadline)
+                                        .foregroundColor(.purple)
                                 }
                             }
 
@@ -168,7 +168,10 @@ struct EventView: View {
                             .padding(16)
                             .background(Color(.systemGray6))
                             .cornerRadius(12)
-
+                            
+                            // Reviews Section - NEW ADDITION
+                            reviewsSummarySection
+                            
                             // Get Ticket Button
                             if hasJoinedEvent {
                                 Text("You've already joined")
@@ -243,6 +246,75 @@ struct EventView: View {
         }
     }
     
+    // Reviews Summary Section - NEW
+    @ViewBuilder
+    private var reviewsSummarySection: some View {
+        VStack(alignment: .leading, spacing: 16) {
+            // Reviews Section Header
+            HStack {
+                Image(systemName: "star.bubble.fill")
+                    .foregroundColor(.purple)
+                Text("Event Reviews")
+                    .font(.headline)
+                    .fontWeight(.semibold)
+                Spacer()
+                if let totalReviews = event?.totalReviews, totalReviews > 0 {
+                    Text("\(totalReviews) review\(totalReviews == 1 ? "" : "s")")
+                        .font(.caption)
+                        .foregroundColor(.gray)
+                }
+            }
+            
+            // Reviews Summary Preview
+            if let averageRating = event?.averageRating, 
+               let totalReviews = event?.totalReviews, 
+               totalReviews > 0 {
+                
+                HStack {
+                    HStack(spacing: 2) {
+                        ForEach(1...5, id: \.self) { star in
+                            Image(systemName: star <= Int(averageRating.rounded()) ? "star.fill" : "star")
+                                .foregroundColor(.purple)
+                                .font(.caption)
+                        }
+                    }
+                    Text(String(format: "%.1f", averageRating))
+                        .font(.subheadline)
+                        .fontWeight(.medium)
+                    Text("• \(totalReviews) review\(totalReviews == 1 ? "" : "s")")
+                        .font(.caption)
+                        .foregroundColor(.gray)
+                    Spacer()
+                }
+                
+                // View All Reviews Button
+                NavigationLink(destination: EventReviewsView(eventId: eventId)) {
+                    HStack {
+                        Text("View All Reviews & Comments")
+                            .font(.subheadline)
+                            .fontWeight(.medium)
+                        Spacer()
+                        Image(systemName: "chevron.right")
+                            .font(.caption)
+                    }
+                    .padding(.vertical, 12)
+                    .padding(.horizontal, 16)
+                    .background(Color.purple.opacity(0.1))
+                    .foregroundColor(.purple)
+                    .cornerRadius(8)
+                }
+            } else {
+                Text("No reviews yet")
+                    .font(.subheadline)
+                    .foregroundColor(.gray)
+                    .italic()
+            }
+        }
+        .padding()
+        .background(Color(.systemGray6).opacity(0.3))
+        .cornerRadius(12)
+    }
+    
     // Reviews Section View
     @ViewBuilder
     private var reviewsSection: some View {
@@ -251,7 +323,7 @@ struct EventView: View {
                 .padding(.vertical, 8)
             
             HStack {
-                Text("Reviews")
+                Text("Recent Reviews")
                     .font(.title2)
                     .fontWeight(.bold)
                 Spacer()
@@ -321,8 +393,26 @@ struct EventView: View {
                     .padding()
             } else {
                 LazyVStack(alignment: .leading, spacing: 12) {
-                    ForEach(reviews, id: \.id) { review in
+                    ForEach(reviews.prefix(3), id: \.id) { review in // Show only first 3 reviews
                         ReviewRowView(review: review)
+                    }
+                    
+                    // Show "View All" button if there are more than 3 reviews
+                    if reviews.count > 3 {
+                        NavigationLink(destination: EventReviewsView(eventId: eventId)) {
+                            HStack {
+                                Text("View All \(reviews.count) Reviews")
+                                    .font(.subheadline)
+                                    .fontWeight(.medium)
+                                Spacer()
+                                Image(systemName: "arrow.right")
+                                    .font(.caption)
+                            }
+                            .padding()
+                            .background(Color.purple.opacity(0.1))
+                            .foregroundColor(.purple)
+                            .cornerRadius(8)
+                        }
                     }
                 }
             }
@@ -464,9 +554,26 @@ struct ReviewRowView: View {
     var body: some View {
         VStack(alignment: .leading, spacing: 12) {
             HStack {
-                Text(review.userName)
-                    .font(.headline)
-                    .fontWeight(.semibold)
+                // Anonymous display
+                Circle()
+                    .fill(Color.purple.opacity(0.2))
+                    .frame(width: 32, height: 32)
+                    .overlay(
+                        Text("A")
+                            .font(.subheadline)
+                            .fontWeight(.bold)
+                            .foregroundColor(.purple)
+                    )
+                
+                VStack(alignment: .leading, spacing: 2) {
+                    Text("Anonymous Reviewer")
+                        .font(.subheadline)
+                        .fontWeight(.semibold)
+                    
+                    Text(review.createdAt.formatted(date: .abbreviated, time: .shortened))
+                        .font(.caption)
+                        .foregroundColor(.gray)
+                }
                 
                 Spacer()
                 
@@ -484,60 +591,61 @@ struct ReviewRowView: View {
             }
             
             // Detailed ratings section
-            VStack(alignment: .leading, spacing: 8) {
-                HStack(spacing: 20) {
-                    ratingRow(title: "Music", rating: review.musicRating, color: .blue, icon: "music.note")
-                    Spacer()
-                    ratingRow(title: "Location", rating: review.locationRating, color: .green, icon: "location.fill")
-                }
-                
-                HStack(spacing: 20) {
-                    ratingRow(title: "Vibe", rating: review.vibeRating, color: .pink, icon: "heart.fill")
-                    Spacer()
-                }
+            HStack(spacing: 16) {
+                ratingPill("Music", rating: review.musicRating, color: .blue)
+                ratingPill("Location", rating: review.locationRating, color: .green)
+                ratingPill("Vibe", rating: review.vibeRating, color: .pink)
             }
-            .padding(.vertical, 4)
             
-            // Comment section
+            // Comment section - ENHANCED
             if !review.comment.isEmpty {
-                Text(review.comment)
-                    .font(.body)
-                    .fixedSize(horizontal: false, vertical: true)
-                    .padding(.top, 4)
+                VStack(alignment: .leading, spacing: 4) {
+                    HStack {
+                        Image(systemName: "quote.bubble.fill")
+                            .foregroundColor(.purple)
+                            .font(.caption)
+                        Text("Feedback")
+                            .font(.caption)
+                            .fontWeight(.semibold)
+                            .foregroundColor(.purple)
+                        Spacer()
+                    }
+                    
+                    Text("\"\(review.comment)\"")
+                        .font(.body)
+                        .foregroundColor(.primary)
+                        .padding(8)
+                        .background(
+                            RoundedRectangle(cornerRadius: 6)
+                                .fill(Color.purple.opacity(0.05))
+                                .overlay(
+                                    RoundedRectangle(cornerRadius: 6)
+                                        .stroke(Color.purple.opacity(0.2), lineWidth: 1)
+                                )
+                        )
+                        .fixedSize(horizontal: false, vertical: true)
+                }
             }
-            
-            // Date
-            Text(review.createdAt.formatted(date: .abbreviated, time: .shortened))
-                .font(.caption)
-                .foregroundColor(.gray)
         }
-        .padding()
+        .padding(12)
         .background(Color(.systemGray6))
         .cornerRadius(12)
     }
     
-    private func ratingRow(title: String, rating: Double, color: Color, icon: String) -> some View {
-        HStack(spacing: 4) {
-            Image(systemName: icon)
-                .foregroundColor(color)
-                .font(.caption2)
-            
+    private func ratingPill(_ title: String, rating: Double, color: Color) -> some View {
+        HStack(spacing: 2) {
             Text(title)
-                .font(.caption)
-                .foregroundColor(.gray)
-            
-            HStack(spacing: 1) {
-                ForEach(1...5, id: \.self) { star in
-                    Image(systemName: star <= Int(rating) ? "star.fill" : "star")
-                        .foregroundColor(color)
-                        .font(.caption2)
-                }
-            }
-            
-            Text(String(format: "%.1f", rating))
                 .font(.caption2)
-                .foregroundColor(.gray)
+                .fontWeight(.medium)
+            Text(String(format: "%.0f", rating))
+                .font(.caption2)
+                .fontWeight(.bold)
         }
+        .padding(.horizontal, 6)
+        .padding(.vertical, 3)
+        .background(color.opacity(0.1))
+        .foregroundColor(color)
+        .cornerRadius(6)
     }
 }
 
