@@ -13,7 +13,7 @@ struct EventsView: View {
     
     let filters = [
         "All Events",
-        "For You", // New personalized tab
+        "For You",
         "House Party",
         "Concert",
         "Meetup",
@@ -233,32 +233,6 @@ struct EventsView: View {
                 Text("Error: \(error)")
                     .foregroundColor(.red)
                     .padding(.horizontal)
-            }
-
-            // In your EventsView.swift, update the debug button:
-            if Auth.auth().currentUser != nil {
-                VStack(spacing: 8) {
-                    Button("🔍 Debug Recommendations") {
-                        Task {
-                            await recommendationService.debugUserPreferences()
-                            await recommendationService.generateRecommendations()
-                        }
-                    }
-                    .padding()
-                    .background(Color.blue.opacity(0.2))
-                    .cornerRadius(8)
-                    .padding(.horizontal)
-        
-                    Button("📊 Debug Event Data") {
-                        Task {
-                            await recommendationService.debugEventData()
-                        }
-                    }
-                    .padding()
-                    .background(Color.green.opacity(0.2))
-                    .cornerRadius(8)
-                    .padding(.horizontal)
-                }     
             }
         }
     }

@@ -10,14 +10,8 @@ class RecommendationService: ObservableObject {
     @Published var errorMessage: String?
 
     func trackUserAction(eventId: String, actionType: UserBehavior.ActionType, event: Event? = nil) {
-        guard let userId = Auth.auth().currentUser?.uid else { 
-            print("❌ No user ID for tracking")
-            return 
-        }
-        
-        print(" Tracking user action: \(actionType) for event: \(eventId)")
-        print(" Event category: \(event?.category ?? "Unknown")")
-        
+        guard let userId = Auth.auth().currentUser?.uid else { return }
+    
         let behavior = UserBehavior(
             userId: userId,
             eventId: eventId,
@@ -27,22 +21,19 @@ class RecommendationService: ObservableObject {
             eventPrice: event?.price,
             eventLocation: event?.location
         )
-        
+    
         do {
             try db.collection("userBehavior").addDocument(from: behavior) { error in
                 if let error = error {
-                    print("❌ Error saving behavior: \(error)")
-                } else {
-                    print("✅ Successfully tracked behavior: \(actionType)")
+                    print("Error saving behavior: \(error)")
                 }
             }
-            
-            // Update user preferences based on this action
+        
             Task {
                 await updateUserPreferences(userId: userId, behavior: behavior)
             }
         } catch {
-            print("❌ Error tracking user behavior: \(error)")
+            print("Error tracking user behavior: \(error)")
         }
     }
     
@@ -122,11 +113,9 @@ class RecommendationService: ObservableObject {
     // MARK: - Generate Recommendations
     func generateRecommendations() async {
         guard let userId = Auth.auth().currentUser?.uid else { 
-            print("❌ No user ID for recommendations")
+            print("No user ID for recommendations")
             return 
         }
-
-        print("🔄 Starting recommendation generation for user: \(userId)")
 
         DispatchQueue.main.async {
             self.isLoading = true
@@ -134,48 +123,28 @@ class RecommendationService: ObservableObject {
         }
 
         do {
-            // Get user preferences
             let preferences = try await getUserPreferences(userId: userId)
-            print("📊 User preferences: \(preferences.preferredCategories)")
-    
-            // Get all available events
             let allEvents = try await getAllEvents()
-            print("📅 Found \(allEvents.count) total events")
-    
-            // Filter out events user has already attended/purchased/joined
             let availableEvents = try await filterUserEvents(allEvents, userId: userId)
-            print("✅ Available events after filtering: \(availableEvents.count)")
-    
-            // Check if we have any events to recommend
+
             if availableEvents.isEmpty {
-                print("❌ No events available for recommendations after filtering")
                 DispatchQueue.main.async {
                     self.recommendedEvents = []
                     self.isLoading = false
-                    print("✅ Generated 0 recommendations - no suitable events")
                 }
                 return
             }
-    
-            // Score and rank the available events
+
             let scoredEvents = scoreEvents(availableEvents, preferences: preferences, userId: userId)
-            print("🏆 Top 5 scored events:")
-            for (index, event) in scoredEvents.prefix(5).enumerated() {
-                let score = calculateEventScore(event, preferences: preferences, userId: userId)
-                print("  \(index + 1). \(event.title) (\(event.category)) - Score: \(score)")
-            }
-    
-            // Get top recommendations (limit to 10)
             let recommendations = Array(scoredEvents.prefix(10))
-    
+
             DispatchQueue.main.async {
                 self.recommendedEvents = recommendations
                 self.isLoading = false
-                print("✅ Generated \(recommendations.count) recommendations")
             }
-    
+
         } catch {
-            print("❌ Error generating recommendations: \(error)")
+            print("Error generating recommendations: \(error)")
             DispatchQueue.main.async {
                 self.errorMessage = "Failed to generate recommendations: \(error.localizedDescription)"
                 self.isLoading = false
@@ -274,65 +243,29 @@ class RecommendationService: ObservableObject {
     }
     
     private func filterUserEvents(_ events: [Event], userId: String) async throws -> [Event] {
-        print("🔍 DEBUG: Starting to filter events for user: \(userId)")
-
         // Get user's tickets (attended events)
         let ticketsSnapshot = try await db.collection("tickets")
             .whereField("userId", isEqualTo: userId)
             .getDocuments()
 
         let attendedEventIds = Set(ticketsSnapshot.documents.compactMap { doc in
-            let eventId = doc.data()["eventId"] as? String
-            print("🎫 Found ticket for event: \(eventId ?? "unknown")")
-            return eventId
+            doc.data()["eventId"] as? String
         })
 
-        // Get user's saved events
+        // Get user's saved and joined events
         let userDoc = try await db.collection("users").document(userId).getDocument()
         let savedEventIds = Set(userDoc.data()?["savedEventIds"] as? [String] ?? [])
         let joinedEventIds = Set(userDoc.data()?["joinedEventIds"] as? [String] ?? [])
 
-        print("🚫 User has attended (tickets): \(attendedEventIds)")
-        print("💾 User has saved: \(savedEventIds)")
-        print("🎯 User has joined: \(joinedEventIds)")
-
-        print("📊 Total events to filter: \(events.count)")
-
-        // Filter out events user has tickets for OR has joined
+        // Filter out events user has already interacted with
         let filteredEvents = events.filter { event in
-            guard let eventId = event.id else { 
-                print("❌ Event has no ID: \(event.title)")
-                return false 
-            }
-
-            // Filter out if user has tickets OR has joined
+            guard let eventId = event.id else { return false }
+        
             let hasTicket = attendedEventIds.contains(eventId)
             let hasJoined = joinedEventIds.contains(eventId)
             let hasSaved = savedEventIds.contains(eventId)
         
-            let shouldFilter = hasTicket || hasJoined || hasSaved
-
-            if shouldFilter {
-                let reasons = [
-                    hasTicket ? "has ticket" : nil,
-                    hasJoined ? "has joined" : nil,
-                    hasSaved ? "has saved" : nil
-                ].compactMap { $0 }.joined(separator: ", ")
-            
-                print("🚫 Filtering out: \(event.title) (ID: \(eventId)) - Reason: \(reasons)")
-            } else {
-                print("✅ Keeping: \(event.title) (ID: \(eventId)) - Available for recommendation")
-            }
-
-            return !shouldFilter
-        }
-
-        print("📈 Final result: \(filteredEvents.count) events available for recommendations")
-    
-        // List the final filtered events
-        print("🎯 Available events for recommendations:")
-        for event in filteredEvents {
-            print("  - \(event.title) (\(event.category)) - ID: \(event.id ?? "no-id")")
+            return !(hasTicket || hasJoined || hasSaved)
         }
 
         return filteredEvents
@@ -355,145 +288,54 @@ class RecommendationService: ObservableObject {
     
     private func calculateEventScore(_ event: Event, preferences: UserPreferences, userId: String) -> Double {
         var score: Double = 0
-        var breakdown: [String: Double] = [:]
-        
-        // Category preference score (higher weight)
+    
+        // Category preference score
         if let categoryWeight = preferences.preferredCategories[event.category] {
-            let categoryScore = categoryWeight * 0.4 // Increased from 0.3
-            score += categoryScore
-            breakdown["category"] = categoryScore
+            score += categoryWeight * 0.4
         } else {
             score -= 0.5
-            breakdown["category"] = -0.5
         }
-        
+    
         // Location preference score
         if let locationWeight = preferences.preferredLocations[event.location] {
-            let locationScore = locationWeight * 0.2
-            score += locationScore
-            breakdown["location"] = locationScore
+            score += locationWeight * 0.2
         }
-        
+    
         // Price preference score
         if let priceRange = preferences.preferredPriceRange {
             if priceRange.contains(event.price) {
                 score += 2.0
-                breakdown["price"] = 2.0
             } else {
                 let distance = min(abs(event.price - priceRange.lowerBound), abs(event.price - priceRange.upperBound))
-                let priceScore = max(-distance * 0.1, -2.0)
-                score += priceScore
-                breakdown["price"] = priceScore
+                score += max(-distance * 0.1, -2.0)
             }
         }
-        
+    
         // Time preference score
         let isoFormatter = ISO8601DateFormatter()
         if let eventDate = isoFormatter.date(from: event.date) {
             let hour = Calendar.current.component(.hour, from: eventDate)
             let timeSlot = getTimeSlot(hour: hour)
             if let timeWeight = preferences.preferredTimes[timeSlot] {
-                let timeScore = timeWeight * 0.2
-                score += timeScore
-                breakdown["time"] = timeScore
+                score += timeWeight * 0.2
             }
         }
-        
-        // Popularity score (lower weight)
-        let popularityScore = Double(event.attendees) * 0.005 // Reduced from 0.01
-        score += popularityScore
-        breakdown["popularity"] = popularityScore
-        
-        // Rating score
+    
+        // Popularity and rating scores
+        score += Double(event.attendees) * 0.005
+    
         if let rating = event.averageRating {
-            let ratingScore = rating * 0.1 // Reduced from 0.3
-            score += ratingScore
-            breakdown["rating"] = ratingScore
+            score += rating * 0.1
         }
-        
-        // Urgency score (events happening soon)
+    
+        // Urgency score for events happening soon
         if let eventDate = isoFormatter.date(from: event.date) {
             let daysUntilEvent = Calendar.current.dateComponents([.day], from: Date(), to: eventDate).day ?? 0
             if daysUntilEvent <= 7 && daysUntilEvent >= 0 {
-                let urgencyScore = 1.0
-                score += urgencyScore
-                breakdown["urgency"] = urgencyScore
+                score += 1.0
             }
         }
-        
-        // Debug logging for high scores
-        if score > 3.0 {
-            print(" High scoring event: \(event.title) (\(event.category)) - Total: \(score)")
-            print("   Breakdown: \(breakdown)")
-        }
-        
-        return max(score, 0)
-    }
     
-    // MARK: - Debug Functions
-    func debugUserPreferences() async {
-        guard let userId = Auth.auth().currentUser?.uid else { return }
-        
-        do {
-            let preferences = try await getUserPreferences(userId: userId)
-            print(" DEBUG - User Preferences:")
-            print("   Categories: \(preferences.preferredCategories)")
-            print("   Locations: \(preferences.preferredLocations)")
-            print("   Times: \(preferences.preferredTimes)")
-            print("   Price Range: \(preferences.preferredPriceRange?.description ?? "None")")
-            print("   Last Updated: \(preferences.lastUpdated)")
-            
-            // Check recent behaviors
-            let behaviorQuery = db.collection("userBehavior")
-                .whereField("userId", isEqualTo: userId)
-                .order(by: "timestamp", descending: true)
-                .limit(to: 10)
-            
-            let behaviorSnapshot = try await behaviorQuery.getDocuments()
-            let behaviors = behaviorSnapshot.documents.compactMap { try? $0.data(as: UserBehavior.self) }
-            
-            print(" Recent Behaviors:")
-            for behavior in behaviors {
-                print("   - \(behavior.actionType): \(behavior.eventCategory ?? "Unknown") at \(behavior.timestamp)")
-            }
-            
-        } catch {
-            print("❌ Debug error: \(error)")
-        }
-    }
-
-    func debugEventData() async {
-        do {
-            print("🔍 DEBUG: Checking event data format...")
-        
-            // Get ALL events (not just 5)
-            let snapshot = try await db.collection("events")
-                .order(by: "createdAt", descending: true)
-                .getDocuments()
-        
-            print("📊 Found \(snapshot.documents.count) events in collection")
-        
-            for doc in snapshot.documents {
-                let data = doc.data()
-                print("📄 Event: \(doc.documentID)")
-                print("  - Title: \(data["title"] as? String ?? "N/A")")
-                print("  - Category: \(data["category"] as? String ?? "N/A")")
-                print("  - Date: \(data["date"] as? String ?? "N/A")")
-            
-                // Try to parse date
-                if let dateString = data["date"] as? String {
-                    let isoFormatter = ISO8601DateFormatter()
-                    if let parsedDate = isoFormatter.date(from: dateString) {
-                        print("  - Parsed date: \(parsedDate)")
-                        print("  - Is future: \(parsedDate > Date())")
-                    } else {
-                        print("  - ❌ Could not parse date string")
-                    }
-                }
-                print("  ---")
-            }
-        } catch {
-            print("❌ Error debugging event data: \(error)")
-        }
+        return max(score, 0)
     }
 }
