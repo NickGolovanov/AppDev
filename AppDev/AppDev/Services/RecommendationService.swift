@@ -125,44 +125,61 @@ class RecommendationService: ObservableObject {
             print("❌ No user ID for recommendations")
             return 
         }
-        
+    
         print(" Starting recommendation generation for user: \(userId)")
-        
+    
         DispatchQueue.main.async {
             self.isLoading = true
             self.errorMessage = nil
         }
-        
+    
         do {
             // Get user preferences
             let preferences = try await getUserPreferences(userId: userId)
-            print(" User preferences: \(preferences.preferredCategories)")
-            
+            print("User preferences: \(preferences.preferredCategories)")
+        
             // Get all available events
             let allEvents = try await getAllEvents()
-            print(" Found \(allEvents.count) total events")
-            
+            print("Found \(allEvents.count) total events")
+        
             // Filter out events user has already attended/purchased
             let availableEvents = try await filterUserEvents(allEvents, userId: userId)
-            print(" Available events after filtering: \(availableEvents.count)")
-            
+            print("Available events after filtering: \(availableEvents.count)")
+        
+            // TEMPORARY: If no events available after filtering, use some recent events for testing
+            let eventsToScore: [Event]
+            if availableEvents.isEmpty {
+                print("⚠️ No events available after filtering. Using recent events for recommendations...")
+                // Use the most recent future events regardless of user history for now
+                eventsToScore = allEvents.filter { event in
+                    let isoFormatter = ISO8601DateFormatter()
+                    if let eventDate = isoFormatter.date(from: event.date) {
+                        return eventDate > Date()
+                    }
+                    return false
+                }
+                print("Using \(eventsToScore.count) recent events for scoring")
+            } else {
+                eventsToScore = availableEvents
+            }
+        
             // Score and rank events
-            let scoredEvents = scoreEvents(availableEvents, preferences: preferences, userId: userId)
+            let scoredEvents = scoreEvents(eventsToScore, preferences: preferences, userId: userId)
             print(" Top 5 scored events:")
             for (index, event) in scoredEvents.prefix(5).enumerated() {
                 let score = calculateEventScore(event, preferences: preferences, userId: userId)
                 print("  \(index + 1). \(event.title) (\(event.category)) - Score: \(score)")
             }
-            
+        
             // Get top recommendations
             let recommendations = Array(scoredEvents.prefix(10))
-            
+        
             DispatchQueue.main.async {
                 self.recommendedEvents = recommendations
                 self.isLoading = false
                 print("✅ Generated \(recommendations.count) recommendations")
             }
-            
+        
         } catch {
             print("❌ Error generating recommendations: \(error)")
             DispatchQueue.main.async {
@@ -263,28 +280,50 @@ class RecommendationService: ObservableObject {
         return futureEvents
     }
     
-    // MARK: - Filter out events user has already interacted with
     private func filterUserEvents(_ events: [Event], userId: String) async throws -> [Event] {
-        // Get user's tickets (attended events)
+        print(" DEBUG: Starting to filter events for user: \(userId)")
+    
         let ticketsSnapshot = try await db.collection("tickets")
             .whereField("userId", isEqualTo: userId)
             .getDocuments()
-        
+    
         let attendedEventIds = Set(ticketsSnapshot.documents.compactMap { doc in
-            doc.data()["eventId"] as? String
+            let eventId = doc.data()["eventId"] as? String
+            print(" Found ticket for event: \(eventId ?? "unknown")")
+            return eventId
         })
-        
-        // Get user's saved events
+    
         let userDoc = try await db.collection("users").document(userId).getDocument()
         let savedEventIds = Set(userDoc.data()?["savedEventIds"] as? [String] ?? [])
-        
-        print(" Filtering out \(attendedEventIds.count) attended and \(savedEventIds.count) saved events")
-        
-        // Filter out attended and saved events
-        return events.filter { event in
+    
+        let joinedEventIds = Set(userDoc.data()?["joinedEventIds"] as? [String] ?? [])
+    
+        print(" User has attended: \(attendedEventIds)")
+        print(" User has saved: \(savedEventIds)")
+        print(" User has joined: \(joinedEventIds)")
+    
+        print("Filtering out \(attendedEventIds.count) attended, \(savedEventIds.count) saved, and \(joinedEventIds.count) joined events")
+    
+        // NEW: Be more lenient - only filter out events if user has actually purchased tickets
+        // Don't filter based on "joinedEventIds" for recommendations
+        let filteredEvents = events.filter { event in
             guard let eventId = event.id else { return false }
-            return !attendedEventIds.contains(eventId) && !savedEventIds.contains(eventId)
+        
+            // Only filter out if user has actual tickets (not just joined)
+            let shouldFilter = attendedEventIds.contains(eventId) || savedEventIds.contains(eventId)
+        
+            if shouldFilter {
+                print(" Filtering out: \(event.title) (ID: \(eventId))")
+            } else {
+                print(" Keeping: \(event.title) (ID: \(eventId))")
+            }
+        
+            return !shouldFilter
         }
+    
+        print(" Final result: \(filteredEvents.count) events available for recommendations")
+    
+        return filteredEvents
     }
     
     private func scoreEvents(_ events: [Event], preferences: UserPreferences, userId: String) -> [Event] {
@@ -312,7 +351,6 @@ class RecommendationService: ObservableObject {
             score += categoryScore
             breakdown["category"] = categoryScore
         } else {
-            // Small penalty for unknown categories
             score -= 0.5
             breakdown["category"] = -0.5
         }
