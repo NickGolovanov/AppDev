@@ -1,10 +1,3 @@
-//
-//  ContentView.swift
-//  AppDev
-//
-//  Created by Nikita Golovanov on 5/8/25.
-//
-
 import FirebaseFirestore
 import SwiftUI
 import FirebaseAuth
@@ -26,8 +19,8 @@ struct ProfileView: View {
     var body: some View {
         NavigationStack {
             VStack(spacing: 0) {
-                // Fixed top section
-                VStack(spacing: 16) {
+                // Fixed top section - made more compact
+                VStack(spacing: 12) {
                     HeaderView(showProfileLink: false)
                     profileInfoSection
                     editAndScanButtons
@@ -36,15 +29,16 @@ struct ProfileView: View {
                 .padding()
                 .background(Color.white)
 
-                // Scrollable events section with fixed frame
-                VStack(alignment: .leading, spacing: 12) {
+                // Expanded scrollable events section
+                VStack(alignment: .leading, spacing: 16) {
                     Text("Recent Events")
-                        .font(.headline)
+                        .font(.title2)
+                        .fontWeight(.bold)
                         .padding(.horizontal)
-                        .padding(.top, 8)
+                        .padding(.top, 16)
 
                     ScrollView {
-                        VStack(spacing: 12) {
+                        VStack(spacing: 16) {
                             ForEach(joinedEvents) { event in
                                 NavigationLink(destination: EventView(eventId: event.id ?? "-1")) {
                                     eventCard(
@@ -60,36 +54,49 @@ struct ProfileView: View {
                             }
 
                             if joinedEvents.isEmpty && organizedEvents.isEmpty {
-                                Text("No recent events.")
-                                    .foregroundColor(.gray)
-                                    .frame(maxWidth: .infinity, alignment: .center)
-                                    .padding()
+                                VStack(spacing: 12) {
+                                    Image(systemName: "calendar.badge.exclamationmark")
+                                        .font(.system(size: 40))
+                                        .foregroundColor(.gray)
+                                    
+                                    Text("No recent events")
+                                        .font(.headline)
+                                        .foregroundColor(.gray)
+                                    
+                                    Text("Join or organize events to see them here!")
+                                        .font(.subheadline)
+                                        .foregroundColor(.secondary)
+                                        .multilineTextAlignment(.center)
+                                }
+                                .frame(maxWidth: .infinity)
+                                .padding(.vertical, 40)
                             }
                         }
                         .padding(.horizontal)
+                        .padding(.bottom, 20) // Extra padding at bottom
                     }
-                    .frame(maxHeight: UIScreen.main.bounds.height * 0.4) // Fixed height for scrollable area
+                    .frame(maxHeight: UIScreen.main.bounds.height * 0.5) // Increased from 0.4 to 0.5
                 }
                 .background(Color(.systemGray6))
 
-                Spacer()
+                Spacer(minLength: 20) // Minimum spacer
 
-                // Fixed bottom section with logout button
+                // Fixed bottom section with logout button - moved closer to bottom
                 VStack {
                     Button(action: logout) {
                         Text("Logout")
                             .fontWeight(.medium)
                             .foregroundColor(.red)
-                            .padding(.vertical, 12)
+                            .padding(.vertical, 14)
                             .padding(.horizontal, 24)
                             .frame(maxWidth: .infinity)
                             .overlay(
-                                RoundedRectangle(cornerRadius: 10)
+                                RoundedRectangle(cornerRadius: 12)
                                     .stroke(Color.red, lineWidth: 1.5)
                             )
                     }
                     .padding(.horizontal)
-                    .padding(.bottom, 32) // Extra padding to stay above footer
+                    .padding(.bottom, 16) // Reduced padding to move closer to bottom
                 }
                 .background(Color.white)
             }
@@ -108,7 +115,7 @@ struct ProfileView: View {
     }
 
     var profileInfoSection: some View {
-        VStack(spacing: 8) {
+        VStack(spacing: 6) { // Reduced spacing
             ZStack(alignment: .bottomTrailing) {
                 if !userProfileImageURL.isEmpty, let url = URL(string: userProfileImageURL) {
                     AsyncImage(url: url) {
@@ -118,17 +125,17 @@ struct ProfileView: View {
                         Image("profile_placeholder")  // Keep placeholder for loading/error
                             .resizable()
                     }
-                    .frame(width: 100, height: 100)
+                    .frame(width: 90, height: 90) // Slightly smaller
                     .clipShape(Circle())
                     .overlay(Circle().stroke(Color.white, lineWidth: 2))
                     .shadow(radius: 5)
                 } else {
                     Circle()
                         .fill(Color(hex: "#7131C5"))
-                        .frame(width: 100, height: 100)
+                        .frame(width: 90, height: 90) // Slightly smaller
                         .overlay(
                             Text(String(userName.prefix(1)).uppercased())
-                                .font(.system(size: 40, weight: .bold))
+                                .font(.system(size: 36, weight: .bold)) // Adjusted font size
                                 .foregroundColor(.white)
                         )
                         .overlay(Circle().stroke(Color.white, lineWidth: 2))
@@ -137,31 +144,33 @@ struct ProfileView: View {
             }
 
             Text(userName)
-                .font(.title2)
+                .font(.title3) // Slightly smaller
                 .fontWeight(.bold)
 
             Text(userHandle)
                 .foregroundColor(.gray)
+                .font(.subheadline)
 
             Text(userBio)
                 .font(.body)
                 .multilineTextAlignment(.center)
                 .foregroundColor(.secondary)
                 .padding(.horizontal, 20)
+                .lineLimit(3) // Limit bio lines
         }
         .frame(maxWidth: .infinity)
-        .padding(.top)
+        .padding(.top, 8)
     }
 
     var editAndScanButtons: some View {
-        HStack(spacing: 20) {
+        HStack(spacing: 16) {
             Button(action: {
                 showEditProfile = true
             }) {
                 Text("Edit Profile")
                     .fontWeight(.medium)
                     .foregroundColor(Color(hex: "#7131C5"))
-                    .padding(.vertical, 8)
+                    .padding(.vertical, 10)
                     .padding(.horizontal, 20)
                     .overlay(
                         RoundedRectangle(cornerRadius: 10)
@@ -175,7 +184,7 @@ struct ProfileView: View {
                 Text("Scan QR Code")
                     .fontWeight(.medium)
                     .foregroundColor(Color(hex: "#7131C5"))
-                    .padding(.vertical, 8)
+                    .padding(.vertical, 10)
                     .padding(.horizontal, 20)
                     .overlay(
                         RoundedRectangle(cornerRadius: 10)
@@ -183,7 +192,7 @@ struct ProfileView: View {
                     )
             }
         }
-        .padding(.top, 12)
+        .padding(.top, 8)
     }
 
     var statsSection: some View {
@@ -194,9 +203,9 @@ struct ProfileView: View {
     }
 
     func statBox(title: String, subtitle: String) -> some View {
-        VStack {
+        VStack(spacing: 4) {
             Text(title)
-                .font(.title)
+                .font(.title2) // Slightly smaller
                 .fontWeight(.bold)
                 .foregroundColor(Color(hex: "#7131C5"))
             Text(subtitle)
@@ -204,57 +213,80 @@ struct ProfileView: View {
                 .foregroundColor(.gray)
         }
         .frame(maxWidth: .infinity)
-        .padding()
+        .padding(.vertical, 12) // Reduced padding
         .background(Color(.systemGray6))
         .cornerRadius(12)
     }
 
     func eventCard(event: Event, badge: String, badgeColor: Color) -> some View {
-        HStack(spacing: 12) {
+        HStack(spacing: 16) {
             ZStack {
-                RoundedRectangle(cornerRadius: 8)
+                RoundedRectangle(cornerRadius: 12)
                     .fill(Color(hex: "#E9DDFD"))
-                    .frame(width: 40, height: 40)
+                    .frame(width: 60, height: 60) // Larger image area
 
                 if let imageUrl = URL(string: event.imageUrl), !event.imageUrl.isEmpty {
                     AsyncImage(url: imageUrl) { image in
                         image.resizable()
                             .aspectRatio(contentMode: .fill)
-                            .frame(width: 40, height: 40)
-                            .cornerRadius(8)
+                            .frame(width: 60, height: 60)
+                            .cornerRadius(12)
                     } placeholder: {
                         Image(systemName: "calendar")
                             .foregroundColor(Color(hex: "#7131C5"))
+                            .font(.title2)
                     }
                 } else {
                     Image(systemName: "calendar")
                         .foregroundColor(Color(hex: "#7131C5"))
+                        .font(.title2)
                 }
             }
 
-            VStack(alignment: .leading, spacing: 4) {
+            VStack(alignment: .leading, spacing: 6) {
                 Text(event.title)
+                    .font(.headline)
                     .fontWeight(.semibold)
                     .foregroundColor(.primary)
+                    .lineLimit(2)
 
                 Text("\(event.formattedDate), \(event.formattedTime)")
                     .font(.subheadline)
                     .foregroundColor(.gray)
+                
+                Text(event.location)
+                    .font(.caption)
+                    .foregroundColor(.secondary)
+                    .lineLimit(1)
             }
 
             Spacer()
 
-            Text(badge)
-                .font(.caption)
-                .padding(.horizontal, 10)
-                .padding(.vertical, 4)
-                .background(badgeColor)
-                .cornerRadius(8)
+            VStack(spacing: 4) {
+                Text(badge)
+                    .font(.caption)
+                    .fontWeight(.semibold)
+                    .padding(.horizontal, 12)
+                    .padding(.vertical, 6)
+                    .background(badgeColor)
+                    .cornerRadius(8)
+                
+                if let rating = event.averageRating, rating > 0 {
+                    HStack(spacing: 2) {
+                        Image(systemName: "star.fill")
+                            .foregroundColor(.yellow)
+                            .font(.caption2)
+                        Text(String(format: "%.1f", rating))
+                            .font(.caption2)
+                            .foregroundColor(.gray)
+                    }
+                }
+            }
         }
-        .padding()
+        .padding(16) // Increased padding
         .background(Color.white)
-        .cornerRadius(12)
-        .shadow(color: Color.black.opacity(0.05), radius: 4, x: 0, y: 2)
+        .cornerRadius(16) // Larger corner radius
+        .shadow(color: Color.black.opacity(0.08), radius: 6, x: 0, y: 3) // Enhanced shadow
     }
 
     func fetchRecentEvents() {
