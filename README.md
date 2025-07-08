@@ -1,3 +1,37 @@
+## 🆕 New Features Introduced: Smart Recommendations & Party Ratings  
+ **Smart Recommendation System**  
+ **Post-Party Rating & Review System**
+
+---
+
+###  1. Smart Recommendation System
+
+**Purpose:**  
+Help users discover parties tailored to their personal taste, past activity, the user can see parties match with their preference.
+
+**Benefits:**
+- Boosts user engagement and ticket purchases.
+- Provides a personalized experience that improves over time.
+- Enables smarter party discovery without manual searching.
+
+---
+
+### 2. Post-Party Rating & Review System
+
+**Purpose:**  
+Allow users to provide feedback on their event experience and help others make informed decisions. Based their reviews, the organizer can improve their up-coming parties.
+
+**Benefits:**
+- Based their reviews, the organizer can improve their up-coming parties.
+- Having reviews from the past-participants, it helps users to choose the best party. 
+---
+
+##  Improved Features:
+### Party lists:
+- Event/parties are removed out of the Event page after five days expired.
+- In the Profile view page, the view of event history is wider that helps the users can see their past-events easier.  
+
+
 # Party Pal: Event & Ticketing App
 
 This repository contains the source code for **Party Pal**, a vibrant mobile application designed to simplify the process of creating, discovering, and attending parties and events. It offers a comprehensive suite of functionalities for both event-goers and organizers:
