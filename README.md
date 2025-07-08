@@ -19,10 +19,10 @@ Help users discover parties tailored to their personal taste, past activity, the
 ### 2. Post-Party Rating & Review System
 
 **Purpose:**  
-Allow users to provide feedback on their event experience and help others make informed decisions. Based their reviews, the organizer can improve their up-coming parties.
+Allow users to provide feedback on their event experience and help others make informed decisions.
 
 **Benefits:**
-- Based their reviews, the organizer can improve their up-coming parties.
+- Based on their reviews, the organizer can improve their up-coming parties.
 - Having reviews from the past-participants, it helps users to choose the best party. 
 ---
 
