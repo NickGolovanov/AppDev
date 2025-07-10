@@ -277,7 +277,10 @@ class RecommendationService: ObservableObject {
         let savedEventIds = Set(userDoc.data()?["savedEventIds"] as? [String] ?? [])
         let joinedEventIds = Set(userDoc.data()?["joinedEventIds"] as? [String] ?? [])
 
-        // Filter out events user has already interacted with
+        // Get user preferences for filtering
+        let preferences = try await getUserPreferences(userId: userId)
+
+        // Filter out events user has already interacted with AND events that don't match preferences
         let filteredEvents = events.filter { event in
             guard let eventId = event.id else { return false }
         
@@ -285,10 +288,59 @@ class RecommendationService: ObservableObject {
             let hasJoined = joinedEventIds.contains(eventId)
             let hasSaved = savedEventIds.contains(eventId)
         
-            return !(hasTicket || hasJoined || hasSaved)
+            if hasTicket || hasJoined || hasSaved {
+                return false
+            }
+        
+            return matchesUserPreferences(event, preferences: preferences)
         }
 
+        print("📋 Filtered events based on preferences: \(filteredEvents.count) out of \(events.count)")
         return filteredEvents
+    }
+
+    private func matchesUserPreferences(_ event: Event, preferences: UserPreferences) -> Bool {
+        // If user has no preferences yet, show all events (new user)
+        if preferences.preferredCategories.isEmpty && preferences.preferredLocations.isEmpty {
+            print("👤 New user - showing all events")
+            return true
+        }
+    
+        var matches = false
+    
+        // Check category preferences (most important)
+        if !preferences.preferredCategories.isEmpty {
+            let categoryMatch = preferences.preferredCategories[event.category] != nil && 
+                               preferences.preferredCategories[event.category]! > 0
+            if categoryMatch {
+                matches = true
+                print("✅ Category match: \(event.category) for event: \(event.title)")
+            } else {
+                print("❌ Category mismatch: \(event.category) for event: \(event.title)")
+            }
+        }
+    
+        // Check location preferences (secondary filter)
+        if !preferences.preferredLocations.isEmpty && !matches {
+            let locationMatch = preferences.preferredLocations[event.location] != nil && 
+                               preferences.preferredLocations[event.location]! > 0
+            if locationMatch {
+                matches = true
+                print("✅ Location match: \(event.location) for event: \(event.title)")
+            } else {
+                print("❌ Location mismatch: \(event.location) for event: \(event.title)")
+            }
+        }
+    
+        // If user has preferences but this event doesn't match any, exclude it
+        if !preferences.preferredCategories.isEmpty || !preferences.preferredLocations.isEmpty {
+            if !matches {
+                print("🚫 Event \(event.title) excluded - doesn't match user preferences")
+                return false
+            }
+        }
+    
+        return true
     }
     
     private func scoreEvents(_ events: [Event], preferences: UserPreferences, userId: String) -> [Event] {
