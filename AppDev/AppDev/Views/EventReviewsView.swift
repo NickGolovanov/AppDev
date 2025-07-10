@@ -26,7 +26,7 @@ struct EventReviewsView: View {
             }
             .padding()
         }
-        .navigationTitle("Reviews & Feedback")
+        .navigationTitle("Reviews")
         .navigationBarTitleDisplayMode(.large)
         .task {
             await loadReviews()
@@ -210,6 +210,7 @@ struct QuickReviewsSummaryComponent: View {
                                 color: .blue,
                                 icon: "music.note"
                             )
+                            .frame(minWidth: 90)
                             
                             StatItem(
                                 title: "Location",
@@ -217,6 +218,7 @@ struct QuickReviewsSummaryComponent: View {
                                 color: .green,
                                 icon: "location.fill"
                             )
+                            .frame(minWidth: 100)
                         }
                         
                         HStack(spacing: 16) {
@@ -233,6 +235,7 @@ struct QuickReviewsSummaryComponent: View {
                                 color: .purple,
                                 icon: "bubble.left.and.bubble.right"
                             )
+                            .frame(minWidth: 90)
                         }
                     }
                     
@@ -279,13 +282,13 @@ struct StatItem: View {
     let icon: String
     
     var body: some View {
-        HStack(spacing: 8) {
+        HStack(spacing: 6) {
             Image(systemName: icon)
                 .foregroundColor(color)
-                .font(.system(size: 14))
-                .frame(width: 20)
+                .font(.system(size: 12))
+                .frame(width: 16)
             
-            VStack(alignment: .leading, spacing: 2) {
+            VStack(alignment: .leading, spacing: 1) {
                 Text(title)
                     .font(.caption2)
                     .foregroundColor(.gray)
@@ -295,10 +298,10 @@ struct StatItem: View {
                     .foregroundColor(color)
             }
         }
-        .padding(.horizontal, 12)
-        .padding(.vertical, 8)
+        .padding(.horizontal, 8)
+        .padding(.vertical, 6)
         .background(color.opacity(0.1))
-        .cornerRadius(8)
+        .cornerRadius(6)
     }
 }
 
