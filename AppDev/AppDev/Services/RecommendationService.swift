@@ -208,61 +208,40 @@ class RecommendationService: ObservableObject {
             return event
         }
 
-        print("Found \(allEvents.count) total events in database")
+        print("📊 Found \(allEvents.count) total events in database")
 
-        // Filter for relevant events: future events + events ended within last 5 days
+        // For "For You" recommendations, return ONLY future events
         let currentDate = Date()
-        let fiveDaysAgo = currentDate.addingTimeInterval(-5 * 24 * 60 * 60) // 5 days ago
         let isoFormatter = ISO8601DateFormatter()
 
-        let relevantEvents = allEvents.filter { event in
-            // Try parsing the end time first (more accurate for when event actually ended)
-            if let eventEndDate = isoFormatter.date(from: event.endTime) {
-                let isRelevant = eventEndDate >= fiveDaysAgo // Keep if ended within last 5 days OR is future
-                print("Event: \(event.title) - End: \(event.endTime) - Relevant: \(isRelevant)")
-                return isRelevant
-            }
-            // Fallback to start date if end time parsing fails
-            else if let eventDate = isoFormatter.date(from: event.date) {
-                let isRelevant = eventDate >= fiveDaysAgo
-                print("Event: \(event.title) - Date: \(event.date) - Relevant: \(isRelevant)")
-                return isRelevant
+        let futureEvents = allEvents.filter { event in
+            if let eventDate = isoFormatter.date(from: event.date) {
+                let isFuture = eventDate > currentDate
+                if isFuture {
+                    print("✅ Future event: \(event.title) - Date: \(event.date)")
+                } else {
+                    print("🚫 Past event excluded: \(event.title) - Date: \(event.date)")
+                }
+                return isFuture
             } else {
                 print("⚠️ Could not parse date for event: \(event.title)")
                 return false
             }
         }
 
-        print("📅 Found \(relevantEvents.count) relevant events (future + last 5 days)")
+        print("🔮 Returning \(futureEvents.count) future events for 'For You' recommendations")
     
-        // Separate into future and past for better debugging
-        let futureEvents = relevantEvents.filter { event in
-            if let eventDate = isoFormatter.date(from: event.date) {
-                return eventDate > currentDate
-            }
-            return false
-        }
-    
-        let recentPastEvents = relevantEvents.filter { event in
-            if let eventEndDate = isoFormatter.date(from: event.endTime) {
-                return eventEndDate <= currentDate && eventEndDate >= fiveDaysAgo
-            }
-            return false
-        }
-    
-        print("Future events: \(futureEvents.count)")
-        print("Recent past events (for reviews): \(recentPastEvents.count)")
-    
-        print("Events by category:")
-        let eventsByCategory = Dictionary(grouping: relevantEvents, by: { $0.category })
+        let eventsByCategory = Dictionary(grouping: futureEvents, by: { $0.category })
         for (category, categoryEvents) in eventsByCategory {
-            print("  - \(category): \(categoryEvents.count) events")
+            print("  - \(category): \(categoryEvents.count) future events")
         }
 
-        return relevantEvents
+        return futureEvents
     }
     
     private func filterUserEvents(_ events: [Event], userId: String) async throws -> [Event] {
+        print("Filtering events for user preferences...")
+    
         // Get user's tickets (attended events)
         let ticketsSnapshot = try await db.collection("tickets")
             .whereField("userId", isEqualTo: userId)
@@ -279,67 +258,84 @@ class RecommendationService: ObservableObject {
 
         // Get user preferences for filtering
         let preferences = try await getUserPreferences(userId: userId)
+    
+        print("User has \(preferences.preferredCategories.count) category preferences")
+        print("User has \(preferences.preferredLocations.count) location preferences")
 
-        // Filter out events user has already interacted with AND events that don't match preferences
+        // Filter events based on preferences and interactions
         let filteredEvents = events.filter { event in
             guard let eventId = event.id else { return false }
         
+            // Filter out already interacted events
             let hasTicket = attendedEventIds.contains(eventId)
             let hasJoined = joinedEventIds.contains(eventId)
             let hasSaved = savedEventIds.contains(eventId)
         
             if hasTicket || hasJoined || hasSaved {
+                print("🚫 Already interacted: \(event.title)")
                 return false
-            }
+            }  
         
-            return matchesUserPreferences(event, preferences: preferences)
+            // Apply strict preference matching
+            let matchesPrefs = matchesUserPreferences(event, preferences: preferences)
+            if !matchesPrefs {
+                print("🚫 Doesn't match preferences: \(event.title)")
+            }
+            return matchesPrefs
         }
 
-        print("📋 Filtered events based on preferences: \(filteredEvents.count) out of \(events.count)")
+        print("Final filtered events for 'For You': \(filteredEvents.count) out of \(events.count)")
         return filteredEvents
     }
 
     private func matchesUserPreferences(_ event: Event, preferences: UserPreferences) -> Bool {
-        // If user has no preferences yet, show all events (new user)
+        // If user has no preferences yet, show all future events (new user)
         if preferences.preferredCategories.isEmpty && preferences.preferredLocations.isEmpty {
-            print("👤 New user - showing all events")
+            print("👤 New user - showing all future events")
             return true
         }
     
-        var matches = false
+        // STRICT PREFERENCE MATCHING
+        var categoryMatches = false
+        var locationMatches = false
     
-        // Check category preferences (most important)
+        // Check category preferences (REQUIRED if user has category preferences)
         if !preferences.preferredCategories.isEmpty {
-            let categoryMatch = preferences.preferredCategories[event.category] != nil && 
-                               preferences.preferredCategories[event.category]! > 0
-            if categoryMatch {
-                matches = true
+            categoryMatches = preferences.preferredCategories[event.category] != nil && 
+                             preferences.preferredCategories[event.category]! > 0
+        
+            if categoryMatches {
                 print("✅ Category match: \(event.category) for event: \(event.title)")
             } else {
-                print("❌ Category mismatch: \(event.category) for event: \(event.title)")
-            }
-        }
-    
-        // Check location preferences (secondary filter)
-        if !preferences.preferredLocations.isEmpty && !matches {
-            let locationMatch = preferences.preferredLocations[event.location] != nil && 
-                               preferences.preferredLocations[event.location]! > 0
-            if locationMatch {
-                matches = true
-                print("✅ Location match: \(event.location) for event: \(event.title)")
-            } else {
-                print("❌ Location mismatch: \(event.location) for event: \(event.title)")
-            }
-        }
-    
-        // If user has preferences but this event doesn't match any, exclude it
-        if !preferences.preferredCategories.isEmpty || !preferences.preferredLocations.isEmpty {
-            if !matches {
-                print("🚫 Event \(event.title) excluded - doesn't match user preferences")
+                print("❌ Category '\(event.category)' not in user preferences for: \(event.title)")
+                // If user has category preferences, event MUST match one of them
                 return false
             }
         }
     
+        if !preferences.preferredLocations.isEmpty {
+            locationMatches = preferences.preferredLocations[event.location] != nil && 
+                             preferences.preferredLocations[event.location]! > 0
+        
+            if locationMatches {
+                print("✅ Location match: \(event.location) for event: \(event.title)")
+            } else {
+                print("❌ Location '\(event.location)' not preferred for: \(event.title)")
+            }
+        }
+    
+        // Event must match category preferences (if user has them)
+        // Location is secondary and not required
+        if !preferences.preferredCategories.isEmpty {
+            return categoryMatches
+        }
+    
+        // If only location preferences exist, use those
+        if !preferences.preferredLocations.isEmpty {
+            return locationMatches
+        }
+    
+        // Fallback for edge cases
         return true
     }
     
