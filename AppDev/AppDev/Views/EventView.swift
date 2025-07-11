@@ -85,8 +85,8 @@ struct EventView: View {
                                 }
                                 Spacer()
                                 
-                                // Cancel button for organizers
-                                if isEventOrganizer && !event.hasEnded {
+                                // FIXED: Cancel button for organizers
+                                if isEventOrganizer && !event.hasEnded && !event.isCancelled {
                                     Button(action: {
                                         showCancelEvent = true
                                     }) {
@@ -238,7 +238,11 @@ struct EventView: View {
     @ViewBuilder
     private var actionButtonsSection: some View {
         VStack(spacing: 12) {
-            if isEventOrganizer && !event?.hasEnded ?? false {
+        // FIXED: Properly unwrap the optional and check cancellation status
+            if let event = event, 
+               isEventOrganizer && 
+               !event.hasEnded && 
+               !event.isCancelled {
                 Button(action: {
                     showCancelEvent = true
                 }) {
@@ -255,8 +259,8 @@ struct EventView: View {
                 }
                 .shadow(color: Color.red.opacity(0.3), radius: 8, x: 0, y: 4)
             }
-            
-            // Get Ticket Button
+        
+            // Get Ticket Button - ALSO FIXED
             if hasJoinedEvent {
                 Text("You've already joined")
                     .font(.headline)
@@ -265,7 +269,7 @@ struct EventView: View {
                     .padding()
                     .background(Color.gray)
                     .cornerRadius(12)
-            } else if !(event?.hasEnded ?? false) {
+            } else if let event = event, !event.hasEnded && !event.isCancelled {
                 let getTicketDestination = getTicketDestination
                 NavigationLink(destination: getTicketDestination, isActive: $showGetTicket) {
                     EmptyView()
@@ -291,6 +295,43 @@ struct EventView: View {
                         .cornerRadius(12)
                 }
                 .shadow(color: Color.purple.opacity(0.3), radius: 8, x: 0, y: 4)
+            }
+        
+            // ADDED: Show cancellation notice if event is cancelled
+            if let event = event, event.isCancelled {
+                VStack(spacing: 8) {
+                    HStack {
+                        Image(systemName: "exclamationmark.triangle.fill")
+                            .foregroundColor(.orange)
+                        Text("Event Cancelled")
+                            .font(.headline)
+                            .fontWeight(.semibold)
+                            .foregroundColor(.orange)
+                    }
+                
+                    if let reason = event.cancellationReason {
+                        Text("Reason: \(reason)")
+                            .font(.subheadline)
+                            .foregroundColor(.gray)
+                            .multilineTextAlignment(.center)
+                    }
+                
+                    if let details = event.cancellationDetails, !details.isEmpty {
+                        Text(details)
+                            .font(.caption)
+                            .foregroundColor(.gray)
+                            .multilineTextAlignment(.center)
+                            .padding(.horizontal)
+                    }
+                }
+                .frame(maxWidth: .infinity)
+                .padding()
+                .background(Color.orange.opacity(0.1))
+                .cornerRadius(12)
+                .overlay(
+                    RoundedRectangle(cornerRadius: 12)
+                        .stroke(Color.orange.opacity(0.3), lineWidth: 1)
+                )
             }
         }
         .padding(.top, 8)
