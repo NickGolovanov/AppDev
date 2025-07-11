@@ -189,7 +189,7 @@ struct EventView: View {
                             reviewsSummarySection
                             
                             // Action Buttons Section
-                            actionButtonsSection
+                            actionButtonsSection(for: event)
                             
                             // REVIEWS SECTION
                             reviewsSection
@@ -236,7 +236,7 @@ struct EventView: View {
     }
     
     @ViewBuilder
-    private var actionButtonsSection: some View {
+    private var actionButtonsSection(for event: Event) -> some View {
         VStack(spacing: 12) {
         // FIXED: Properly unwrap the optional and check cancellation status
             if isEventOrganizer && 
@@ -294,7 +294,7 @@ struct EventView: View {
                 .shadow(color: Color.purple.opacity(0.3), radius: 8, x: 0, y: 4)
             }
         
-            // ADDED: Show cancellation notice if event is cancelled
+            // Show cancellation notice if event is cancelled
             if event.isCancelled {
                 VStack(spacing: 8) {
                     HStack {
