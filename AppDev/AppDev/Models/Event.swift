@@ -37,10 +37,6 @@ struct Event: Identifiable, Codable {
     }
     var distance: String? = nil
 
-    var isCancelled: Bool {
-        return status == "cancelled"
-    }
-
     enum CodingKeys: String, CodingKey {
         case id, title, date, endTime, startTime, location, imageUrl, attendees, category, price, maxCapacity, description, latitude, longitude, averageRating, totalReviews, status, cancellationReason, cancellationDetails, cancelledAt, cancelledBy
     }
