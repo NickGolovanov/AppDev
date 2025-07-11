@@ -239,8 +239,7 @@ struct EventView: View {
     private var actionButtonsSection: some View {
         VStack(spacing: 12) {
         // FIXED: Properly unwrap the optional and check cancellation status
-            if let event = event, 
-               isEventOrganizer && 
+            if isEventOrganizer && 
                !event.hasEnded && 
                !event.isCancelled {
                 Button(action: {
@@ -269,16 +268,14 @@ struct EventView: View {
                     .padding()
                     .background(Color.gray)
                     .cornerRadius(12)
-            } else if let event = event, !event.hasEnded && !event.isCancelled {
+            } else if !event.hasEnded && !event.isCancelled {
                 let getTicketDestination = getTicketDestination
                 NavigationLink(destination: getTicketDestination, isActive: $showGetTicket) {
                     EmptyView()
                 }
                 Button(action: {
                     showGetTicket = true
-                    if let event = event {
-                        recommendationService.trackUserAction(eventId: eventId, actionType: .clicked, event: event)
-                    }
+                    recommendationService.trackUserAction(eventId: eventId, actionType: .clicked, event: event)
                 }) {
                     Text("Get Ticket Now")
                         .font(.headline)
@@ -298,7 +295,7 @@ struct EventView: View {
             }
         
             // ADDED: Show cancellation notice if event is cancelled
-            if let event = event, event.isCancelled {
+            if event.isCancelled {
                 VStack(spacing: 8) {
                     HStack {
                         Image(systemName: "exclamationmark.triangle.fill")
