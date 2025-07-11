@@ -660,6 +660,27 @@ struct EventView: View {
                 }
             }
     }
+
+    private func fixExistingEvent() {
+        guard let event = event,
+              let eventId = event.id,
+              let currentUserId = authViewModel.currentUser?.id else {
+            return
+        }
+    
+        let db = Firestore.firestore()
+        db.collection("events").document(eventId).updateData([
+            "organizerId": currentUserId
+        ]) { error in
+            if let error = error {
+                print("Error updating event: \(error.localizedDescription)")
+            } else {
+                print("Successfully added organizerId to event")
+                // Refresh the event
+                self.fetchEvent()
+            }
+        }
+    }
 }
 
 struct ReviewRowView: View {
@@ -760,28 +781,6 @@ struct ReviewRowView: View {
         .background(color.opacity(0.1))
         .foregroundColor(color)
         .cornerRadius(6)
-    }
-
-    // Add this function to your EventView
-    private func fixExistingEvent() {
-        guard let event = event,
-              let eventId = event.id,
-              let currentUserId = authViewModel.currentUser?.id else {
-            return
-        }
-    
-        let db = Firestore.firestore()
-        db.collection("events").document(eventId).updateData([
-            "organizerId": currentUserId
-        ]) { error in
-            if let error = error {
-                print("Error updating event: \(error.localizedDescription)")
-            } else {
-                print("Successfully added organizerId to event")
-                // Refresh the event
-                self.fetchEvent()
-            }
-        }
     }
 }
 
