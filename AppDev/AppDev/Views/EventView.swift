@@ -555,22 +555,27 @@ struct EventView: View {
         }
     }
     
-    //Check if current user is the event organizer
     private func checkIfUserIsOrganizer() {
         guard let event = event,
-              let eventId = event.id,
               let currentUserId = Auth.auth().currentUser?.uid else {
+            print("No current user or event found")
+            self.isEventOrganizer = false
             return
         }
+    
+        if let organizerId = event.organizerId {
+            print("Event organizer ID: \(organizerId)")
+            print("Current user ID: \(currentUserId)")
+            let isOrganizer = (organizerId == currentUserId)
+            print("Is organizer: \(isOrganizer)")
         
-        let db = Firestore.firestore()
-        db.collection("events").document(eventId).getDocument { document, error in
-            if let document = document, document.exists {
-                if let organizerId = document.data()?["organizerId"] as? String {
-                    DispatchQueue.main.async {
-                        self.isEventOrganizer = (organizerId == currentUserId)
-                    }
-                }
+            DispatchQueue.main.async {
+                self.isEventOrganizer = isOrganizer
+            }
+        } else {
+            print("No organizerId field found in event")
+            DispatchQueue.main.async {
+                self.isEventOrganizer = false
             }
         }
     }

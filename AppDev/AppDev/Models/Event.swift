@@ -24,6 +24,7 @@ struct Event: Identifiable, Codable {
     let cancellationDetails: String?
     let cancelledAt: Date?
     let cancelledBy: String?
+    let organizerId: String?
     
     // Recommendation tracking - these are computed/runtime properties, not stored in Firestore
     var recommendationScore: Double? = nil
@@ -38,7 +39,7 @@ struct Event: Identifiable, Codable {
     var distance: String? = nil
 
     enum CodingKeys: String, CodingKey {
-        case id, title, date, endTime, startTime, location, imageUrl, attendees, category, price, maxCapacity, description, latitude, longitude, averageRating, totalReviews, status, cancellationReason, cancellationDetails, cancelledAt, cancelledBy
+        case id, title, date, endTime, startTime, location, imageUrl, attendees, category, price, maxCapacity, description, latitude, longitude, averageRating, totalReviews, status, cancellationReason, cancellationDetails, cancelledAt, cancelledBy, organizerId
     }
     
     init(
@@ -62,7 +63,8 @@ struct Event: Identifiable, Codable {
         cancellationReason: String? = nil,
         cancellationDetails: String? = nil,
         cancelledAt: Date? = nil,
-        cancelledBy: String? = nil
+        cancelledBy: String? = nil,
+        organizerId: String? = nil
     ) {
         self.id = id
         self.title = title
@@ -86,6 +88,7 @@ struct Event: Identifiable, Codable {
         self.cancellationDetails = cancellationDetails
         self.cancelledAt = cancelledAt
         self.cancelledBy = cancelledBy
+        self.organizerId = organizerId
 
         self.recommendationScore = nil
         self.isRecommended = false
@@ -119,6 +122,8 @@ struct Event: Identifiable, Codable {
         cancellationDetails = try container.decodeIfPresent(String.self, forKey: .cancellationDetails)
         cancelledAt = try container.decodeIfPresent(Date.self, forKey: .cancelledAt)
         cancelledBy = try container.decodeIfPresent(String.self, forKey: .cancelledBy)
+        organizerId = try container.decodeIfPresent(String.self, forKey: .organizerId)
+        
         recommendationScore = nil
         isRecommended = false
         distance = nil
@@ -148,8 +153,8 @@ struct Event: Identifiable, Codable {
         try container.encodeIfPresent(cancellationDetails, forKey: .cancellationDetails)
         try container.encodeIfPresent(cancelledAt, forKey: .cancelledAt)
         try container.encodeIfPresent(cancelledBy, forKey: .cancelledBy)
+        try container.encodeIfPresent(organizerId, forKey: .organizerId)
         
-        // Note: We don't encode recommendationScore, isRecommended, or distance as they're runtime-only
     }
     
     var hasEnded: Bool {
