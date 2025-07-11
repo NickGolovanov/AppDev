@@ -28,7 +28,6 @@ struct Event: Identifiable, Codable {
     // Recommendation tracking - these are computed/runtime properties, not stored in Firestore
     var recommendationScore: Double? = nil
     var isRecommended: Bool = false
-
     
     var coordinate: CLLocationCoordinate2D? {
         if let lat = latitude, let lon = longitude {
@@ -39,11 +38,9 @@ struct Event: Identifiable, Codable {
     var distance: String? = nil
 
     enum CodingKeys: String, CodingKey {
-        case id, title, date, endTime, startTime, location, imageUrl, attendees, category, price, maxCapacity, description, latitude, longitude, averageRating, totalReviews
-        // Note: recommendationScore and isRecommended are NOT included as they're runtime-only properties
+        case id, title, date, endTime, startTime, location, imageUrl, attendees, category, price, maxCapacity, description, latitude, longitude, averageRating, totalReviews, status, cancellationReason, cancellationDetails, cancelledAt, cancelledBy
     }
     
-    // Add memberwise initializer
     init(
         id: String? = nil,
         title: String,
@@ -60,7 +57,12 @@ struct Event: Identifiable, Codable {
         latitude: Double? = nil,
         longitude: Double? = nil,
         averageRating: Double? = nil,
-        totalReviews: Int? = nil
+        totalReviews: Int? = nil,
+        status: String? = nil,
+        cancellationReason: String? = nil,
+        cancellationDetails: String? = nil,
+        cancelledAt: Date? = nil,
+        cancelledBy: String? = nil
     ) {
         self.id = id
         self.title = title
@@ -78,12 +80,21 @@ struct Event: Identifiable, Codable {
         self.longitude = longitude
         self.averageRating = averageRating
         self.totalReviews = totalReviews
+        
+        self.status = status
+        self.cancellationReason = cancellationReason
+        self.cancellationDetails = cancellationDetails
+        self.cancelledAt = cancelledAt
+        self.cancelledBy = cancelledBy
+
+        self.recommendationScore = nil
+        self.isRecommended = false
+        self.distance = nil
     }
     
     init(from decoder: Decoder) throws {
         let container = try decoder.container(keyedBy: CodingKeys.self)
         
-        // Decode DocumentID
         _id = try container.decode(DocumentID<String>.self, forKey: .id)
         
         title = try container.decode(String.self, forKey: .title)
@@ -98,19 +109,21 @@ struct Event: Identifiable, Codable {
         maxCapacity = try container.decode(Int.self, forKey: .maxCapacity)
         description = try container.decode(String.self, forKey: .description)
         
-        // Decode optional fields
         latitude = try container.decodeIfPresent(Double.self, forKey: .latitude)
         longitude = try container.decodeIfPresent(Double.self, forKey: .longitude)
         averageRating = try container.decodeIfPresent(Double.self, forKey: .averageRating)
         totalReviews = try container.decodeIfPresent(Int.self, forKey: .totalReviews)
         
-        // Initialize runtime properties with default values
+        status = try container.decodeIfPresent(String.self, forKey: .status)
+        cancellationReason = try container.decodeIfPresent(String.self, forKey: .cancellationReason)
+        cancellationDetails = try container.decodeIfPresent(String.self, forKey: .cancellationDetails)
+        cancelledAt = try container.decodeIfPresent(Date.self, forKey: .cancelledAt)
+        cancelledBy = try container.decodeIfPresent(String.self, forKey: .cancelledBy)
         recommendationScore = nil
         isRecommended = false
         distance = nil
     }
     
-    // Custom encoder that only encodes Firestore fields
     func encode(to encoder: Encoder) throws {
         var container = encoder.container(keyedBy: CodingKeys.self)
         
@@ -130,31 +143,38 @@ struct Event: Identifiable, Codable {
         try container.encodeIfPresent(longitude, forKey: .longitude)
         try container.encodeIfPresent(averageRating, forKey: .averageRating)
         try container.encodeIfPresent(totalReviews, forKey: .totalReviews)
+        try container.encodeIfPresent(status, forKey: .status)
+        try container.encodeIfPresent(cancellationReason, forKey: .cancellationReason)
+        try container.encodeIfPresent(cancellationDetails, forKey: .cancellationDetails)
+        try container.encodeIfPresent(cancelledAt, forKey: .cancelledAt)
+        try container.encodeIfPresent(cancelledBy, forKey: .cancelledBy)
         
         // Note: We don't encode recommendationScore, isRecommended, or distance as they're runtime-only
     }
     
-    // Helper computed property to check if event has ended
     var hasEnded: Bool {
         let isoFormatter = ISO8601DateFormatter()
         guard let endDateTime = isoFormatter.date(from: endTime) else { return false }
         return endDateTime < Date()
     }
+    
+    var isCancelled: Bool {
+        return status == "cancelled"
+    }
 }
 
 extension Event {
     var formattedDate: String {
-        // Try to parse ISO8601 date string and format as '21 May 2025'
         let isoFormatter = ISO8601DateFormatter()
         if let dateObj = isoFormatter.date(from: self.date) {
             let formatter = DateFormatter()
             formatter.dateFormat = "d MMM yyyy"
             return formatter.string(from: dateObj)
         }
-        return self.date  // fallback
+        return self.date
     }
+    
     var formattedTime: String {
-        // Try to parse ISO8601 date string and format as '10:00'
         let isoFormatter = ISO8601DateFormatter()
         if let dateObj = isoFormatter.date(from: self.date) {
             let formatter = DateFormatter()
