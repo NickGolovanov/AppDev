@@ -23,6 +23,10 @@ struct EventView: View {
     
     // Recommendation service for tracking
     @StateObject private var recommendationService = RecommendationService()
+    
+    // Cancel event states
+    @State private var showCancelEvent = false
+    @State private var isEventOrganizer = false
 
     var body: some View {
         VStack(spacing: 0) {
@@ -69,7 +73,6 @@ struct EventView: View {
                                     .frame(height: 240)
                             }
 
-                            // Back and Favorite buttons
                             HStack {
                                 Button(action: {
                                     dismiss()
@@ -81,6 +84,19 @@ struct EventView: View {
                                         .clipShape(Circle())
                                 }
                                 Spacer()
+                                
+                                // Cancel button for organizers
+                                if isEventOrganizer && !event.hasEnded {
+                                    Button(action: {
+                                        showCancelEvent = true
+                                    }) {
+                                        Image(systemName: "xmark.circle.fill")
+                                            .foregroundColor(.white)
+                                            .padding(12)
+                                            .background(Color.red.opacity(0.7))
+                                            .clipShape(Circle())
+                                    }
+                                }
                             }
                             .padding(.horizontal, 16)
                             .padding(.top, 16)
@@ -169,46 +185,11 @@ struct EventView: View {
                             .background(Color(.systemGray6))
                             .cornerRadius(12)
                             
-                            // Reviews Section - NEW ADDITION
+                            // Reviews Section
                             reviewsSummarySection
                             
-                            // Get Ticket Button
-                            if hasJoinedEvent {
-                                Text("You've already joined")
-                                    .font(.headline)
-                                    .foregroundColor(.white)
-                                    .frame(maxWidth: .infinity)
-                                    .padding()
-                                    .background(Color.gray)
-                                    .cornerRadius(12)
-                                    .padding(.top, 8)
-                            } else {
-                                let getTicketDestination = getTicketDestination
-                                NavigationLink(destination: getTicketDestination, isActive: $showGetTicket) {
-                                    EmptyView()
-                                }
-                                Button(action: {
-                                    showGetTicket = true
-                                    // Track ticket purchase intent
-                                    recommendationService.trackUserAction(eventId: eventId, actionType: .clicked, event: event)
-                                }) {
-                                    Text("Get Ticket Now")
-                                        .font(.headline)
-                                        .foregroundColor(.white)
-                                        .frame(maxWidth: .infinity)
-                                        .padding()
-                                        .background(
-                                            LinearGradient(
-                                                gradient: Gradient(colors: [Color.purple, Color.blue]),
-                                                startPoint: .leading,
-                                                endPoint: .trailing
-                                            )
-                                        )
-                                        .cornerRadius(12)
-                                }
-                                .padding(.top, 8)
-                                .shadow(color: Color.purple.opacity(0.3), radius: 8, x: 0, y: 4)
-                            }
+                            // Action Buttons Section
+                            actionButtonsSection
                             
                             // REVIEWS SECTION
                             reviewsSection
@@ -233,20 +214,89 @@ struct EventView: View {
                 CreateReviewView(event: event, onReviewCreated: {
                     fetchReviews()
                     Task { await checkReviewStatus() }
-                    // Track review action
                     recommendationService.trackUserAction(eventId: eventId, actionType: .rated, event: event)
                 })
+            }
+        }
+        .sheet(isPresented: $showCancelEvent) {
+            if let event = event {
+                CancelEventView(event: event) {
+                    // Handle event cancellation completion
+                    dismiss() // Go back to previous screen
+                }
             }
         }
         .task {
             if let event = event {
                 await checkReviewStatus()
                 fetchReviews()
+                checkIfUserIsOrganizer()
             }
         }
     }
     
-    // Reviews Summary Section - NEW
+    @ViewBuilder
+    private var actionButtonsSection: some View {
+        VStack(spacing: 12) {
+            if isEventOrganizer && !event?.hasEnded ?? false {
+                Button(action: {
+                    showCancelEvent = true
+                }) {
+                    HStack {
+                        Image(systemName: "xmark.circle.fill")
+                        Text("Cancel Event")
+                    }
+                    .font(.headline)
+                    .foregroundColor(.white)
+                    .frame(maxWidth: .infinity)
+                    .padding()
+                    .background(Color.red)
+                    .cornerRadius(12)
+                }
+                .shadow(color: Color.red.opacity(0.3), radius: 8, x: 0, y: 4)
+            }
+            
+            // Get Ticket Button
+            if hasJoinedEvent {
+                Text("You've already joined")
+                    .font(.headline)
+                    .foregroundColor(.white)
+                    .frame(maxWidth: .infinity)
+                    .padding()
+                    .background(Color.gray)
+                    .cornerRadius(12)
+            } else if !(event?.hasEnded ?? false) {
+                let getTicketDestination = getTicketDestination
+                NavigationLink(destination: getTicketDestination, isActive: $showGetTicket) {
+                    EmptyView()
+                }
+                Button(action: {
+                    showGetTicket = true
+                    if let event = event {
+                        recommendationService.trackUserAction(eventId: eventId, actionType: .clicked, event: event)
+                    }
+                }) {
+                    Text("Get Ticket Now")
+                        .font(.headline)
+                        .foregroundColor(.white)
+                        .frame(maxWidth: .infinity)
+                        .padding()
+                        .background(
+                            LinearGradient(
+                                gradient: Gradient(colors: [Color.purple, Color.blue]),
+                                startPoint: .leading,
+                                endPoint: .trailing
+                            )
+                        )
+                        .cornerRadius(12)
+                }
+                .shadow(color: Color.purple.opacity(0.3), radius: 8, x: 0, y: 4)
+            }
+        }
+        .padding(.top, 8)
+    }
+    
+    // Reviews Summary Section
     @ViewBuilder
     private var reviewsSummarySection: some View {
         VStack(alignment: .leading, spacing: 16) {
@@ -436,6 +486,7 @@ struct EventView: View {
             self.event = try? document.data(as: Event.self)
             if self.event != nil {
                 checkIfUserJoinedEvent()
+                checkIfUserIsOrganizer() // NEW
                 Task {
                     await checkReviewStatus()
                     fetchReviews()
@@ -460,6 +511,26 @@ struct EventView: View {
                         if self.hasJoinedEvent, let event = self.event {
                             self.recommendationService.trackUserAction(eventId: self.eventId, actionType: .attended, event: event)
                         }
+                    }
+                }
+            }
+        }
+    }
+    
+    //Check if current user is the event organizer
+    private func checkIfUserIsOrganizer() {
+        guard let event = event,
+              let eventId = event.id,
+              let currentUserId = Auth.auth().currentUser?.uid else {
+            return
+        }
+        
+        let db = Firestore.firestore()
+        db.collection("events").document(eventId).getDocument { document, error in
+            if let document = document, document.exists {
+                if let organizerId = document.data()?["organizerId"] as? String {
+                    DispatchQueue.main.async {
+                        self.isEventOrganizer = (organizerId == currentUserId)
                     }
                 }
             }
@@ -597,7 +668,7 @@ struct ReviewRowView: View {
                 ratingPill("Vibe", rating: review.vibeRating, color: .pink)
             }
             
-            // Comment section - ENHANCED
+            // Comment section
             if !review.comment.isEmpty {
                 VStack(alignment: .leading, spacing: 4) {
                     HStack {

@@ -19,6 +19,11 @@ struct Event: Identifiable, Codable {
     let longitude: Double?
     let averageRating: Double?
     let totalReviews: Int?
+    let status: String?
+    let cancellationReason: String?
+    let cancellationDetails: String?
+    let cancelledAt: Date?
+    let cancelledBy: String?
     
     // Recommendation tracking - these are computed/runtime properties, not stored in Firestore
     var recommendationScore: Double? = nil
