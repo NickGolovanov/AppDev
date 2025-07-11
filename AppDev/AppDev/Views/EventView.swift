@@ -236,12 +236,10 @@ struct EventView: View {
     }
     
     @ViewBuilder
-    private var actionButtonsSection(for event: Event) -> some View {
+    private func actionButtonsSection(for event: Event) -> some View {
         VStack(spacing: 12) {
-        // FIXED: Properly unwrap the optional and check cancellation status
-            if isEventOrganizer && 
-               !event.hasEnded && 
-               !event.isCancelled {
+            // Cancel Event Button for Organizers
+            if isEventOrganizer && !event.hasEnded && !event.isCancelled {
                 Button(action: {
                     showCancelEvent = true
                 }) {
@@ -259,7 +257,7 @@ struct EventView: View {
                 .shadow(color: Color.red.opacity(0.3), radius: 8, x: 0, y: 4)
             }
         
-            // Get Ticket Button - ALSO FIXED
+            // Get Ticket Button or Already Joined Message
             if hasJoinedEvent {
                 Text("You've already joined")
                     .font(.headline)
@@ -269,10 +267,12 @@ struct EventView: View {
                     .background(Color.gray)
                     .cornerRadius(12)
             } else if !event.hasEnded && !event.isCancelled {
-                let getTicketDestination = getTicketDestination
+                // NavigationLink for ticket purchase
                 NavigationLink(destination: getTicketDestination, isActive: $showGetTicket) {
                     EmptyView()
                 }
+            
+                // Get Ticket Button
                 Button(action: {
                     showGetTicket = true
                     recommendationService.trackUserAction(eventId: eventId, actionType: .clicked, event: event)
